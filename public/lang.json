@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "lang_zh-TW": "好",
+    "lang_id": "bagus"
+  },
+  {
+    "id": 2,
+    "lang_zh-TW": "困惑",
+    "lang_id": "bangung"
+  },
+  {
+    "id": 3,
+    "lang_zh-TW": "累",
+    "lang_id": "capek"
+  }
+]
