@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lumina Lexicon | Style Guide</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#e2dfff",
+                    "surface-variant": "#34343d",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#34343d",
+                    "surface-container-high": "#2a2932",
+                    "on-tertiary-container": "#ffefe7",
+                    "on-primary-fixed-variant": "#332dbc",
+                    "on-surface-variant": "#c7c4d7",
+                    "on-background": "#e4e1ed",
+                    "background": "#13131b",
+                    "on-secondary-fixed": "#151449",
+                    "surface-dim": "#13131b",
+                    "secondary": "#c2c1ff",
+                    "surface-container-lowest": "#0e0d15",
+                    "secondary-container": "#43437a",
+                    "outline": "#918fa0",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "surface-tint": "#c2c1ff",
+                    "primary-fixed-dim": "#c2c1ff",
+                    "primary-container": "#5e5ce6",
+                    "inverse-on-surface": "#302f38",
+                    "secondary-fixed": "#e2dfff",
+                    "on-surface": "#e4e1ed",
+                    "tertiary": "#ffb786",
+                    "inverse-primary": "#4d4ad5",
+                    "on-secondary-fixed-variant": "#414177",
+                    "on-secondary": "#2a2a5f",
+                    "on-tertiary-fixed": "#311300",
+                    "surface-bright": "#393841",
+                    "on-error": "#690005",
+                    "inverse-surface": "#e4e1ed",
+                    "on-primary-container": "#f4f1ff",
+                    "error": "#ffb4ab",
+                    "surface-container": "#1f1f27",
+                    "outline-variant": "#464554",
+                    "surface-container-low": "#1b1b23",
+                    "on-tertiary": "#502400",
+                    "tertiary-container": "#ae5600",
+                    "on-primary": "#1800a7",
+                    "on-error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#c2c1ff",
+                    "primary": "#c2c1ff",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "on-primary-fixed": "#0c006b",
+                    "on-secondary-container": "#b3b3f1",
+                    "tertiary-fixed": "#ffdcc6",
+                    "surface": "#13131b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #13131b;
+            color: #e4e1ed;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(52, 52, 61, 0.6);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(199, 196, 215, 0.1);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 bg-[#13131b] shadow-none">
+<nav class="flex justify-between items-center px-6 h-16 w-full max-w-screen-xl mx-auto">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#c2c1ff] hover:opacity-80 transition-opacity">menu</span>
+<h1 class="font-manrope text-xl font-bold tracking-tight text-[#c2c1ff]">Lumina Lexicon</h1>
+</div>
+<div class="flex items-center gap-6">
+<span class="hidden md:block text-[#c2c1ff] font-medium transition-opacity hover:opacity-80 cursor-pointer">Design System</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a professional male designer with a neutral expression and soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8i_2MlxkgE8suqnpTohvYc7yXCRBPyRu5kPxIkEys7pTYkKhC3tKKRxP0EwML9lXsYFHDgAWb8yabrChGhvI5OJiUj_IVG7MFDO4ryO9K6qCjBlitPEtVXAVuTCfSDeWgUoLc7h3tElmS9NC8y67VtekUOT4Q-auJw8KxB_uW81CA8y6o9JGAtrJ2s5X2S06bnPBYrWTMDQN1usF26G2-jvzIxwl2Q_8pPVPQ72jD9jlfgXT1t66O3mMEILWimdqhE36OJEvUNQg4"/>
+</div>
+</div>
+</nav>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-screen-xl mx-auto">
+<!-- Hero Section -->
+<section class="mb-20">
+<p class="text-tertiary font-label text-sm tracking-[0.2em] uppercase mb-4">The Digital Lexicon</p>
+<h2 class="font-headline text-5xl md:text-7xl font-extrabold tracking-tighter mb-8 max-w-3xl">
+                Refining the architectural space of <span class="text-primary">language.</span>
+</h2>
+<div class="w-full h-[1px] bg-gradient-to-r from-primary/30 to-transparent"></div>
+</section>
+<!-- Color Palette: Bento Grid -->
+<section class="mb-24">
+<div class="flex items-end justify-between mb-10">
+<div>
+<h3 class="font-headline text-3xl font-bold mb-2">Color Palette</h3>
+<p class="text-on-surface-variant max-w-md">A nocturnal foundation designed for depth, accented by vibrant illuminations for critical actions.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<!-- Primary Column -->
+<div class="md:col-span-2 flex flex-col gap-6">
+<div class="bg-primary-container h-64 rounded-xl p-8 flex flex-col justify-end relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full"></div>
+<span class="text-on-primary-container font-headline text-2xl font-bold">Primary</span>
+<span class="text-on-primary-container/80 font-mono text-sm tracking-widest">#5E5CE6</span>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="bg-primary h-32 rounded-xl p-6 flex flex-col justify-end">
+<span class="text-on-primary font-bold">Illumination</span>
+<span class="text-on-primary/70 text-xs font-mono">#C2C1FF</span>
+</div>
+<div class="bg-secondary-container h-32 rounded-xl p-6 flex flex-col justify-end">
+<span class="text-on-secondary-container font-bold">Submerged</span>
+<span class="text-on-secondary-container/70 text-xs font-mono">#43437A</span>
+</div>
+</div>
+</div>
+<!-- Surface Column -->
+<div class="md:col-span-1 flex flex-col gap-6">
+<div class="bg-surface-container-low h-full rounded-xl p-8 flex flex-col justify-between border border-outline-variant/10">
+<div>
+<span class="text-on-surface font-headline text-xl font-bold">Surface Layering</span>
+<p class="text-on-surface-variant text-xs mt-2">The "Void" base foundation.</p>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-background border border-outline-variant/20"></div>
+<span class="text-xs font-mono">#13131B</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest"></div>
+<span class="text-xs font-mono">#34343D</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Semantic Column -->
+<div class="md:col-span-1 flex flex-col gap-6">
+<div class="bg-tertiary-container h-1/2 rounded-xl p-6 flex flex-col justify-end">
+<span class="text-on-tertiary-container font-bold">Emphasis</span>
+<span class="text-on-tertiary-container/70 text-xs font-mono">#FFB786</span>
+</div>
+<div class="bg-error-container h-1/2 rounded-xl p-6 flex flex-col justify-end">
+<span class="text-on-error-container font-bold">Error</span>
+<span class="text-on-error-container/70 text-xs font-mono">#93000A</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Typography: Editorial Layout -->
+<section class="mb-24">
+<h3 class="font-headline text-3xl font-bold mb-12">Typography Hierarchy</h3>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+<div class="lg:col-span-4">
+<div class="sticky top-24">
+<p class="text-primary font-bold mb-4">Manrope &amp; Inter</p>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-8">
+                            A dialogue between geometric modernism and utilitarian precision. Headlines command space while body text prioritizes absolute stroke clarity.
+                        </p>
+<div class="p-6 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+<span class="text-4xl block mb-2 font-headline">体 観</span>
+<p class="text-xs text-on-surface-variant tracking-widest uppercase">Traditional Chinese Font-Scaling</p>
+</div>
+</div>
+</div>
+<div class="lg:col-span-8 flex flex-col gap-12">
+<div class="border-b border-outline-variant/10 pb-8">
+<span class="text-xs text-primary mb-4 block font-mono">H1 / Manrope ExtraBold / 72px</span>
+<h1 class="font-headline text-6xl font-extrabold tracking-tighter">Editorial Presence.</h1>
+</div>
+<div class="border-b border-outline-variant/10 pb-8">
+<span class="text-xs text-primary mb-4 block font-mono">H2 / Manrope Bold / 48px</span>
+<h2 class="font-headline text-4xl font-bold">The architecture of thought.</h2>
+</div>
+<div class="border-b border-outline-variant/10 pb-8">
+<span class="text-xs text-primary mb-4 block font-mono">Body / Inter Regular / 18px</span>
+<p class="font-body text-lg text-on-surface leading-relaxed">
+                            Language acquisition treated as a journey through a refined, physical space. We break the template look with intentional asymmetry.
+                        </p>
+</div>
+<div class="pb-8">
+<span class="text-xs text-primary mb-4 block font-mono">Caption / Inter Medium / 12px</span>
+<p class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Pronunciation guide in tertiary accent.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Iconography & Elevation -->
+<section class="mb-24">
+<h3 class="font-headline text-3xl font-bold mb-12">Iconography &amp; Tonal Elevation</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<!-- Iconography -->
+<div class="flex flex-col gap-8">
+<div class="glass-panel p-10 rounded-2xl">
+<div class="grid grid-cols-4 gap-8">
+<span class="material-symbols-outlined text-3xl text-primary">auto_stories</span>
+<span class="material-symbols-outlined text-3xl text-secondary">explore</span>
+<span class="material-symbols-outlined text-3xl text-tertiary">style</span>
+<span class="material-symbols-outlined text-3xl text-on-surface">settings</span>
+<span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="material-symbols-outlined text-3xl text-secondary" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="material-symbols-outlined text-3xl text-tertiary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-3xl text-on-surface" style="font-variation-settings: 'FILL' 1;">translate</span>
+</div>
+<div class="mt-8">
+<p class="text-sm font-bold mb-2">Material Symbols Outlined</p>
+<p class="text-xs text-on-surface-variant">Literal transcription with optical sizing at 24px. Filled variants reserved for active interaction states.</p>
+</div>
+</div>
+</div>
+<!-- Elevation / Tonal Layering -->
+<div class="space-y-8">
+<!-- Layer 1 -->
+<div class="p-8 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/10">
+<span class="text-sm font-bold">Surface Container Low</span>
+<span class="text-xs text-on-surface-variant font-mono">Elevation 1</span>
+</div>
+<!-- Layer 2 -->
+<div class="p-8 bg-surface-container-high rounded-xl flex items-center justify-between shadow-xl">
+<span class="text-sm font-bold">Surface Container High</span>
+<span class="text-xs text-on-surface-variant font-mono">Elevation 2</span>
+</div>
+<!-- Layer 3 (The Flashcard Stack Metaphor) -->
+<div class="relative pt-8">
+<div class="absolute inset-0 top-0 mx-auto w-[90%] h-full bg-surface-container-low rounded-xl translate-y-[-16px] opacity-40"></div>
+<div class="absolute inset-0 top-0 mx-auto w-[95%] h-full bg-surface-container-high rounded-xl translate-y-[-8px] opacity-70"></div>
+<div class="relative p-10 bg-surface-container-highest rounded-xl shadow-2xl flex flex-col items-center gap-4">
+<span class="text-4xl font-headline font-extrabold text-primary">識</span>
+<span class="text-xs tracking-widest text-on-surface-variant">ACTIVE CARD LAYER</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Components Showcase -->
+<section class="mb-24">
+<h3 class="font-headline text-3xl font-bold mb-12">Atomic Components</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- CTA -->
+<div class="flex flex-col gap-4">
+<p class="text-xs font-mono text-primary">Primary CTA</p>
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold py-4 px-8 rounded-full transition-transform active:scale-95 duration-200">
+                        Continue Learning
+                    </button>
+<button class="w-full bg-surface-container-high text-primary font-bold py-4 px-8 rounded-full border border-outline-variant/20">
+                        View Archive
+                    </button>
+</div>
+<!-- Tag Cloud -->
+<div class="flex flex-col gap-4">
+<p class="text-xs font-mono text-primary">Tag Cloud (Asymmetric)</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-container-lowest px-4 py-2 rounded-full text-xs font-medium text-on-surface-variant border border-outline-variant/10">JLPT N2</span>
+<span class="bg-surface-container-lowest px-4 py-2 rounded-full text-xs font-medium text-on-surface-variant border border-outline-variant/10">Grammar</span>
+<span class="bg-primary-container/20 text-primary px-4 py-2 rounded-full text-xs font-medium">Daily Review</span>
+<span class="bg-surface-container-lowest px-4 py-2 rounded-full text-xs font-medium text-on-surface-variant border border-outline-variant/10">Traditional</span>
+<span class="bg-surface-container-lowest px-4 py-2 rounded-full text-xs font-medium text-on-surface-variant border border-outline-variant/10">Business</span>
+</div>
+</div>
+<!-- Input -->
+<div class="flex flex-col gap-4">
+<p class="text-xs font-mono text-primary">Focused Input</p>
+<div class="relative group">
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant" placeholder="Search the lexicon..." type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-4 text-on-surface-variant">search</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Anchor -->
+<nav class="fixed bottom-0 left-0 w-full z-50 rounded-t-3xl border-t border-[#c2c1ff]/10 bg-[#13131b]/80 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pt-2 pb-6">
+<div class="flex flex-col items-center justify-center bg-[#5e5ce6]/20 text-[#c2c1ff] rounded-xl px-4 py-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined">style</span>
+<span class="font-inter text-[10px] font-medium tracking-wide">Library</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-500 hover:text-[#c2c1ff] transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-inter text-[10px] font-medium tracking-wide">Review</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-500 hover:text-[#c2c1ff] transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-inter text-[10px] font-medium tracking-wide">Explore</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-500 hover:text-[#c2c1ff] transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-inter text-[10px] font-medium tracking-wide">Settings</span>
+</div>
+</div>
+</nav>
+</body></html>

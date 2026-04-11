@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Lexicon</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+  <base href="./">
+ 
+  <script src="public/assets/js/main.js"></script>
+  <link rel="stylesheet" href="public/assets/css/main.css">
+
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30" x-data="lexiconApp()" x-init="init()">
+  <div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+    <div class="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-l from-primary/10 to-transparent"></div>
+    <div class="absolute bottom-0 left-0 h-1/2 w-1/4 bg-gradient-to-tr from-primary-container/20 to-transparent blur-3xl"></div>
+  </div>
+
+  <header class="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/5 bg-[#13131b]/60 px-6 backdrop-blur-xl">
+    <div class="flex items-center gap-4">
+      <button type="button" class="text-primary transition-opacity hover:opacity-80 active:opacity-60" aria-label="menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <h1 class="font-headline text-lg font-black tracking-tighter text-primary">The Lexicon</h1>
+    </div>
+
+    <div class="relative" @click.outside="quickLangOpen = false">
+      <button type="button" class="flex items-center gap-2 text-primary transition-opacity hover:opacity-80 active:opacity-60" @click="quickLangOpen = !quickLangOpen" :aria-label="t('changeInterfaceLanguage')">
+        <span class="material-symbols-outlined">translate</span>
+      </button>
+
+      <div x-cloak x-show="quickLangOpen" x-transition class="glass-panel absolute right-0 top-12 w-56 overflow-hidden rounded-xl shadow-2xl">
+        <div class="p-2 space-y-1">
+          <template x-for="language in languages" :key="language.code">
+            <button type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left transition-colors" :class="nativeLanguage === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click="nativeLanguage = language.code; quickLangOpen = false; savePreferences()">
+              <div>
+                <p class="text-sm font-medium" x-text="language.description"></p>
+              </div>
+              <span x-show="nativeLanguage === language.code" class="material-symbols-outlined text-sm fill-icon">check_circle</span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto min-h-screen max-w-4xl px-6 pb-32 pt-20">
+    <section x-cloak x-show="loading" class="flex min-h-[70vh] items-center justify-center">
+      <div class="glass-panel w-full max-w-md rounded-3xl p-8 text-center shadow-ambient">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-container/20 text-primary">
+          <span class="material-symbols-outlined text-3xl fill-icon">auto_stories</span>
+        </div>
+        <h2 class="mb-3 font-headline text-3xl font-extrabold tracking-tight text-primary" x-text="t('loadingTitle')"></h2>
+        <p class="text-sm leading-relaxed text-on-surface-variant" x-text="t('loadingDescription')"></p>
+      </div>
+    </section>
+
+    <section x-cloak x-show="!loading && error" class="flex min-h-[70vh] items-center justify-center">
+      <div class="w-full max-w-lg rounded-3xl border border-error/20 bg-surface-container-low p-8 text-center shadow-xl">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-error-container/20 text-error">
+          <span class="material-symbols-outlined text-3xl fill-icon">error</span>
+        </div>
+        <h2 class="mb-3 font-headline text-3xl font-extrabold tracking-tight text-on-surface" x-text="t('loadErrorTitle')"></h2>
+        <p class="mb-6 text-sm leading-relaxed text-on-surface-variant" x-text="error"></p>
+        <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-8 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="init()" x-text="t('retry')"></button>
+      </div>
+    </section>
+
+    <div x-cloak x-show="!loading && !error">
+      <section x-show="activeView === 'card'" class="min-h-[70vh]">
+        <div class="mb-6 h-10 invisible"></div>
+
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('card')" :aria-label="t('filterTags')">
+              <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
+            </button>
+            <div class="h-4 w-px bg-outline/20"></div>
+            <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant" x-text="activeTagSummary"></span>
+          </div>
+
+          <div class="flex shrink-0 rounded-lg bg-surface-container-high p-1">
+            <button type="button" class="rounded-md p-1.5 text-primary shadow-sm transition-all bg-surface-container-highest" :aria-label="t('cardView')">
+              <span class="material-symbols-outlined fill-icon text-[20px]">grid_view</span>
+            </button>
+            <button type="button" class="rounded-md p-1.5 text-outline transition-colors hover:text-primary" @click="switchView('list')" :aria-label="t('listView')">
+              <span class="material-symbols-outlined text-[20px]">list</span>
+            </button>
+          </div>
+        </div>
+
+        <template x-if="filteredCardWords.length">
+          <div>
+            <section class="relative flex min-h-[520px] items-center justify-center py-4">
+              <div class="absolute h-[480px] w-full rounded-xl bg-surface-container-low opacity-30 shadow-2xl translate-x-3 translate-y-3"></div>
+              <div class="absolute h-[480px] w-full rounded-xl bg-surface-container-high opacity-60 shadow-xl translate-x-1.5 translate-y-1.5"></div>
+
+              <article class="relative flex h-[480px] w-full flex-col overflow-hidden rounded-xl shadow-2xl group card-swipe-area" :class="cardMotionClass" :style="cardStyle" @pointerdown="handlePointerDown($event)" @pointermove="handlePointerMove($event)" @pointerup="handlePointerUp($event)" @pointercancel="handlePointerCancel()">
+                <div class="pointer-events-none absolute inset-0 bg-surface-container-highest/30"></div>
+                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface-container-highest via-transparent to-transparent"></div>
+                <div class="relative flex flex-1 flex-col items-center justify-start pt-3 px-2 pb-10 text-center md:px-4 md:pt-8">
+                  <div class="relative z-10 mx-auto w-full max-w-full px-0">
+                    <div class="mb-3 max-h-32 overflow-y-auto" style="scrollbar-gutter: stable;">
+                      <h2 class="w-full max-w-full rounded-3xl bg-surface-container-highest/60 px-2 py-3 font-headline text-4xl font-bold text-primary chinese-char md:px-4 md:text-6xl break-words whitespace-normal text-center leading-tight" x-text="getWordText(currentCardWord, currentCardLanguage)"></h2>
+                    </div>
+                    <p class="mb-8 text-sm tracking-wide text-tertiary" x-text="cardDescriptor(currentCardWord)"></p>
+                    <div class="mb-8 h-px w-full bg-outline-variant/10"></div>
+                      <div class="flex items-center justify-center gap-4">
+                      <button type="button" class="group/btn flex flex-col items-center gap-3 transition-transform active:scale-95" @click="playAudio(currentCardWord, currentCardLanguage)">
+                        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container shadow-lg shadow-primary/20 transition-shadow group-hover/btn:shadow-primary/40">
+                          <span class="material-symbols-outlined fill-icon text-3xl text-on-primary">volume_up</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline transition-colors group-hover/btn:text-primary" x-text="t('listen')"></span>
+                      </button>
+
+                      <button type="button" class="group/btn flex flex-col items-center gap-3 transition-transform active:scale-95" @click="toggleCardLanguage()">
+                        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-high text-primary shadow-lg shadow-black/20 transition-colors group-hover/btn:bg-surface-bright">
+                          <span class="material-symbols-outlined text-3xl">translate</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline transition-colors group-hover/btn:text-primary" x-text="t('switchLanguage')"></span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-surface-container-highest text-primary shadow-lg shadow-black/20 transition-colors hover:bg-surface-container-high" @click.prevent.stop="prevCard()" :aria-label="t('previousCard')">
+                  <span class="material-symbols-outlined text-4xl">chevron_left</span>
+                </button>
+                <button type="button" class="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-surface-container-highest text-primary shadow-lg shadow-black/20 transition-colors hover:bg-surface-container-high" @click.prevent.stop="nextCard()" :aria-label="t('nextCard')">
+                  <span class="material-symbols-outlined text-4xl">chevron_right</span>
+                </button>
+              </article>
+            </section>
+
+            <div class="mt-8 text-center">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-outline" x-text="progressLabel"></p>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="!filteredCardWords.length">
+          <section class="flex min-h-[60vh] items-center justify-center">
+            <div class="w-full max-w-2xl rounded-3xl bg-surface-container-low p-8 shadow-xl">
+              <div class="mb-8 flex items-start gap-4">
+                <div class="rounded-2xl bg-primary-container/15 p-3 text-primary">
+                  <span class="material-symbols-outlined fill-icon text-3xl">search_off</span>
+                </div>
+                <div>
+                  <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-tertiary" x-text="t('emptyEyebrow')"></p>
+                  <h2 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface" x-text="t('emptyTitle')"></h2>
+                </div>
+              </div>
+
+              <p class="mb-8 max-w-xl text-sm leading-relaxed text-on-surface-variant" x-text="t('emptyDescription')"></p>
+
+              <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5">
+                  <p class="mb-1 text-sm font-semibold text-on-surface" x-text="t('emptyTipTitle')"></p>
+                  <p class="text-xs leading-relaxed text-on-surface-variant" x-text="t('emptyTipBody')"></p>
+                </div>
+
+                <div class="flex flex-col gap-3 md:w-56">
+                  <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-6 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="openTagSelection('card')" x-text="t('openFilters')"></button>
+                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="clearAppliedTags()" x-text="t('clearFilters')"></button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </template>
+      </section>
+
+      <section x-show="activeView === 'list'" class="min-h-[70vh]">
+        <div class="mb-6 flex items-center gap-3">
+          <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high text-primary transition-colors hover:bg-surface-container-highest" @click="switchView('card')" :aria-label="t('backToCards')">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+
+          <div class="relative flex-1">
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-sm text-outline">search</span>
+            <input type="text" class="w-full rounded-xl border-none bg-surface-container-highest py-3 pl-11 pr-12 text-on-surface transition-all placeholder:text-outline/50 focus:ring-1 focus:ring-primary/20" :placeholder="t('searchPlaceholder')" x-model.trim="searchQuery">
+            <button type="button" x-show="searchQuery" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-outline transition-colors hover:text-primary" @click="searchQuery = ''" :aria-label="t('clearSearch')">
+              <span class="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('list')" :aria-label="t('filterTags')">
+              <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
+            </button>
+            <div class="h-4 w-px bg-outline/20"></div>
+            <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant" x-text="activeTagSummary"></span>
+          </div>
+
+          <div class="flex shrink-0 rounded-lg bg-surface-container-high p-1">
+            <button type="button" class="rounded-md p-1.5 text-outline transition-colors hover:text-primary" @click="switchView('card')" :aria-label="t('cardView')">
+              <span class="material-symbols-outlined text-[20px]">grid_view</span>
+            </button>
+            <button type="button" class="rounded-md bg-surface-container-highest p-1.5 text-primary shadow-sm transition-all" :aria-label="t('listView')">
+              <span class="material-symbols-outlined fill-icon text-[20px]">list</span>
+            </button>
+          </div>
+        </div>
+
+        <template x-if="filteredListWords.length">
+          <div class="space-y-4">
+            <template x-for="word in filteredListWords" :key="word.id">
+              <article class="group flex items-center gap-4 rounded-xl border border-transparent bg-surface-container-low p-4 transition-all hover:border-outline-variant/30 hover:bg-surface-container-high">
+                <div class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg">
+                  <img class="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0" :src="word.img" :alt="getWordText(word, displayLanguage1)">
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center justify-between gap-4">
+                    <div class="min-w-0">
+                      <span class="block truncate font-headline text-xl tracking-wide text-primary" x-text="getWordText(word, displayLanguage1)"></span>
+                      <p class="mt-0.5 truncate text-sm text-outline" x-text="getWordText(word, displayLanguage2)"></p>
+                    </div>
+
+                    <button type="button" class="text-tertiary opacity-40 transition-opacity group-hover:opacity-100" @click="playAudio(word, currentCardLanguage)" :aria-label="t('listen')">
+                      <span class="material-symbols-outlined">volume_up</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[10px] font-bold uppercase tracking-tighter text-primary/60" x-text="listItemTagSummary(word)"></span>
+                  <div class="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(194,193,255,0.6)]"></div>
+                </div>
+              </article>
+            </template>
+
+            <div class="h-12"></div>
+          </div>
+        </template>
+
+        <template x-if="!filteredListWords.length">
+          <section class="flex min-h-[60vh] items-center justify-center">
+            <div class="w-full max-w-2xl rounded-3xl bg-surface-container-low p-8 shadow-xl">
+              <div class="mb-8 flex items-start gap-4">
+                <div class="rounded-2xl bg-primary-container/15 p-3 text-primary">
+                  <span class="material-symbols-outlined fill-icon text-3xl">pageview</span>
+                </div>
+                <div>
+                  <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-tertiary" x-text="t('emptySearchEyebrow')"></p>
+                  <h2 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface" x-text="t('emptySearchTitle')"></h2>
+                </div>
+              </div>
+
+              <p class="mb-8 max-w-xl text-sm leading-relaxed text-on-surface-variant" x-text="t('emptySearchDescription')"></p>
+
+              <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+                <div class="rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-5">
+                  <p class="mb-1 text-sm font-semibold text-on-surface" x-text="t('emptyTipTitle')"></p>
+                  <p class="text-xs leading-relaxed text-on-surface-variant" x-text="t('emptySearchTipBody')"></p>
+                </div>
+
+                <div class="flex flex-col gap-3 md:w-56">
+                  <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-6 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="searchQuery = ''" x-text="t('clearSearch')"></button>
+                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="openTagSelection('list')" x-text="t('adjustFilters')"></button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </template>
+      </section>
+
+      <section x-show="activeView === 'settings'" class="space-y-8">
+        <section class="space-y-2 pt-4">
+          <h2 class="font-headline text-3xl font-extrabold tracking-tight text-primary" x-text="t('settingsTitle')"></h2>
+          <p class="text-sm text-on-surface-variant" x-text="t('settingsDescription')"></p>
+        </section>
+
+        <div class="space-y-6">
+          <div class="space-y-6 rounded-xl bg-surface-container-low p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="rounded-lg bg-primary-container/20 p-2 text-primary">
+                  <span class="material-symbols-outlined">person_pin</span>
+                </div>
+                <h3 class="font-headline text-lg font-bold" x-text="t('nativeLanguage')"></h3>
+              </div>
+            </div>
+
+            <div class="relative" @click.outside="openSettingSelect = null">
+              <button type="button" class="flex w-full items-center justify-between rounded-xl border border-transparent bg-surface-container-highest p-4 transition-all hover:border-primary/20" @click.stop="toggleSettingSelect('native')">
+                <div class="flex items-center gap-4">
+                  <span class="text-2xl" x-text="getLanguageMeta(nativeLanguage).symbol"></span>
+                  <div class="text-left">
+                    <p class="font-semibold text-on-surface" x-text="getLanguageMeta(nativeLanguage).label"></p>
+                    <p class="text-xs text-on-surface-variant" x-text="getLanguageMeta(nativeLanguage).description"></p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-outline" x-text="openSettingSelect === 'native' ? 'expand_less' : 'expand_more'"></span>
+              </button>
+
+              <div x-cloak x-show="openSettingSelect === 'native'" x-transition class="glass-panel mt-2 overflow-hidden rounded-xl shadow-2xl">
+                <div class="space-y-1 p-2">
+                  <template x-for="language in languages" :key="`native-${language.code}`">
+                    <button type="button" class="flex w-full items-center justify-between rounded-lg p-3 transition-colors" :class="nativeLanguage === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click.stop="selectLanguage('nativeLanguage', language.code)">
+                      <div class="flex items-center gap-4">
+                        <span class="text-xl" x-text="language.symbol"></span>
+                        <span class="text-sm font-medium" x-text="language.label"></span>
+                      </div>
+                      <span x-show="nativeLanguage === language.code" class="material-symbols-outlined fill-icon text-sm">check_circle</span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-6 rounded-xl bg-surface-container-low p-6">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-primary-container/20 p-2 text-primary">
+                <span class="material-symbols-outlined">looks_one</span>
+              </div>
+              <h3 class="font-headline text-lg font-bold" x-text="t('displayLanguage1')"></h3>
+            </div>
+
+            <div class="relative" @click.outside="openSettingSelect = null">
+              <button type="button" class="flex w-full items-center justify-between rounded-xl border border-transparent bg-surface-container-highest p-4 transition-all hover:border-primary/20" @click.stop="toggleSettingSelect('displayLanguage1')">
+                <div class="flex items-center gap-4">
+                  <span class="text-2xl" x-text="getLanguageMeta(displayLanguage1).symbol"></span>
+                  <div class="text-left">
+                    <p class="font-semibold text-on-surface" x-text="getLanguageMeta(displayLanguage1).label"></p>
+                    <p class="text-xs text-on-surface-variant" x-text="t('displayLanguage1Description')"></p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-outline" x-text="openSettingSelect === 'displayLanguage1' ? 'expand_less' : 'expand_more'"></span>
+              </button>
+
+              <div x-cloak x-show="openSettingSelect === 'displayLanguage1'" x-transition class="glass-panel mt-2 overflow-hidden rounded-xl shadow-2xl">
+                <div class="space-y-1 p-2">
+                  <template x-for="language in languages" :key="`displayLanguage1-${language.code}`">
+                    <button type="button" class="flex w-full items-center justify-between rounded-lg p-3 transition-colors" :class="displayLanguage1 === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click.stop="selectLanguage('displayLanguage1', language.code)">
+                      <div class="flex items-center gap-4">
+                        <span class="text-xl" x-text="language.symbol"></span>
+                        <span class="text-sm font-medium" x-text="language.label"></span>
+                      </div>
+                      <span x-show="displayLanguage1 === language.code" class="material-symbols-outlined fill-icon text-sm">check_circle</span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-6 rounded-xl bg-surface-container-low p-6">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-primary-container/20 p-2 text-primary">
+                <span class="material-symbols-outlined">looks_two</span>
+              </div>
+              <h3 class="font-headline text-lg font-bold" x-text="t('displayLanguage2')"></h3>
+            </div>
+
+            <div class="relative" @click.outside="openSettingSelect = null">
+              <button type="button" class="flex w-full items-center justify-between rounded-xl border border-primary/40 bg-surface-container-highest p-4 ring-1 ring-primary/20 transition-all" @click.stop="toggleSettingSelect('displayLanguage2')">
+                <div class="flex items-center gap-4">
+                  <span class="text-2xl" x-text="getLanguageMeta(displayLanguage2).symbol"></span>
+                  <div class="text-left">
+                    <p class="font-semibold text-on-surface" x-text="getLanguageMeta(displayLanguage2).label"></p>
+                    <p class="text-xs text-on-surface-variant" x-text="t('displayLanguage2Description')"></p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-primary" x-text="openSettingSelect === 'displayLanguage2' ? 'expand_less' : 'expand_more'"></span>
+              </button>
+
+              <div x-cloak x-show="openSettingSelect === 'displayLanguage2'" x-transition class="glass-panel mt-2 overflow-hidden rounded-xl shadow-2xl border border-outline-variant/15">
+                <div class="space-y-1 p-2">
+                  <template x-for="language in languages" :key="`displayLanguage2-${language.code}`">
+                    <button type="button" class="flex w-full items-center justify-between rounded-lg p-3 transition-colors" :class="displayLanguage2 === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click.stop="selectLanguage('displayLanguage2', language.code)">
+                      <div class="flex items-center gap-4">
+                        <span class="text-xl" x-text="language.symbol"></span>
+                        <span class="text-sm font-medium" x-text="language.label"></span>
+                      </div>
+                      <span x-show="displayLanguage2 === language.code" class="material-symbols-outlined fill-icon text-sm">check_circle</span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-4 rounded-xl border border-tertiary/10 bg-tertiary/5 p-4">
+            <span class="material-symbols-outlined text-tertiary">info</span>
+            <p class="text-xs leading-relaxed text-on-surface-variant" x-text="t('settingsInfo')"></p>
+          </div>
+
+          <p x-show="settingsError" class="mb-3 rounded-xl border border-error/20 bg-error-container/10 px-4 py-3 text-sm text-error" x-text="settingsError"></p>
+          <button type="button" class="w-full rounded-full bg-gradient-to-br from-primary to-primary-container py-4 font-headline font-bold text-on-primary shadow-lg shadow-primary-container/20 transition-transform active:scale-95" @click="savePreferences()" x-text="settingsSaved ? t('savedPreferences') : t('savePreferences')"></button>
+        </div>
+      </section>
+
+      <section x-show="activeView === 'tags'" class="min-h-[70vh] pt-4">
+        <section class="mb-12">
+          <div class="mb-4 inline-flex items-center rounded-full bg-surface-container-low px-3 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-tertiary" x-text="t('tagEyebrow')"></div>
+          <h2 class="mb-6 font-headline text-4xl font-extrabold leading-none tracking-tight text-on-surface md:text-5xl">
+            <span x-text="t('tagTitleStart')"></span>
+            <span class="italic text-primary" x-text="t('tagTitleAccent')"></span>
+          </h2>
+          <p class="max-w-md text-sm leading-relaxed text-on-surface-variant" x-text="t('tagDescription')"></p>
+        </section>
+
+        <div class="sticky top-16 z-10 mb-4 flex justify-end gap-3 px-4 py-3 md:static md:mb-4 md:px-0 md:py-0">
+          <button type="button" class="rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold uppercase text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="resetDraftTags()" :aria-label="t('clearFilters')">
+            <span x-text="t('clearFilters')"></span>
+          </button>
+          <button type="button" class="rounded-full bg-emerald-800 px-4 py-3 text-sm font-semibold uppercase text-white transition-all hover:bg-emerald-900 active:scale-95" @click="applyDraftTags()" :aria-label="t('applyFilters')">
+            <span x-text="t('applyFilters')"></span>
+          </button>
+        </div>
+
+        <div class="rounded-xl bg-surface-container-low p-4 min-h-[400px] md:p-8">
+          <div class="flex flex-wrap gap-3 pt-2">
+            <template x-for="tag in tags" :key="tag.id">
+              <button type="button" class="group flex items-center gap-2 rounded-full px-5 py-3 transition-all duration-300" :class="draftTagIds.includes(tag.id) ? 'bg-primary-container text-on-primary-container scale-95' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-white/5'" @click="toggleDraftTag(tag.id)">
+                <span class="material-symbols-outlined text-sm" :class="draftTagIds.includes(tag.id) ? 'fill-icon' : ''" x-text="tag.icon"></span>
+                <span class="font-label text-sm font-medium tracking-wide" x-text="getTagName(tag)"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-white/5 bg-[#13131b] px-6 py-4">
+    <button type="button" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'card' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('card')">
+      <span class="material-symbols-outlined" :class="activeView === 'card' ? 'fill-icon' : ''">style</span>
+      <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('learn')"></span>
+    </button>
+
+    <button type="button" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'list' || activeView === 'tags' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('list')">
+      <span class="material-symbols-outlined" :class="activeView === 'list' || activeView === 'tags' ? 'fill-icon' : ''">list_alt</span>
+      <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('library')"></span>
+    </button>
+
+    <button type="button" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'settings' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('settings')">
+      <span class="material-symbols-outlined" :class="activeView === 'settings' ? 'fill-icon' : ''">settings</span>
+      <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('settingsNav')"></span>
+    </button>
+  </nav>
+</body>
+</html>

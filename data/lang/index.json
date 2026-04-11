@@ -1,0 +1,18 @@
+{
+  "languages": [
+    {
+      "code": "zh-TW",
+      "label": "繁體中文",
+      "description": "繁體中文",
+      "shortLabel": "繁中",
+      "symbol": "繁"
+    },
+    {
+      "code": "id",
+      "label": "印尼文",
+      "description": "Bahasa Indonesia",
+      "shortLabel": "印尼",
+      "symbol": "印"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name_en": "other",
+    "name_zh_tw": "其他",
+    "name_id": "lain",
+    "icon": "sell"
+  },
+  {
+    "id": 2,
+    "name_en": "common",
+    "name_zh_tw": "常用",
+    "name_id": "umum",
+    "icon": "sell"
+  },
+  {
+    "id": 3,
+    "name_en": "uncategorized",
+    "name_zh_tw": "未分類",
+    "name_id": "belum dikategorikan",
+    "icon": "sell"
+  },
+    {
+    "id": 4,
+    "name_en": "adjective",
+    "name_zh_tw": "形容詞",
+    "name_id": "kata sifat",
+    "icon": "sell"
+  }
+]

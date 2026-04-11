@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "lang_zh-TW": "好",
+    "lang_id": "bagus",
+    "img": "public/assets/imgs/202604120952.jpg",
+    "audio": {
+      "zh-TW": "好.mp3",
+      "id": "bagus.mp3"
+    },
+    "tags": [1]
+  },
+  {
+    "id": 2,
+    "lang_zh-TW": "困惑",
+    "lang_id": "bingung",
+    "img": "public/assets/imgs/202604120954.jpg",
+    "audio": {
+      "zh-TW": "困惑.mp3",
+      "id": "bingung.mp3"
+    },
+    "tags": [1, 4]
+  },
+  {
+    "id": 3,
+    "lang_zh-TW": "累",
+    "lang_id": "capek",
+    "img": "public/assets/imgs/202604120956.jpg",
+    "audio": {
+      "zh-TW": "累.mp3",
+      "id": "capek.mp3"
+    },
+    "tags": [1, 4]
+  }
+]
