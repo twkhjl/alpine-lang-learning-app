@@ -113,18 +113,16 @@
                     <p class="mb-8 text-sm tracking-wide text-tertiary" x-text="cardDescriptor(currentCardWord)"></p>
                     <div class="mb-8 h-px w-full bg-outline-variant/10"></div>
                       <div class="flex items-center justify-center gap-4">
-                      <button type="button" class="group/btn flex flex-col items-center gap-3 transition-transform active:scale-95" @click="playAudio(currentCardWord, currentCardLanguage)">
+                      <button type="button" class="group/btn flex flex-col items-center gap-3 transition-transform active:scale-95" @click="playAudio(currentCardWord, currentCardLanguage)" aria-label="Play audio">
                         <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container shadow-lg shadow-primary/20 transition-shadow group-hover/btn:shadow-primary/40">
                           <span class="material-symbols-outlined fill-icon text-3xl text-on-primary">volume_up</span>
                         </div>
-                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline transition-colors group-hover/btn:text-primary" x-text="t('listen')"></span>
                       </button>
 
-                      <button type="button" class="group/btn flex flex-col items-center gap-3 transition-transform active:scale-95" @click="toggleCardLanguage()">
+                      <button type="button" class="group/btn flex flex-col items-center gap-3 transition-transform active:scale-95" @click="toggleCardLanguage()" aria-label="Switch language">
                         <div class="flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-high text-primary shadow-lg shadow-black/20 transition-colors group-hover/btn:bg-surface-bright">
                           <span class="material-symbols-outlined text-3xl">translate</span>
                         </div>
-                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-outline transition-colors group-hover/btn:text-primary" x-text="t('switchLanguage')"></span>
                       </button>
                     </div>
                   </div>
@@ -225,7 +223,7 @@
                       <p class="mt-0.5 truncate text-sm text-outline" x-text="getWordText(word, displayLanguage2)"></p>
                     </div>
 
-                    <button type="button" class="text-tertiary opacity-40 transition-opacity group-hover:opacity-100" @click="playAudio(word, currentCardLanguage)" :aria-label="t('listen')">
+                    <button type="button" class="text-tertiary opacity-40 transition-opacity group-hover:opacity-100" @click="playAudio(word, currentCardLanguage)" aria-label="Play audio">
                       <span class="material-symbols-outlined">volume_up</span>
                     </button>
                   </div>

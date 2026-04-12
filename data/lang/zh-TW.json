@@ -12,8 +12,6 @@
   "selectedTagCount": "已選 {count} 個標籤",
   "cardView": "卡片檢視",
   "listView": "列表檢視",
-  "listen": "播放",
-  "switchLanguage": "切換語言",
   "previousCard": "上一張卡片",
   "nextCard": "下一張卡片",
   "cardOf": "第 {current} 張，共 {total} 張",
