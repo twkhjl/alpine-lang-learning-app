@@ -562,6 +562,16 @@ function lexiconApp() {
       }
     },
 
+    handleImageError(event) {
+      const img = event.target;
+      if (!img) {
+        return;
+      }
+      img.onerror = null;
+      img.alt = "";
+      img.style.visibility = "hidden";
+    },
+
     t(key, replacements = {}) {
       const table =
         this.translations[this.nativeLanguage] || this.translations["zh-TW"];

@@ -213,7 +213,7 @@
             <template x-for="word in filteredListWords" :key="word.id">
               <article class="group flex items-center gap-4 rounded-xl border border-transparent bg-surface-container-low p-4 transition-all hover:border-outline-variant/30 hover:bg-surface-container-high">
                 <div class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg">
-                  <img class="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0" :src="word.img" :alt="getWordText(word, displayLanguage1)">
+                  <img class="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0" :src="word.img" :alt="getWordText(word, displayLanguage1)" @error="handleImageError($event)">
                 </div>
 
                 <div class="min-w-0 flex-1">
