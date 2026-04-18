@@ -69,12 +69,189 @@ tailwind.config = {
   },
 };
 
+const STATUS = {
+  NORMAL: "normal",
+  FAVORITE: "favorite",
+  IGNORED: "ignored",
+};
+
+const DEFAULT_PREFERENCES = {
+  version: 2,
+  nativeLanguage: "zh-TW",
+  displayLanguage1: "zh-TW",
+  displayLanguage2: "id",
+  activeView: "card",
+  lastContentView: "card",
+  selectedTagIds: [],
+  cardLanguageSlot: 1,
+  favoriteWordIds: [],
+  ignoredWordIds: [],
+  statusFilter: "all",
+};
+
+const VALID_VIEWS = ["card", "list", "favorites", "settings", "tags"];
+const VALID_STATUS_FILTERS = ["all", "favorite", "ignored", "normal"];
+
+function uniqueNumberArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(value.filter((item) => Number.isInteger(item)))];
+}
+
+function normalizeStatusCollections(favoriteIds, ignoredIds) {
+  const favorites = uniqueNumberArray(favoriteIds);
+  const ignored = uniqueNumberArray(ignoredIds).filter(
+    (id) => !favorites.includes(id),
+  );
+
+  return {
+    favoriteWordIds: favorites,
+    ignoredWordIds: ignored,
+  };
+}
+
+function resolvePreferredValue(...values) {
+  return values.find((value) => typeof value === "string" && value.trim()) || "";
+}
+
+function getWordValue(word, languageCode) {
+  const map = {
+    "zh-TW": "lang_zh-TW",
+    id: "lang_id",
+    en: "lang_en",
+  };
+  const key = map[languageCode];
+  return key ? word[key] || "" : "";
+}
+
+function resolveWordText(word, languageCode, fallbacks = ["zh-TW", "id", "en"]) {
+  if (!word) {
+    return "";
+  }
+
+  const candidateLanguages = [languageCode, ...fallbacks].filter(Boolean);
+  for (const candidate of candidateLanguages) {
+    const value = getWordValue(word, candidate);
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function wordMatchesQuery(word, query) {
+  const normalized = (query || "").trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+
+  return ["zh-TW", "id", "en"].some((languageCode) =>
+    resolveWordText(word, languageCode).toLowerCase().includes(normalized),
+  );
+}
+
+function normalizePreferences(saved, languages = []) {
+  const languageCodes = languages.map((language) => language.code);
+  const preferred = {
+    ...DEFAULT_PREFERENCES,
+    ...(saved && typeof saved === "object" ? saved : {}),
+  };
+  const normalizedStatus = normalizeStatusCollections(
+    preferred.favoriteWordIds,
+    preferred.ignoredWordIds,
+  );
+
+  const nativeLanguage = languageCodes.includes(preferred.nativeLanguage)
+    ? preferred.nativeLanguage
+    : DEFAULT_PREFERENCES.nativeLanguage;
+
+  let displayLanguage1 = languageCodes.includes(preferred.displayLanguage1)
+    ? preferred.displayLanguage1
+    : DEFAULT_PREFERENCES.displayLanguage1;
+
+  let displayLanguage2 = languageCodes.includes(preferred.displayLanguage2)
+    ? preferred.displayLanguage2
+    : DEFAULT_PREFERENCES.displayLanguage2;
+
+  if (displayLanguage1 === displayLanguage2) {
+    displayLanguage2 =
+      languageCodes.find((code) => code !== displayLanguage1) ||
+      DEFAULT_PREFERENCES.displayLanguage2;
+  }
+
+  return {
+    version: 2,
+    nativeLanguage,
+    displayLanguage1,
+    displayLanguage2,
+    activeView: VALID_VIEWS.includes(preferred.activeView)
+      ? preferred.activeView
+      : DEFAULT_PREFERENCES.activeView,
+    lastContentView: ["card", "list", "favorites"].includes(
+      preferred.lastContentView,
+    )
+      ? preferred.lastContentView
+      : DEFAULT_PREFERENCES.lastContentView,
+    selectedTagIds: uniqueNumberArray(preferred.selectedTagIds),
+    cardLanguageSlot: preferred.cardLanguageSlot === 2 ? 2 : 1,
+    favoriteWordIds: normalizedStatus.favoriteWordIds,
+    ignoredWordIds: normalizedStatus.ignoredWordIds,
+    statusFilter: VALID_STATUS_FILTERS.includes(preferred.statusFilter)
+      ? preferred.statusFilter
+      : DEFAULT_PREFERENCES.statusFilter,
+  };
+}
+
+function getWordStatus(wordId, favoriteWordIds, ignoredWordIds) {
+  if (favoriteWordIds.includes(wordId)) {
+    return STATUS.FAVORITE;
+  }
+  if (ignoredWordIds.includes(wordId)) {
+    return STATUS.IGNORED;
+  }
+  return STATUS.NORMAL;
+}
+
+function applyExclusiveStatus(wordId, nextStatus, favoriteWordIds, ignoredWordIds) {
+  const cleanedFavorites = uniqueNumberArray(favoriteWordIds).filter(
+    (id) => id !== wordId,
+  );
+  const cleanedIgnored = uniqueNumberArray(ignoredWordIds).filter(
+    (id) => id !== wordId,
+  );
+
+  if (nextStatus === STATUS.FAVORITE) {
+    cleanedFavorites.push(wordId);
+  } else if (nextStatus === STATUS.IGNORED) {
+    cleanedIgnored.push(wordId);
+  }
+
+  return normalizeStatusCollections(cleanedFavorites, cleanedIgnored);
+}
+
+window.lexiconTestUtils = {
+  STATUS,
+  DEFAULT_PREFERENCES,
+  uniqueNumberArray,
+  normalizeStatusCollections,
+  resolveWordText,
+  wordMatchesQuery,
+  normalizePreferences,
+  getWordStatus,
+  applyExclusiveStatus,
+};
+
 function lexiconApp() {
   return {
     loading: true,
     error: "",
     words: [],
     tags: [],
+    translations: {},
+    languages: [],
     activeView: "card",
     lastContentView: "card",
     currentCardIndex: 0,
@@ -83,60 +260,67 @@ function lexiconApp() {
     displayLanguage1: "zh-TW",
     displayLanguage2: "id",
     searchQuery: "",
+    favoritesQuery: "",
     selectedTagIds: [],
     draftTagIds: [],
     quickLangOpen: false,
     openSettingSelect: null,
     settingsSaved: false,
     settingsError: "",
+    detailModalOpen: false,
+    activeWordId: null,
+    showCardTranslation: false,
+    statusFilter: "all",
+    favoriteWordIds: [],
+    ignoredWordIds: [],
     touchStartX: 0,
     touchOffsetX: 0,
     touchActive: false,
     cardMotionClass: "",
     motionTimer: null,
     saveTimer: null,
-    translations: {},
+    keydownHandler: null,
 
-    languages: [],
-
-    get currentCardLanguage() {
-      return this.cardLanguageSlot === 1
-        ? this.displayLanguage1
-        : this.displayLanguage2;
+    get activeWord() {
+      return this.words.find((word) => word.id === this.activeWordId) || null;
     },
 
-    get filteredCardWords() {
+    get filteredWordsByTags() {
       return this.words.filter((word) => this.wordMatchesSelectedTags(word));
     },
 
-    get filteredListWords() {
-      const baseWords = this.filteredCardWords;
-      const query = this.searchQuery.trim().toLowerCase();
-      if (!query) {
-        return baseWords;
-      }
+    get visibleCardWords() {
+      return this.filteredWordsByTags.filter(
+        (word) => this.wordStatus(word) !== STATUS.IGNORED,
+      );
+    },
 
-      return baseWords.filter((word) => {
-        const zh = (word["lang_zh-TW"] || "").toLowerCase();
-        const id = (word.lang_id || "").toLowerCase();
-        return zh.includes(query) || id.includes(query);
-      });
+    get filteredListWords() {
+      return this.filteredWordsByTags
+        .filter((word) => this.wordMatchesStatusFilter(word))
+        .filter((word) => wordMatchesQuery(word, this.searchQuery));
+    },
+
+    get filteredFavoriteWords() {
+      return this.filteredWordsByTags
+        .filter((word) => this.wordStatus(word) === STATUS.FAVORITE)
+        .filter((word) => wordMatchesQuery(word, this.favoritesQuery));
     },
 
     get currentCardWord() {
-      return this.filteredCardWords[this.currentCardIndex] || null;
-    },
-
-    get cardSwipeTransform() {
-      return this.touchOffsetX ? `translateX(${this.touchOffsetX}px)` : "";
+      return this.visibleCardWords[this.currentCardIndex] || null;
     },
 
     get cardStyle() {
+      const backgroundImage = this.currentCardWord?.img
+        ? `url(${this.currentCardWord.img})`
+        : "linear-gradient(135deg, rgba(94, 92, 230, 0.26), rgba(14, 13, 21, 0.88))";
+
       return {
-        backgroundImage: this.currentCardWord ? `url(${this.currentCardWord.img})` : "",
+        backgroundImage,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        transform: this.cardSwipeTransform,
+        transform: this.touchOffsetX ? `translateX(${this.touchOffsetX}px)` : "",
       };
     },
 
@@ -146,9 +330,7 @@ function lexiconApp() {
       }
 
       if (this.selectedTagIds.length === 1) {
-        const tag = this.tags.find(
-          (item) => item.id === this.selectedTagIds[0],
-        );
+        const tag = this.tags.find((item) => item.id === this.selectedTagIds[0]);
         return tag ? this.getTagName(tag) : this.t("allTerms");
       }
 
@@ -157,13 +339,34 @@ function lexiconApp() {
 
     get progressLabel() {
       return this.t("cardOf", {
-        current: this.filteredCardWords.length ? this.currentCardIndex + 1 : 0,
-        total: this.filteredCardWords.length,
+        current: this.visibleCardWords.length ? this.currentCardIndex + 1 : 0,
+        total: this.visibleCardWords.length,
       });
     },
 
-    get cardSupportText() {
-      return this.t("cardPrompt");
+    get statusFilterOptions() {
+      return [
+        {
+          value: "all",
+          label: this.t("statusFilterAll"),
+          icon: "apps",
+        },
+        {
+          value: "favorite",
+          label: this.t("statusFilterFavorite"),
+          icon: "favorite",
+        },
+        {
+          value: "ignored",
+          label: this.t("statusFilterIgnored"),
+          icon: "do_not_disturb_on",
+        },
+        {
+          value: "normal",
+          label: this.t("statusFilterNormal"),
+          icon: "auto_stories",
+        },
+      ];
     },
 
     async init() {
@@ -171,12 +374,11 @@ function lexiconApp() {
       this.error = "";
 
       try {
-        const [wordsResponse, tagsResponse, langIndexResponse] =
-          await Promise.all([
-            fetch("./data/lang.json"),
-            fetch("./data/tags.json"),
-            fetch("./data/lang/index.json"),
-          ]);
+        const [wordsResponse, tagsResponse, langIndexResponse] = await Promise.all([
+          fetch("./data/lang.json"),
+          fetch("./data/tags.json"),
+          fetch("./data/lang/index.json"),
+        ]);
 
         if (!wordsResponse.ok || !tagsResponse.ok || !langIndexResponse.ok) {
           throw new Error(
@@ -189,14 +391,16 @@ function lexiconApp() {
           tagsResponse.json(),
           langIndexResponse.json(),
         ]);
-        this.languages = Array.isArray(langIndex.languages)
-          ? langIndex.languages
-          : [];
+
+        this.languages = Array.isArray(langIndex.languages) ? langIndex.languages : [];
         await this.loadTranslations(this.languages);
-        this.loadPreferences();
+
         this.tags = tags.map((tag) => this.normalizeTag(tag));
         this.words = words.map((word) => this.normalizeWord(word));
-        this.ensureLanguagesAreUnique();
+
+        this.loadPreferences();
+        this.ensureLanguagesAreValid();
+        this.applyDocumentLanguage();
         this.clampCardIndex();
       } catch (error) {
         this.error = error.message || "Unknown error";
@@ -204,19 +408,25 @@ function lexiconApp() {
         this.loading = false;
       }
 
-      window.addEventListener("keydown", this.handleKeydown.bind(this));
+      this.keydownHandler = this.handleKeydown.bind(this);
+      window.addEventListener("keydown", this.keydownHandler);
     },
 
     normalizeTag(tag) {
       return {
         ...tag,
         icon: tag.icon || "sell",
+        name_en: tag.name_en || "",
+        name_id: tag.name_id || "",
+        name_zh_tw: tag.name_zh_tw || "",
       };
     },
 
     normalizeWord(word) {
       return {
         ...word,
+        lang_en: word.lang_en || "",
+        img: typeof word.img === "string" ? word.img : "",
         audioPaths: {
           "zh-TW":
             word.audio && word.audio["zh-TW"]
@@ -225,6 +435,10 @@ function lexiconApp() {
           id:
             word.audio && word.audio.id
               ? `public/assets/audios/id/${word.audio.id}`
+              : "",
+          en:
+            word.audio && word.audio.en
+              ? `public/assets/audios/en/${word.audio.en}`
               : "",
         },
       };
@@ -236,37 +450,52 @@ function lexiconApp() {
         languages.map(async (language) => {
           const response = await fetch(`./data/lang/${language.code}.json`);
           if (!response.ok) {
-            throw new Error(
-              `Unable to load translations for ${language.code}.`,
-            );
+            throw new Error(`Unable to load translations for ${language.code}.`);
           }
           loaded[language.code] = await response.json();
         }),
       );
+
       this.translations = loaded;
     },
 
     loadPreferences() {
       try {
         const raw = localStorage.getItem("lexicon-preferences");
-        if (!raw) {
-          return;
-        }
+        const parsed = raw ? JSON.parse(raw) : {};
+        const normalized = normalizePreferences(parsed, this.languages);
 
-        const saved = JSON.parse(raw);
-        this.nativeLanguage = saved.nativeLanguage || this.nativeLanguage;
-        this.displayLanguage1 = saved.displayLanguage1 || this.displayLanguage1;
-        this.displayLanguage2 = saved.displayLanguage2 || this.displayLanguage2;
-        this.activeView = saved.activeView || this.activeView;
-        this.lastContentView = saved.lastContentView || this.lastContentView;
-        this.selectedTagIds = Array.isArray(saved.selectedTagIds)
-          ? saved.selectedTagIds
-          : [];
-        this.cardLanguageSlot = saved.cardLanguageSlot === 2 ? 2 : 1;
-        this.ensureLanguagesAreUnique();
+        this.nativeLanguage = normalized.nativeLanguage;
+        this.displayLanguage1 = normalized.displayLanguage1;
+        this.displayLanguage2 = normalized.displayLanguage2;
+        this.activeView = normalized.activeView;
+        this.lastContentView = normalized.lastContentView;
+        this.selectedTagIds = normalized.selectedTagIds;
+        this.cardLanguageSlot = normalized.cardLanguageSlot;
+        this.favoriteWordIds = normalized.favoriteWordIds;
+        this.ignoredWordIds = normalized.ignoredWordIds;
+        this.statusFilter = normalized.statusFilter;
       } catch (_error) {
         localStorage.removeItem("lexicon-preferences");
       }
+    },
+
+    persistPreferences() {
+      const payload = {
+        version: 2,
+        nativeLanguage: this.nativeLanguage,
+        displayLanguage1: this.displayLanguage1,
+        displayLanguage2: this.displayLanguage2,
+        activeView: this.activeView,
+        lastContentView: this.lastContentView,
+        selectedTagIds: this.selectedTagIds,
+        cardLanguageSlot: this.cardLanguageSlot,
+        favoriteWordIds: this.favoriteWordIds,
+        ignoredWordIds: this.ignoredWordIds,
+        statusFilter: this.statusFilter,
+      };
+
+      localStorage.setItem("lexicon-preferences", JSON.stringify(payload));
     },
 
     savePreferences() {
@@ -276,8 +505,8 @@ function lexiconApp() {
         return;
       }
 
-      this.cardLanguageSlot = 1;
-      this.ensureLanguagesAreUnique();
+      this.ensureLanguagesAreValid();
+      this.applyDocumentLanguage();
       this.persistPreferences();
       this.openSettingSelect = null;
       this.settingsSaved = true;
@@ -287,33 +516,28 @@ function lexiconApp() {
       }, 1600);
     },
 
-    persistPreferences() {
-      const payload = {
-        nativeLanguage: this.nativeLanguage,
-        displayLanguage1: this.displayLanguage1,
-        displayLanguage2: this.displayLanguage2,
-        activeView: this.activeView,
-        lastContentView: this.lastContentView,
-        selectedTagIds: this.selectedTagIds,
-        cardLanguageSlot: this.cardLanguageSlot,
-      };
-      localStorage.setItem("lexicon-preferences", JSON.stringify(payload));
+    ensureLanguagesAreValid() {
+      const codes = this.languages.map((language) => language.code);
+      if (!codes.includes(this.nativeLanguage)) {
+        this.nativeLanguage = DEFAULT_PREFERENCES.nativeLanguage;
+      }
+      if (!codes.includes(this.displayLanguage1)) {
+        this.displayLanguage1 = DEFAULT_PREFERENCES.displayLanguage1;
+      }
+      if (!codes.includes(this.displayLanguage2)) {
+        this.displayLanguage2 =
+          codes.find((code) => code !== this.displayLanguage1) ||
+          DEFAULT_PREFERENCES.displayLanguage2;
+      }
+      if (this.displayLanguage1 === this.displayLanguage2) {
+        this.displayLanguage2 =
+          codes.find((code) => code !== this.displayLanguage1) ||
+          DEFAULT_PREFERENCES.displayLanguage2;
+      }
     },
 
-    ensureLanguagesAreUnique() {
-      if (this.displayLanguage1 === this.displayLanguage2) {
-        this.displayLanguage2 = this.languages.find(
-          (language) => language.code !== this.displayLanguage1,
-        ).code;
-      }
-
-      if (
-        !this.languages.some(
-          (language) => language.code === this.nativeLanguage,
-        )
-      ) {
-        this.nativeLanguage = "zh-TW";
-      }
+    applyDocumentLanguage() {
+      document.documentElement.lang = this.nativeLanguage;
     },
 
     toggleSettingSelect(field) {
@@ -321,30 +545,24 @@ function lexiconApp() {
     },
 
     selectLanguage(field, code) {
-      if (field === "nativeLanguage") {
-        this.nativeLanguage = code;
-      }
-
-      if (field === "displayLanguage1") {
-        this.displayLanguage1 = code;
-      }
-
-      if (field === "displayLanguage2") {
-        this.displayLanguage2 = code;
-      }
-
-      this.ensureLanguagesAreUnique();
+      this[field] = code;
+      this.ensureLanguagesAreValid();
       this.openSettingSelect = null;
     },
 
     switchView(view) {
       this.activeView = view;
-      if (view === "card" || view === "list") {
+      if (["card", "list", "favorites"].includes(view)) {
         this.lastContentView = view;
       }
+
       if (view === "card") {
         this.clampCardIndex();
       }
+
+      this.detailModalOpen = false;
+      this.quickLangOpen = false;
+      this.openSettingSelect = null;
       this.persistPreferences();
     },
 
@@ -387,47 +605,103 @@ function lexiconApp() {
         return true;
       }
 
-      return this.selectedTagIds.some((tagId) =>
-        (word.tags || []).includes(tagId),
+      return this.selectedTagIds.some((tagId) => (word.tags || []).includes(tagId));
+    },
+
+    wordMatchesStatusFilter(word) {
+      const status = this.wordStatus(word);
+      if (this.statusFilter === "all") {
+        return true;
+      }
+      return status === this.statusFilter;
+    },
+
+    wordStatus(word) {
+      return getWordStatus(word.id, this.favoriteWordIds, this.ignoredWordIds);
+    },
+
+    statusIcon(status) {
+      const icons = {
+        [STATUS.NORMAL]: "auto_stories",
+        [STATUS.FAVORITE]: "favorite",
+        [STATUS.IGNORED]: "do_not_disturb_on",
+      };
+      return icons[status] || icons[STATUS.NORMAL];
+    },
+
+    statusLabel(status) {
+      const labels = {
+        [STATUS.NORMAL]: this.t("statusFilterNormal"),
+        [STATUS.FAVORITE]: this.t("favorites"),
+        [STATUS.IGNORED]: this.t("ignored"),
+      };
+      return labels[status] || labels[STATUS.NORMAL];
+    },
+
+    setWordStatus(wordId, nextStatus) {
+      const normalized = applyExclusiveStatus(
+        wordId,
+        nextStatus,
+        this.favoriteWordIds,
+        this.ignoredWordIds,
       );
+
+      this.favoriteWordIds = normalized.favoriteWordIds;
+      this.ignoredWordIds = normalized.ignoredWordIds;
+
+      if (this.activeView === "card") {
+        this.clampCardIndex();
+      }
+
+      if (this.activeWordId === wordId && nextStatus === STATUS.NORMAL) {
+        this.activeWordId = wordId;
+      }
+
+      if (this.activeView === "favorites" && nextStatus !== STATUS.FAVORITE) {
+        this.detailModalOpen = false;
+      }
+
+      this.persistPreferences();
+    },
+
+    toggleWordStatus(wordId, targetStatus) {
+      const current = getWordStatus(wordId, this.favoriteWordIds, this.ignoredWordIds);
+      const next = current === targetStatus ? STATUS.NORMAL : targetStatus;
+      this.setWordStatus(wordId, next);
+    },
+
+    isStatusActive(wordId, targetStatus) {
+      return getWordStatus(wordId, this.favoriteWordIds, this.ignoredWordIds) === targetStatus;
     },
 
     getWordText(word, languageCode) {
-      if (!word) {
-        return "";
-      }
-
-      if (languageCode === "zh-TW") {
-        return word["lang_zh-TW"] || "";
-      }
-
-      if (languageCode === "id") {
-        return word.lang_id || "";
-      }
-
-      return "";
+      return resolveWordText(word, languageCode);
     },
 
     getLanguageMeta(code) {
-      return (
-        this.languages.find((language) => language.code === code) ||
-        this.languages[0]
-      );
+      return this.languages.find((language) => language.code === code) || {
+        code,
+        label: code,
+        description: code,
+        symbol: code.toUpperCase(),
+      };
     },
 
-    getTagName(tag, languageCode = null) {
-      const codeToUse = languageCode || this.nativeLanguage;
-      if (codeToUse === "id") {
-        return tag.name_id;
+    getTagName(tag, languageCode = this.nativeLanguage) {
+      if (languageCode === "en") {
+        return tag.name_en || tag.name_id || tag.name_zh_tw || "";
       }
-      return tag.name_zh_tw;
+      if (languageCode === "id") {
+        return tag.name_id || tag.name_en || tag.name_zh_tw || "";
+      }
+      return tag.name_zh_tw || tag.name_en || tag.name_id || "";
     },
 
     cardDescriptor(word) {
-      const names = (word.tags || [])
+      const names = (word?.tags || [])
         .map((tagId) => this.tags.find((tag) => tag.id === tagId))
         .filter(Boolean)
-        .map((tag) => this.getTagName(tag, this.currentCardLanguage));
+        .map((tag) => this.getTagName(tag));
 
       return names.length ? names.join(" / ") : this.activeTagSummary;
     },
@@ -440,13 +714,35 @@ function lexiconApp() {
       return firstTag ? this.getTagName(firstTag) : this.t("allTerms");
     },
 
-    toggleCardLanguage() {
-      this.cardLanguageSlot = this.cardLanguageSlot === 1 ? 2 : 1;
-      this.persistPreferences();
+    openWordDetails(wordId) {
+      this.activeWordId = wordId;
+      this.detailModalOpen = !!this.activeWord;
     },
 
-    playAudio(word, languageCode) {
-      const path = word && word.audioPaths ? word.audioPaths[languageCode] : "";
+    closeWordDetails() {
+      this.detailModalOpen = false;
+      this.activeWordId = null;
+    },
+
+    audioLanguageForWord(word) {
+      const ordered = [
+        this.displayLanguage1,
+        this.displayLanguage2,
+        "zh-TW",
+        "id",
+        "en",
+      ];
+      return ordered.find((languageCode) => word?.audioPaths?.[languageCode]) || "";
+    },
+
+    hasAudio(word, languageCode = null) {
+      const code = languageCode || this.audioLanguageForWord(word);
+      return !!(word?.audioPaths && code && word.audioPaths[code]);
+    },
+
+    playAudio(word, languageCode = null) {
+      const code = languageCode || this.audioLanguageForWord(word);
+      const path = word?.audioPaths?.[code] || "";
       if (!path) {
         return;
       }
@@ -456,23 +752,26 @@ function lexiconApp() {
     },
 
     nextCard() {
-      if (this.filteredCardWords.length <= 1) {
+      if (this.visibleCardWords.length <= 1) {
+        this.showCardTranslation = false;
         return;
       }
 
-      this.currentCardIndex =
-        (this.currentCardIndex + 1) % this.filteredCardWords.length;
+      this.currentCardIndex = (this.currentCardIndex + 1) % this.visibleCardWords.length;
+      this.showCardTranslation = false;
       this.applyCardMotion("card-motion-next");
     },
 
     prevCard() {
-      if (this.filteredCardWords.length <= 1) {
+      if (this.visibleCardWords.length <= 1) {
+        this.showCardTranslation = false;
         return;
       }
 
       this.currentCardIndex =
-        (this.currentCardIndex - 1 + this.filteredCardWords.length) %
-        this.filteredCardWords.length;
+        (this.currentCardIndex - 1 + this.visibleCardWords.length) %
+        this.visibleCardWords.length;
+      this.showCardTranslation = false;
       this.applyCardMotion("card-motion-prev");
     },
 
@@ -485,7 +784,7 @@ function lexiconApp() {
     },
 
     clampCardIndex() {
-      const total = this.filteredCardWords.length;
+      const total = this.visibleCardWords.length;
       if (!total) {
         this.currentCardIndex = 0;
         return;
@@ -500,13 +799,15 @@ function lexiconApp() {
       if (event.pointerType === "mouse" && event.button !== 0) {
         return;
       }
+
       if (event.target.closest("button, [role=button], a, input, textarea, select, summary")) {
         return;
       }
+
       this.touchActive = true;
       this.touchStartX = event.clientX;
       this.touchOffsetX = 0;
-      if (event.currentTarget && event.currentTarget.setPointerCapture) {
+      if (event.currentTarget?.setPointerCapture) {
         event.currentTarget.setPointerCapture(event.pointerId);
       }
     },
@@ -522,12 +823,14 @@ function lexiconApp() {
       if (!this.touchActive) {
         return;
       }
+
       const deltaX = event.clientX - this.touchStartX;
       this.touchActive = false;
       this.touchOffsetX = 0;
-      if (event.currentTarget && event.currentTarget.releasePointerCapture) {
+      if (event.currentTarget?.releasePointerCapture) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
+
       if (Math.abs(deltaX) < 45) {
         return;
       }
@@ -542,12 +845,22 @@ function lexiconApp() {
     handlePointerCancel(event) {
       this.touchActive = false;
       this.touchOffsetX = 0;
-      if (event.currentTarget && event.currentTarget.releasePointerCapture) {
+      if (event.currentTarget?.releasePointerCapture) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
     },
 
     handleKeydown(event) {
+      if (this.detailModalOpen && event.key === "Escape") {
+        this.closeWordDetails();
+        return;
+      }
+
+      if (this.activeView === "tags" && event.key === "Escape") {
+        this.activeView = this.lastContentView;
+        return;
+      }
+
       if (this.activeView === "card") {
         if (event.key === "ArrowRight") {
           this.nextCard();
@@ -555,10 +868,6 @@ function lexiconApp() {
         if (event.key === "ArrowLeft") {
           this.prevCard();
         }
-      }
-
-      if (this.activeView === "tags" && event.key === "Escape") {
-        this.activeView = this.lastContentView;
       }
     },
 
@@ -568,17 +877,57 @@ function lexiconApp() {
         return;
       }
       img.onerror = null;
-      img.alt = "";
-      img.style.visibility = "hidden";
+      img.style.display = "none";
+    },
+
+    cardHeadlineText() {
+      return resolveWordText(this.currentCardWord, this.displayLanguage1);
+    },
+    cardTranslationText() {
+      return resolveWordText(this.currentCardWord, this.displayLanguage2);
+    },
+
+    statusButtonClasses(wordId, status) {
+      const active = this.isStatusActive(wordId, status);
+      const base =
+        "flex h-11 w-11 items-center justify-center rounded-full border transition-all active:scale-95";
+      if (status === STATUS.FAVORITE) {
+        return active
+          ? `${base} border-primary/30 bg-primary-container text-on-primary-container shadow-lg shadow-primary/15`
+          : `${base} border-white/10 bg-black/30 text-white/70 hover:border-primary/30 hover:text-primary`;
+      }
+      if (status === STATUS.IGNORED) {
+        return active
+          ? `${base} border-error/30 bg-error-container/20 text-error`
+          : `${base} border-white/10 bg-black/30 text-white/70 hover:border-error/30 hover:text-error`;
+      }
+      return active
+        ? `${base} border-tertiary/30 bg-surface-container-highest text-tertiary`
+        : `${base} border-white/10 bg-black/30 text-white/70 hover:border-tertiary/30 hover:text-tertiary`;
+    },
+
+    segmentedClasses(value) {
+      return this.statusFilter === value
+        ? "bg-primary-container text-on-primary-container shadow-lg shadow-primary/10"
+        : "bg-surface-container-high text-outline hover:text-on-surface";
+    },
+
+    translationToggleLabel() {
+      return this.showCardTranslation ? this.t("hideTranslation") : this.t("showTranslation");
     },
 
     t(key, replacements = {}) {
       const table =
-        this.translations[this.nativeLanguage] || this.translations["zh-TW"];
+        this.translations[this.nativeLanguage] ||
+        this.translations["zh-TW"] ||
+        this.translations.en ||
+        {};
       let value = table[key] || key;
+
       Object.entries(replacements).forEach(([token, replacement]) => {
         value = value.replace(`{${token}}`, replacement);
       });
+
       return value;
     },
   };

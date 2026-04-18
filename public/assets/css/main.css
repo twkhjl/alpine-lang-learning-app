@@ -24,15 +24,11 @@
   border: 1px solid rgba(145, 143, 160, 0.15);
 }
 
-.chinese-char {
-  letter-spacing: 0.05em;
-}
-
-.no-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-.no-scrollbar {
+.hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

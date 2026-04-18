@@ -3,16 +3,23 @@
     {
       "code": "zh-TW",
       "label": "繁體中文",
-      "description": "繁體中文",
+      "description": "Traditional Chinese",
       "shortLabel": "繁中",
-      "symbol": "繁"
+      "symbol": "ZH"
     },
     {
       "code": "id",
       "label": "印尼文",
       "description": "Bahasa Indonesia",
-      "shortLabel": "印尼",
-      "symbol": "印"
+      "shortLabel": "ID",
+      "symbol": "ID"
+    },
+    {
+      "code": "en",
+      "label": "英文",
+      "description": "English",
+      "shortLabel": "EN",
+      "symbol": "EN"
     }
   ]
 }
