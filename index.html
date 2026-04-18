@@ -75,13 +75,31 @@
       <section x-show="activeView === 'card'" class="min-h-[70vh]">
         <div class="mb-6 h-10 invisible"></div>
 
-        <div class="mb-6 flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
+        <div class="mb-6 flex items-center justify-between gap-4" @click.outside="listStatusPanelOpen = false">
+          <div class="flex min-w-0 items-center gap-3">
             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('card')" :aria-label="t('filterTags')">
               <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
             </button>
             <div class="h-4 w-px bg-outline/20"></div>
-            <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant" x-text="activeTagSummary"></span>
+            <span class="hidden font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant sm:inline" x-text="activeTagSummary"></span>
+            <div class="relative">
+              <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="listStatusPanelOpen = !listStatusPanelOpen" :aria-label="currentStatusFilterSummary">
+                <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes('all') || !activeStatusFilters.includes('ignored') ? 'fill-icon' : ''">tune</span>
+                <span class="hidden sm:inline" x-text="currentStatusFilterSummary"></span>
+                <span class="material-symbols-outlined text-[18px] text-outline">expand_more</span>
+              </button>
+
+              <div x-cloak x-show="listStatusPanelOpen" x-transition class="absolute left-0 top-[calc(100%+0.75rem)] z-30 w-[min(24rem,calc(100vw-3rem))] rounded-2xl border border-white/10 bg-[#1b1b25]/95 p-3 shadow-2xl backdrop-blur-xl">
+                <div class="flex flex-wrap gap-2">
+                  <template x-for="option in statusFilterOptions" :key="option.value">
+                    <button type="button" class="flex min-w-[3rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all active:scale-95" :class="segmentedClasses(option.value)" @click="toggleStatusFilter(option.value)">
+                      <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes(option.value) && option.value !== 'ignored' ? 'fill-icon' : ''" x-text="option.icon"></span>
+                      <span x-text="option.label"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="flex shrink-0 rounded-lg bg-surface-container-high p-1">
@@ -194,7 +212,7 @@
           </div>
         </div>
 
-        <div class="mb-6 flex items-center gap-4">
+        <div class="mb-6 flex items-center gap-4" @click.outside="listStatusPanelOpen = false">
           <div class="flex items-center gap-3">
             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('list')" :aria-label="t('filterTags')">
               <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
@@ -202,13 +220,23 @@
             <div class="h-4 w-px bg-outline/20"></div>
           </div>
 
-          <div class="hide-scrollbar flex flex-1 items-center gap-2 overflow-x-auto py-1">
-            <template x-for="option in statusFilterOptions" :key="option.value">
-              <button type="button" class="flex min-w-[3rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all active:scale-95" :class="segmentedClasses(option.value)" @click="statusFilter = option.value; persistPreferences()">
-                <span class="material-symbols-outlined text-[18px]" :class="statusFilter === option.value && option.value !== 'ignored' ? 'fill-icon' : ''" x-text="option.icon"></span>
-                <span x-text="option.label"></span>
-              </button>
-            </template>
+          <div class="relative flex-1">
+            <button type="button" data-testid="list-status-filter-toggle" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="listStatusPanelOpen = !listStatusPanelOpen" :aria-label="currentStatusFilterSummary">
+              <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes('all') || !activeStatusFilters.includes('ignored') ? 'fill-icon' : ''">tune</span>
+              <span class="hidden sm:inline" x-text="currentStatusFilterSummary"></span>
+              <span class="material-symbols-outlined text-[18px] text-outline">expand_more</span>
+            </button>
+
+            <div x-cloak x-show="listStatusPanelOpen" x-transition class="absolute left-0 top-[calc(100%+0.75rem)] z-30 w-full rounded-2xl border border-white/10 bg-[#1b1b25]/95 p-3 shadow-2xl backdrop-blur-xl">
+              <div class="flex flex-wrap gap-2">
+                <template x-for="option in statusFilterOptions" :key="option.value">
+                  <button type="button" class="flex min-w-[3rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all active:scale-95" :class="segmentedClasses(option.value)" @click="toggleStatusFilter(option.value)">
+                    <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes(option.value) && option.value !== 'ignored' ? 'fill-icon' : ''" x-text="option.icon"></span>
+                    <span x-text="option.label"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
           </div>
 
           <div class="flex shrink-0 rounded-lg bg-surface-container-high p-1">
@@ -310,12 +338,12 @@
         </div>
 
         <div class="mb-6 flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
+          <div class="flex min-w-0 items-center gap-3">
             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('favorites')" :aria-label="t('filterTags')">
               <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
             </button>
             <div class="h-4 w-px bg-outline/20"></div>
-            <span class="font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant" x-text="activeTagSummary"></span>
+            <span class="hidden font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant sm:inline" x-text="activeTagSummary"></span>
           </div>
 
           <div class="rounded-full bg-primary-container px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-primary-container">
@@ -347,15 +375,9 @@
                   </button>
                 </div>
 
-                <div class="mt-4 flex items-center justify-end gap-2">
-                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'normal')" @click.stop="toggleWordStatus(word.id, 'normal')" :aria-label="t('markNormal')">
-                    <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
-                  </button>
-                  <button type="button" data-testid="favorites-status-favorite" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'favorite')" @click.stop="toggleWordStatus(word.id, 'favorite')" :aria-label="t('markFavorite')">
+                <div class="mt-4 flex items-center justify-end">
+                  <button type="button" data-testid="favorites-status-favorite" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'favorite')" @click.stop="removeFavoriteFromFavoritesPage(word.id)" :aria-label="t('unmarkFavorite')">
                     <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'favorite') ? 'fill-icon' : ''">favorite</span>
-                  </button>
-                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'ignored')" @click.stop="toggleWordStatus(word.id, 'ignored')" :aria-label="t('markIgnored')">
-                    <span class="material-symbols-outlined">do_not_disturb_on</span>
                   </button>
                 </div>
               </article>
@@ -595,6 +617,13 @@
       <div class="relative h-12 w-full pb-4">
         <div class="mx-auto h-1 w-3/4 rounded-t-full bg-surface-container-high opacity-50"></div>
       </div>
+    </div>
+  </div>
+
+  <div x-cloak x-show="favoritesSnackbar" x-transition class="pointer-events-none fixed inset-x-0 bottom-24 z-[70] flex justify-center px-6">
+    <div class="pointer-events-auto flex w-full max-w-md items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#1b1b25]/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
+      <p class="min-w-0 flex-1 truncate text-sm text-on-surface" x-text="favoritesSnackbar ? favoritesSnackbar.message : ''"></p>
+      <button x-show="favoritesSnackbar && favoritesSnackbar.type === 'removed'" type="button" class="shrink-0 text-sm font-bold text-primary transition-opacity hover:opacity-80" @click="undoRemovedFavorite()" x-text="favoritesSnackbar ? favoritesSnackbar.actionLabel : ''"></button>
     </div>
   </div>
 

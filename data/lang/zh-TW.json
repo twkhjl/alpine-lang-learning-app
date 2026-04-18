@@ -74,5 +74,8 @@
   "favoritesEmptyTitle": "你還沒有收藏任何單字",
   "favoritesEmptyDescription": "先到字庫或卡片頁把常用詞設為最愛，之後就能在這裡快速回顧。",
   "favoritesEmptyTipBody": "你可以從字庫開始搜尋，再用最愛按鈕把重要詞條存起來。",
-  "goToLibrary": "前往字庫"
+  "goToLibrary": "前往字庫",
+  "favoriteRemovedMessage": "{word} 已移除",
+  "favoriteRestoredMessage": "已復原",
+  "undo": "復原"
 }

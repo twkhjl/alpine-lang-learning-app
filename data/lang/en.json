@@ -74,5 +74,8 @@
   "favoritesEmptyTitle": "You do not have any favorites yet",
   "favoritesEmptyDescription": "Mark important words from the library or card view as favorites, then come back here for a quick review.",
   "favoritesEmptyTipBody": "Start from the library, then save important terms with the favorite button.",
-  "goToLibrary": "Open library"
+  "goToLibrary": "Open library",
+  "favoriteRemovedMessage": "{word} removed",
+  "favoriteRestoredMessage": "Restored",
+  "undo": "Undo"
 }

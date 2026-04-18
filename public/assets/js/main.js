@@ -76,7 +76,7 @@ const STATUS = {
 };
 
 const DEFAULT_PREFERENCES = {
-  version: 2,
+  version: 3,
   nativeLanguage: "zh-TW",
   displayLanguage1: "zh-TW",
   displayLanguage2: "id",
@@ -86,7 +86,7 @@ const DEFAULT_PREFERENCES = {
   cardLanguageSlot: 1,
   favoriteWordIds: [],
   ignoredWordIds: [],
-  statusFilter: "all",
+  statusFilters: ["all"],
 };
 
 const VALID_VIEWS = ["card", "list", "favorites", "settings", "tags"];
@@ -98,6 +98,14 @@ function uniqueNumberArray(value) {
   }
 
   return [...new Set(value.filter((item) => Number.isInteger(item)))];
+}
+
+function uniqueStringArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(value.filter((item) => typeof item === "string"))];
 }
 
 function normalizeStatusCollections(favoriteIds, ignoredIds) {
@@ -182,8 +190,22 @@ function normalizePreferences(saved, languages = []) {
       DEFAULT_PREFERENCES.displayLanguage2;
   }
 
+  const rawStatusFilters = Array.isArray(preferred.statusFilters)
+    ? preferred.statusFilters
+    : preferred.statusFilter
+      ? [preferred.statusFilter]
+      : DEFAULT_PREFERENCES.statusFilters;
+  const normalizedFilters = uniqueStringArray(rawStatusFilters).filter((value) =>
+    VALID_STATUS_FILTERS.includes(value),
+  );
+  const statusFilters = normalizedFilters.length
+    ? normalizedFilters.includes("all")
+      ? ["all"]
+      : normalizedFilters
+    : DEFAULT_PREFERENCES.statusFilters;
+
   return {
-    version: 2,
+    version: 3,
     nativeLanguage,
     displayLanguage1,
     displayLanguage2,
@@ -199,9 +221,7 @@ function normalizePreferences(saved, languages = []) {
     cardLanguageSlot: preferred.cardLanguageSlot === 2 ? 2 : 1,
     favoriteWordIds: normalizedStatus.favoriteWordIds,
     ignoredWordIds: normalizedStatus.ignoredWordIds,
-    statusFilter: VALID_STATUS_FILTERS.includes(preferred.statusFilter)
-      ? preferred.statusFilter
-      : DEFAULT_PREFERENCES.statusFilter,
+    statusFilters,
   };
 }
 
@@ -236,6 +256,7 @@ window.lexiconTestUtils = {
   STATUS,
   DEFAULT_PREFERENCES,
   uniqueNumberArray,
+  uniqueStringArray,
   normalizeStatusCollections,
   resolveWordText,
   wordMatchesQuery,
@@ -265,12 +286,13 @@ function lexiconApp() {
     draftTagIds: [],
     quickLangOpen: false,
     openSettingSelect: null,
+    listStatusPanelOpen: false,
     settingsSaved: false,
     settingsError: "",
     detailModalOpen: false,
     activeWordId: null,
     showCardTranslation: false,
-    statusFilter: "all",
+    statusFilters: ["all"],
     favoriteWordIds: [],
     ignoredWordIds: [],
     touchStartX: 0,
@@ -279,6 +301,8 @@ function lexiconApp() {
     cardMotionClass: "",
     motionTimer: null,
     saveTimer: null,
+    favoritesSnackbar: null,
+    favoritesSnackbarTimer: null,
     keydownHandler: null,
 
     get activeWord() {
@@ -290,9 +314,13 @@ function lexiconApp() {
     },
 
     get visibleCardWords() {
-      return this.filteredWordsByTags.filter(
-        (word) => this.wordStatus(word) !== STATUS.IGNORED,
-      );
+      return this.filteredWordsByTags.filter((word) => {
+        if (this.wordStatus(word) === STATUS.IGNORED) {
+          return false;
+        }
+
+        return this.wordMatchesStatusFilter(word);
+      });
     },
 
     get filteredListWords() {
@@ -304,6 +332,7 @@ function lexiconApp() {
     get filteredFavoriteWords() {
       return this.filteredWordsByTags
         .filter((word) => this.wordStatus(word) === STATUS.FAVORITE)
+        .filter((word) => this.wordMatchesStatusFilter(word))
         .filter((word) => wordMatchesQuery(word, this.favoritesQuery));
     },
 
@@ -342,6 +371,26 @@ function lexiconApp() {
         current: this.visibleCardWords.length ? this.currentCardIndex + 1 : 0,
         total: this.visibleCardWords.length,
       });
+    },
+
+    get activeStatusFilters() {
+      if (!Array.isArray(this.statusFilters) || !this.statusFilters.length) {
+        return ["all"];
+      }
+
+      return this.statusFilters.includes("all") ? ["all"] : this.statusFilters;
+    },
+
+    get currentStatusFilterSummary() {
+      const active = this.activeStatusFilters;
+      if (active.includes("all")) {
+        return this.t("statusFilterAll");
+      }
+      if (active.length === 1) {
+        const option = this.statusFilterOptions.find((item) => item.value === active[0]);
+        return option ? option.label : this.t("statusFilterAll");
+      }
+      return this.t("selectedTagCount", { count: active.length });
     },
 
     get statusFilterOptions() {
@@ -474,7 +523,7 @@ function lexiconApp() {
         this.cardLanguageSlot = normalized.cardLanguageSlot;
         this.favoriteWordIds = normalized.favoriteWordIds;
         this.ignoredWordIds = normalized.ignoredWordIds;
-        this.statusFilter = normalized.statusFilter;
+        this.statusFilters = normalized.statusFilters;
       } catch (_error) {
         localStorage.removeItem("lexicon-preferences");
       }
@@ -482,7 +531,7 @@ function lexiconApp() {
 
     persistPreferences() {
       const payload = {
-        version: 2,
+        version: 3,
         nativeLanguage: this.nativeLanguage,
         displayLanguage1: this.displayLanguage1,
         displayLanguage2: this.displayLanguage2,
@@ -492,7 +541,7 @@ function lexiconApp() {
         cardLanguageSlot: this.cardLanguageSlot,
         favoriteWordIds: this.favoriteWordIds,
         ignoredWordIds: this.ignoredWordIds,
-        statusFilter: this.statusFilter,
+        statusFilters: this.activeStatusFilters,
       };
 
       localStorage.setItem("lexicon-preferences", JSON.stringify(payload));
@@ -551,6 +600,10 @@ function lexiconApp() {
     },
 
     switchView(view) {
+      if (this.activeView !== view) {
+        this.dismissFavoritesSnackbar();
+      }
+
       this.activeView = view;
       if (["card", "list", "favorites"].includes(view)) {
         this.lastContentView = view;
@@ -563,6 +616,88 @@ function lexiconApp() {
       this.detailModalOpen = false;
       this.quickLangOpen = false;
       this.openSettingSelect = null;
+      this.listStatusPanelOpen = false;
+      this.persistPreferences();
+    },
+
+    favoriteWordLabel(wordId) {
+      const word = this.words.find((item) => item.id === wordId);
+      return resolveWordText(word, this.nativeLanguage) || "";
+    },
+
+    showFavoritesSnackbar(payload, durationMs = 3000) {
+      clearTimeout(this.favoritesSnackbarTimer);
+      this.favoritesSnackbar = payload;
+      this.favoritesSnackbarTimer = setTimeout(() => {
+        this.favoritesSnackbar = null;
+        this.favoritesSnackbarTimer = null;
+      }, durationMs);
+    },
+
+    dismissFavoritesSnackbar() {
+      clearTimeout(this.favoritesSnackbarTimer);
+      this.favoritesSnackbar = null;
+      this.favoritesSnackbarTimer = null;
+    },
+
+    removeFavoriteFromFavoritesPage(wordId) {
+      const label = this.favoriteWordLabel(wordId);
+      this.setWordStatus(wordId, STATUS.NORMAL);
+      this.showFavoritesSnackbar(
+        {
+          type: "removed",
+          wordId,
+          label,
+          message: this.t("favoriteRemovedMessage", { word: label }),
+          actionLabel: this.t("undo"),
+        },
+        3000,
+      );
+    },
+
+    undoRemovedFavorite() {
+      if (!this.favoritesSnackbar || this.favoritesSnackbar.type !== "removed") {
+        return;
+      }
+
+      const { wordId } = this.favoritesSnackbar;
+      this.setWordStatus(wordId, STATUS.FAVORITE);
+      this.showFavoritesSnackbar(
+        {
+          type: "restored",
+          wordId,
+          message: this.t("favoriteRestoredMessage"),
+          actionLabel: "",
+        },
+        2000,
+      );
+    },
+
+    toggleStatusFilter(value) {
+      if (!VALID_STATUS_FILTERS.includes(value)) {
+        return;
+      }
+
+      if (value === "all") {
+        this.statusFilters = ["all"];
+        this.persistPreferences();
+        return;
+      }
+
+      const next = this.activeStatusFilters.includes("all")
+        ? []
+        : [...this.activeStatusFilters];
+
+      if (next.includes(value)) {
+        this.statusFilters = next.filter((item) => item !== value);
+      } else {
+        this.statusFilters = [...next, value];
+      }
+
+      if (!this.statusFilters.length) {
+        this.statusFilters = ["all"];
+      }
+
       this.persistPreferences();
     },
 
@@ -610,10 +745,10 @@ function lexiconApp() {
 
     wordMatchesStatusFilter(word) {
       const status = this.wordStatus(word);
-      if (this.statusFilter === "all") {
+      if (this.activeStatusFilters.includes("all")) {
         return true;
       }
-      return status === this.statusFilter;
+      return this.activeStatusFilters.includes(status);
     },
 
     wordStatus(word) {
@@ -907,7 +1042,7 @@ function lexiconApp() {
     },
 
     segmentedClasses(value) {
-      return this.statusFilter === value
+      return this.activeStatusFilters.includes(value)
         ? "bg-primary-container text-on-primary-container shadow-lg shadow-primary/10"
         : "bg-surface-container-high text-outline hover:text-on-surface";
     },

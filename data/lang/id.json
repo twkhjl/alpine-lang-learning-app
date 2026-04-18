@@ -74,5 +74,8 @@
   "favoritesEmptyTitle": "Belum ada kata favorit",
   "favoritesEmptyDescription": "Tandai kata penting dari daftar atau kartu agar bisa kamu buka kembali di sini dengan cepat.",
   "favoritesEmptyTipBody": "Mulailah dari daftar, lalu simpan kata penting memakai tombol favorit.",
-  "goToLibrary": "Buka daftar"
+  "goToLibrary": "Buka daftar",
+  "favoriteRemovedMessage": "{word} dihapus",
+  "favoriteRestoredMessage": "Dipulihkan",
+  "undo": "Urungkan"
 }
