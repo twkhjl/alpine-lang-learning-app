@@ -138,12 +138,7 @@
                   <div class="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center">
                     <p class="mb-3 rounded-full bg-black/25 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-tertiary backdrop-blur-md" x-text="cardDescriptor(currentCardWord)"></p>
                     <h2 class="mb-4 max-w-full break-words rounded-[2rem] bg-black/25 px-5 py-4 font-headline text-5xl font-black leading-tight tracking-[0.05em] text-on-surface shadow-2xl md:text-7xl" x-text="cardHeadlineText()"></h2>
-                    <p class="mb-8 text-sm tracking-[0.24em] uppercase text-primary/90" x-text="getLanguageMeta(displayLanguage1).label"></p>
-
-                    <div x-show="showCardTranslation" x-transition class="mb-8 w-full max-w-md rounded-3xl glass-panel border border-outline-variant/15 px-6 py-5">
-                      <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-tertiary" x-text="getLanguageMeta(displayLanguage2).label"></p>
-                      <p class="text-2xl font-bold text-on-surface" x-text="cardTranslationText()"></p>
-                    </div>
+                    <p class="mb-8 text-sm tracking-[0.24em] uppercase text-primary/90" x-text="getLanguageMeta(cardHeadlineLanguage()).label"></p>
                   </div>
 
                   <div class="flex items-center justify-center gap-4">

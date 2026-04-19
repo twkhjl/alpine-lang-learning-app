@@ -813,6 +813,32 @@ function lexiconApp() {
       return resolveWordText(word, languageCode);
     },
 
+    getLocalizedLanguageLabel(code, interfaceLanguage = this.nativeLanguage) {
+      const labels = {
+        "zh-TW": {
+          "zh-TW": "中文",
+          id: "印尼文",
+          en: "英文",
+        },
+        id: {
+          "zh-TW": "Bahasa Mandarin Tradisional",
+          id: "Bahasa Indonesia",
+          en: "Bahasa Inggris",
+        },
+        en: {
+          "zh-TW": "Traditional Chinese",
+          id: "Indonesian",
+          en: "English",
+        },
+      };
+
+      return (
+        labels[interfaceLanguage]?.[code] ||
+        labels["en"][code] ||
+        this.getLanguageMeta(code).label
+      );
+    },
+
     getLanguageMeta(code) {
       return this.languages.find((language) => language.code === code) || {
         code,
@@ -861,6 +887,7 @@ function lexiconApp() {
 
     audioLanguageForWord(word) {
       const ordered = [
+        this.cardHeadlineLanguage(),
         this.displayLanguage1,
         this.displayLanguage2,
         "zh-TW",
@@ -1015,11 +1042,12 @@ function lexiconApp() {
       img.style.display = "none";
     },
 
-    cardHeadlineText() {
-      return resolveWordText(this.currentCardWord, this.displayLanguage1);
+    cardHeadlineLanguage() {
+      return this.showCardTranslation ? this.displayLanguage2 : this.displayLanguage1;
     },
-    cardTranslationText() {
-      return resolveWordText(this.currentCardWord, this.displayLanguage2);
+
+    cardHeadlineText() {
+      return resolveWordText(this.currentCardWord, this.cardHeadlineLanguage());
     },
 
     statusButtonClasses(wordId, status) {
@@ -1048,7 +1076,18 @@ function lexiconApp() {
     },
 
     translationToggleLabel() {
-      return this.showCardTranslation ? this.t("hideTranslation") : this.t("showTranslation");
+      const targetLanguage = this.showCardTranslation
+        ? this.displayLanguage1
+        : this.displayLanguage2;
+      const targetLabel = this.getLocalizedLanguageLabel(targetLanguage);
+
+      if (this.nativeLanguage === "id") {
+        return `Tampilkan ${targetLabel}`;
+      }
+      if (this.nativeLanguage === "en") {
+        return `Show ${targetLabel}`;
+      }
+      return `顯示${targetLabel}`;
     },
 
     t(key, replacements = {}) {
