@@ -89,7 +89,7 @@ const DEFAULT_PREFERENCES = {
   statusFilters: ["all"],
 };
 
-const VALID_VIEWS = ["card", "list", "favorites", "settings", "tags"];
+const VALID_VIEWS = ["card", "list", "favorites", "settings"];
 const VALID_STATUS_FILTERS = ["all", "favorite", "ignored", "normal"];
 
 function uniqueNumberArray(value) {
@@ -211,7 +211,10 @@ function normalizePreferences(saved, languages = []) {
     displayLanguage2,
     activeView: VALID_VIEWS.includes(preferred.activeView)
       ? preferred.activeView
-      : DEFAULT_PREFERENCES.activeView,
+      : preferred.activeView === "tags" &&
+          ["card", "list", "favorites"].includes(preferred.lastContentView)
+        ? preferred.lastContentView
+        : DEFAULT_PREFERENCES.activeView,
     lastContentView: ["card", "list", "favorites"].includes(
       preferred.lastContentView,
     )
@@ -284,9 +287,10 @@ function lexiconApp() {
     favoritesQuery: "",
     selectedTagIds: [],
     draftTagIds: [],
+    draftStatusFilters: ["all"],
     quickLangOpen: false,
     openSettingSelect: null,
-    listStatusPanelOpen: false,
+    filterPanelOpen: false,
     settingsSaved: false,
     settingsError: "",
     detailModalOpen: false,
@@ -390,7 +394,21 @@ function lexiconApp() {
         const option = this.statusFilterOptions.find((item) => item.value === active[0]);
         return option ? option.label : this.t("statusFilterAll");
       }
-      return this.t("selectedTagCount", { count: active.length });
+      return this.t("selectedStatusCount", { count: active.length });
+    },
+
+    get activeFilterCount() {
+      const statusCount = this.activeStatusFilters.includes("all")
+        ? 0
+        : this.activeStatusFilters.length;
+      return this.selectedTagIds.length + statusCount;
+    },
+
+    get activeFilterSummary() {
+      if (!this.activeFilterCount) {
+        return this.t("allTerms");
+      }
+      return this.t("activeFilterCount", { count: this.activeFilterCount });
     },
 
     get statusFilterOptions() {
@@ -416,6 +434,14 @@ function lexiconApp() {
           icon: "auto_stories",
         },
       ];
+    },
+
+    get activeDraftStatusFilters() {
+      if (!Array.isArray(this.draftStatusFilters) || !this.draftStatusFilters.length) {
+        return ["all"];
+      }
+
+      return this.draftStatusFilters.includes("all") ? ["all"] : this.draftStatusFilters;
     },
 
     async init() {
@@ -596,7 +622,14 @@ function lexiconApp() {
     selectLanguage(field, code) {
       this[field] = code;
       this.ensureLanguagesAreValid();
+      this.applyDocumentLanguage();
+      this.persistPreferences();
       this.openSettingSelect = null;
+      this.settingsSaved = true;
+      clearTimeout(this.saveTimer);
+      this.saveTimer = setTimeout(() => {
+        this.settingsSaved = false;
+      }, 1600);
     },
 
     switchView(view) {
@@ -616,7 +649,7 @@ function lexiconApp() {
       this.detailModalOpen = false;
       this.quickLangOpen = false;
       this.openSettingSelect = null;
-      this.listStatusPanelOpen = false;
+      this.filterPanelOpen = false;
       this.persistPreferences();
     },
 
@@ -702,10 +735,16 @@ function lexiconApp() {
     },
 
     openTagSelection(fromView) {
+      this.openFilterPanel(fromView);
+    },
+
+    openFilterPanel(fromView) {
       this.lastContentView = fromView;
       this.draftTagIds = [...this.selectedTagIds];
-      this.activeView = "tags";
-      this.persistPreferences();
+      this.draftStatusFilters = [...this.activeStatusFilters];
+      this.filterPanelOpen = true;
+      this.quickLangOpen = false;
+      this.openSettingSelect = null;
     },
 
     toggleDraftTag(tagId) {
@@ -718,21 +757,68 @@ function lexiconApp() {
     },
 
     applyDraftTags() {
+      this.applyDraftFilters();
+    },
+
+    applyDraftFilters() {
       this.selectedTagIds = [...this.draftTagIds];
-      this.activeView = this.lastContentView;
+      this.statusFilters = [...this.activeDraftStatusFilters];
+      this.filterPanelOpen = false;
       this.clampCardIndex();
       this.persistPreferences();
     },
 
     resetDraftTags() {
+      this.resetDraftFilters();
+    },
+
+    resetDraftFilters() {
       this.draftTagIds = [];
+      this.draftStatusFilters = ["all"];
     },
 
     clearAppliedTags() {
+      this.clearAppliedFilters();
+    },
+
+    clearAppliedFilters() {
       this.selectedTagIds = [];
       this.draftTagIds = [];
+      this.statusFilters = ["all"];
+      this.draftStatusFilters = ["all"];
       this.clampCardIndex();
       this.persistPreferences();
+    },
+
+    closeFilterPanel() {
+      this.filterPanelOpen = false;
+      this.draftTagIds = [...this.selectedTagIds];
+      this.draftStatusFilters = [...this.activeStatusFilters];
+    },
+
+    toggleDraftStatusFilter(value) {
+      if (!VALID_STATUS_FILTERS.includes(value)) {
+        return;
+      }
+
+      if (value === "all") {
+        this.draftStatusFilters = ["all"];
+        return;
+      }
+
+      const next = this.activeDraftStatusFilters.includes("all")
+        ? []
+        : [...this.activeDraftStatusFilters];
+
+      if (next.includes(value)) {
+        this.draftStatusFilters = next.filter((item) => item !== value);
+      } else {
+        this.draftStatusFilters = [...next, value];
+      }
+
+      if (!this.draftStatusFilters.length) {
+        this.draftStatusFilters = ["all"];
+      }
     },
 
     wordMatchesSelectedTags(word) {
@@ -816,7 +902,7 @@ function lexiconApp() {
     getLocalizedLanguageLabel(code, interfaceLanguage = this.nativeLanguage) {
       const labels = {
         "zh-TW": {
-          "zh-TW": "中文",
+          "zh-TW": "繁體中文",
           id: "印尼文",
           en: "英文",
         },
@@ -1018,8 +1104,8 @@ function lexiconApp() {
         return;
       }
 
-      if (this.activeView === "tags" && event.key === "Escape") {
-        this.activeView = this.lastContentView;
+      if (this.filterPanelOpen && event.key === "Escape") {
+        this.closeFilterPanel();
         return;
       }
 
@@ -1080,14 +1166,7 @@ function lexiconApp() {
         ? this.displayLanguage1
         : this.displayLanguage2;
       const targetLabel = this.getLocalizedLanguageLabel(targetLanguage);
-
-      if (this.nativeLanguage === "id") {
-        return `Tampilkan ${targetLabel}`;
-      }
-      if (this.nativeLanguage === "en") {
-        return `Show ${targetLabel}`;
-      }
-      return `顯示${targetLabel}`;
+      return this.t("showLanguage", { language: targetLabel });
     },
 
     t(key, replacements = {}) {

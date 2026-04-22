@@ -6,4 +6,5 @@ node_modules/
 local-tests/
 *.test.local.*
 page_example/
+spec/*
 

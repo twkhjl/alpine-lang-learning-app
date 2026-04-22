@@ -22,9 +22,6 @@
 
   <header class="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/5 bg-[#13131b]/60 px-6 backdrop-blur-xl">
     <div class="flex items-center gap-4">
-      <button type="button" class="text-primary transition-opacity hover:opacity-80 active:opacity-60" aria-label="menu">
-        <span class="material-symbols-outlined">menu</span>
-      </button>
       <h1 class="font-headline text-lg font-black tracking-tighter text-primary">The Lexicon</h1>
     </div>
 
@@ -75,31 +72,14 @@
       <section x-show="activeView === 'card'" class="min-h-[70vh]">
         <div class="mb-6 h-10 invisible"></div>
 
-        <div class="mb-6 flex items-center justify-between gap-4" @click.outside="listStatusPanelOpen = false">
+        <div class="mb-6 flex items-center justify-between gap-4">
           <div class="flex min-w-0 items-center gap-3">
-            <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('card')" :aria-label="t('filterTags')">
-              <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
+            <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel('card')" :aria-label="t('filters')">
+              <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
+              <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
             </button>
             <div class="h-4 w-px bg-outline/20"></div>
             <span class="hidden font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant sm:inline" x-text="activeTagSummary"></span>
-            <div class="relative">
-              <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="listStatusPanelOpen = !listStatusPanelOpen" :aria-label="currentStatusFilterSummary">
-                <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes('all') || !activeStatusFilters.includes('ignored') ? 'fill-icon' : ''">tune</span>
-                <span class="hidden sm:inline" x-text="currentStatusFilterSummary"></span>
-                <span class="material-symbols-outlined text-[18px] text-outline">expand_more</span>
-              </button>
-
-              <div x-cloak x-show="listStatusPanelOpen" x-transition class="absolute left-0 top-[calc(100%+0.75rem)] z-30 w-[min(24rem,calc(100vw-3rem))] rounded-2xl border border-white/10 bg-[#1b1b25]/95 p-3 shadow-2xl backdrop-blur-xl">
-                <div class="flex flex-wrap gap-2">
-                  <template x-for="option in statusFilterOptions" :key="option.value">
-                    <button type="button" class="flex min-w-[3rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all active:scale-95" :class="segmentedClasses(option.value)" @click="toggleStatusFilter(option.value)">
-                      <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes(option.value) && option.value !== 'ignored' ? 'fill-icon' : ''" x-text="option.icon"></span>
-                      <span x-text="option.label"></span>
-                    </button>
-                  </template>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="flex shrink-0 rounded-lg bg-surface-container-high p-1">
@@ -124,7 +104,7 @@
 
                 <div class="relative z-10 flex flex-1 flex-col justify-between px-6 pb-7 pt-8 text-center">
                   <div class="flex justify-center gap-3">
-                    <button type="button" data-testid="card-status-normal" :class="statusButtonClasses(currentCardWord.id, 'normal')" @click.stop="toggleWordStatus(currentCardWord.id, 'normal')" :aria-label="t('markNormal')">
+                    <button type="button" data-testid="card-status-normal" :class="statusButtonClasses(currentCardWord.id, 'normal')" @click.stop="toggleWordStatus(currentCardWord.id, 'normal')" :aria-label="t('clearMark')">
                       <span class="material-symbols-outlined" :class="isStatusActive(currentCardWord.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
                     </button>
                     <button type="button" data-testid="card-status-favorite" :class="statusButtonClasses(currentCardWord.id, 'favorite')" @click.stop="toggleWordStatus(currentCardWord.id, 'favorite')" :aria-label="t('markFavorite')">
@@ -161,6 +141,7 @@
 
             <div class="mt-8 text-center">
               <p class="text-[10px] font-bold uppercase tracking-widest text-outline" x-text="progressLabel"></p>
+              <p class="mt-2 text-xs text-on-surface-variant" x-text="t('cardSwipeHint')"></p>
             </div>
           </div>
         </template>
@@ -187,8 +168,8 @@
                 </div>
 
                 <div class="flex flex-col gap-3 md:w-56">
-                  <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-6 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="openTagSelection('card')" x-text="t('openFilters')"></button>
-                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="clearAppliedTags()" x-text="t('clearFilters')"></button>
+                  <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-6 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="openFilterPanel('card')" x-text="t('openFilters')"></button>
+                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="clearAppliedFilters()" x-text="t('clearFilters')"></button>
                 </div>
               </div>
             </div>
@@ -207,32 +188,16 @@
           </div>
         </div>
 
-        <div class="mb-6 flex items-center gap-4" @click.outside="listStatusPanelOpen = false">
+        <div class="mb-6 flex items-center gap-4">
           <div class="flex items-center gap-3">
-            <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('list')" :aria-label="t('filterTags')">
-              <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
+            <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel('list')" :aria-label="t('filters')">
+              <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
+              <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
             </button>
             <div class="h-4 w-px bg-outline/20"></div>
           </div>
 
-          <div class="relative flex-1">
-            <button type="button" data-testid="list-status-filter-toggle" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="listStatusPanelOpen = !listStatusPanelOpen" :aria-label="currentStatusFilterSummary">
-              <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes('all') || !activeStatusFilters.includes('ignored') ? 'fill-icon' : ''">tune</span>
-              <span class="hidden sm:inline" x-text="currentStatusFilterSummary"></span>
-              <span class="material-symbols-outlined text-[18px] text-outline">expand_more</span>
-            </button>
-
-            <div x-cloak x-show="listStatusPanelOpen" x-transition class="absolute left-0 top-[calc(100%+0.75rem)] z-30 w-full rounded-2xl border border-white/10 bg-[#1b1b25]/95 p-3 shadow-2xl backdrop-blur-xl">
-              <div class="flex flex-wrap gap-2">
-                <template x-for="option in statusFilterOptions" :key="option.value">
-                  <button type="button" class="flex min-w-[3rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all active:scale-95" :class="segmentedClasses(option.value)" @click="toggleStatusFilter(option.value)">
-                    <span class="material-symbols-outlined text-[18px]" :class="activeStatusFilters.includes(option.value) && option.value !== 'ignored' ? 'fill-icon' : ''" x-text="option.icon"></span>
-                    <span x-text="option.label"></span>
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
+          <div class="flex-1"></div>
 
           <div class="flex shrink-0 rounded-lg bg-surface-container-high p-1">
             <button type="button" class="rounded-md p-1.5 text-outline transition-colors hover:text-primary" @click="switchView('card')" :aria-label="t('cardView')">
@@ -269,7 +234,7 @@
                 </div>
 
                 <div class="mt-4 flex items-center justify-end gap-2">
-                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'normal')" @click.stop="toggleWordStatus(word.id, 'normal')" :aria-label="t('markNormal')">
+                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'normal')" @click.stop="toggleWordStatus(word.id, 'normal')" :aria-label="t('clearMark')">
                     <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
                   </button>
                   <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'favorite')" @click.stop="toggleWordStatus(word.id, 'favorite')" :aria-label="t('markFavorite')">
@@ -307,7 +272,7 @@
 
                 <div class="flex flex-col gap-3 md:w-56">
                   <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-6 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="searchQuery = ''" x-text="t('clearSearch')"></button>
-                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="openTagSelection('list')" x-text="t('adjustFilters')"></button>
+                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="openFilterPanel('list')" x-text="t('adjustFilters')"></button>
                 </div>
               </div>
             </div>
@@ -334,8 +299,9 @@
 
         <div class="mb-6 flex items-center justify-between gap-4">
           <div class="flex min-w-0 items-center gap-3">
-            <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-outline transition-colors hover:text-primary" @click="openTagSelection('favorites')" :aria-label="t('filterTags')">
-              <span class="material-symbols-outlined" :class="selectedTagIds.length ? 'fill-icon text-primary' : ''">sell</span>
+            <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel('favorites')" :aria-label="t('filters')">
+              <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
+              <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
             </button>
             <div class="h-4 w-px bg-outline/20"></div>
             <span class="hidden font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant sm:inline" x-text="activeTagSummary"></span>
@@ -351,11 +317,11 @@
             <template x-for="word in filteredFavoriteWords" :key="word.id">
               <article data-testid="favorites-item" class="group rounded-xl border border-transparent bg-surface-container-low p-4 transition-all hover:border-outline-variant/30 hover:bg-surface-container-high">
                 <div class="flex items-center gap-4">
-                  <div class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container-highest">
+                  <button type="button" class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container-highest" @click="openWordDetails(word.id)" :aria-label="t('openDetails')">
                     <img x-show="word.img" class="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0" :src="word.img" :alt="getWordText(word, displayLanguage1)" @error="handleImageError($event)">
-                  </div>
+                  </button>
 
-                  <div class="min-w-0 flex-1">
+                  <button type="button" class="min-w-0 flex-1 text-left" @click="openWordDetails(word.id)" :aria-label="t('openDetails')">
                     <div class="flex items-center justify-between gap-4">
                       <div class="min-w-0">
                         <span class="block truncate font-headline text-xl tracking-wide text-primary" x-text="getWordText(word, displayLanguage1)"></span>
@@ -363,7 +329,7 @@
                         <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-tertiary" x-text="listItemTagSummary(word)"></p>
                       </div>
                     </div>
-                  </div>
+                  </button>
 
                   <button type="button" class="rounded-full p-2 text-tertiary transition-transform hover:scale-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click.stop="playAudio(word)" :disabled="!hasAudio(word)" :aria-label="t('playAudio')">
                     <span class="material-symbols-outlined">volume_up</span>
@@ -403,7 +369,7 @@
 
                 <div class="flex flex-col gap-3 md:w-56">
                   <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-6 py-3 font-headline font-bold text-on-primary transition-all hover:opacity-90 active:scale-95" @click="switchView('list')" x-text="t('goToLibrary')"></button>
-                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="clearAppliedTags()" x-text="t('clearFilters')"></button>
+                  <button type="button" class="rounded-full bg-surface-container-high px-6 py-3 font-semibold text-primary transition-all hover:bg-surface-bright active:scale-95" @click="clearAppliedFilters()" x-text="t('clearFilters')"></button>
                 </div>
               </div>
             </div>
@@ -539,27 +505,38 @@
         </div>
       </section>
 
-      <section x-show="activeView === 'tags'" class="min-h-[70vh] pt-4">
-        <section class="mb-12">
-          <div class="mb-4 inline-flex items-center rounded-full bg-surface-container-low px-3 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-tertiary" x-text="t('tagEyebrow')"></div>
-          <h2 class="mb-6 font-headline text-4xl font-extrabold leading-none tracking-tight text-on-surface md:text-5xl">
-            <span x-text="t('tagTitleStart')"></span>
-            <span class="italic text-primary" x-text="t('tagTitleAccent')"></span>
-          </h2>
-          <p class="max-w-md text-sm leading-relaxed text-on-surface-variant" x-text="t('tagDescription')"></p>
+    </div>
+  </main>
+
+  <div x-cloak x-show="filterPanelOpen" class="fixed inset-0 z-[60] flex items-end justify-center bg-surface/80 p-0 backdrop-blur-sm md:items-center md:p-6" @click.self="closeFilterPanel()" x-transition.opacity>
+    <section class="w-full max-w-2xl rounded-t-[2rem] border border-white/10 bg-[#1b1b25]/95 p-6 shadow-2xl backdrop-blur-xl md:rounded-[2rem]">
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-tertiary" x-text="t('filters')"></p>
+          <h2 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface" x-text="t('filterTitle')"></h2>
+          <p class="mt-2 text-sm leading-relaxed text-on-surface-variant" x-text="t('filterHint')"></p>
+        </div>
+        <button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-on-surface transition-colors hover:bg-surface-container-highest" @click="closeFilterPanel()" :aria-label="t('closeModal')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="max-h-[60dvh] space-y-6 overflow-y-auto pr-1">
+        <section>
+          <h3 class="mb-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-primary" x-text="t('statusFilterTitle')"></h3>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="option in statusFilterOptions" :key="`draft-${option.value}`">
+              <button type="button" class="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all active:scale-95" :class="activeDraftStatusFilters.includes(option.value) ? 'bg-primary-container text-on-primary-container shadow-lg shadow-primary/10' : 'bg-surface-container-high text-outline hover:text-on-surface'" @click="toggleDraftStatusFilter(option.value)">
+                <span class="material-symbols-outlined text-[18px]" :class="activeDraftStatusFilters.includes(option.value) && option.value !== 'ignored' ? 'fill-icon' : ''" x-text="option.icon"></span>
+                <span x-text="option.label"></span>
+              </button>
+            </template>
+          </div>
         </section>
 
-        <div class="sticky top-16 z-10 mb-4 flex justify-end gap-3 px-4 py-3 md:static md:mb-4 md:px-0 md:py-0">
-          <button type="button" class="rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold uppercase text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="resetDraftTags()" :aria-label="t('clearFilters')">
-            <span x-text="t('clearFilters')"></span>
-          </button>
-          <button type="button" class="rounded-full bg-emerald-800 px-4 py-3 text-sm font-semibold uppercase text-white transition-all hover:bg-emerald-900 active:scale-95" @click="applyDraftTags()" :aria-label="t('applyFilters')">
-            <span x-text="t('applyFilters')"></span>
-          </button>
-        </div>
-
-        <div class="min-h-[400px] rounded-xl bg-surface-container-low p-4 md:p-8">
-          <div class="flex flex-wrap gap-3 pt-2">
+        <section>
+          <h3 class="mb-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-primary" x-text="t('tagFilterTitle')"></h3>
+          <div class="flex flex-wrap gap-3 rounded-2xl bg-surface-container-low p-4">
             <template x-for="tag in tags" :key="tag.id">
               <button type="button" class="group flex items-center gap-2 rounded-full px-5 py-3 transition-all duration-300" :class="draftTagIds.includes(tag.id) ? 'bg-primary-container text-on-primary-container scale-95' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-white/5'" @click="toggleDraftTag(tag.id)">
                 <span class="material-symbols-outlined text-sm" :class="draftTagIds.includes(tag.id) ? 'fill-icon' : ''" x-text="tag.icon"></span>
@@ -567,10 +544,15 @@
               </button>
             </template>
           </div>
-        </div>
-      </section>
-    </div>
-  </main>
+        </section>
+      </div>
+
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <button type="button" class="rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold uppercase text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="resetDraftFilters()" :aria-label="t('clearFilters')" x-text="t('clearFilters')"></button>
+        <button type="button" class="rounded-full bg-gradient-to-br from-primary to-primary-container px-4 py-3 font-headline text-sm font-bold uppercase text-on-primary transition-all hover:opacity-90 active:scale-95" @click="applyDraftFilters()" :aria-label="t('applyFilters')" x-text="t('applyFilters')"></button>
+      </div>
+    </section>
+  </div>
 
   <div x-cloak x-show="detailModalOpen && activeWord" class="fixed inset-0 z-[60] flex items-center justify-center bg-surface/90 p-6 backdrop-blur-sm" @click.self="closeWordDetails()" x-transition.opacity>
     <div class="relative flex aspect-[4/5] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-surface-container-low shadow-2xl">
@@ -596,7 +578,7 @@
           </button>
 
           <div class="flex items-center justify-center gap-3">
-            <button type="button" class="flex h-14 w-14 items-center justify-center rounded-full border transition-all active:scale-95" :class="activeWord ? statusButtonClasses(activeWord.id, 'normal') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'normal')" :aria-label="t('markNormal')">
+            <button type="button" class="flex h-14 w-14 items-center justify-center rounded-full border transition-all active:scale-95" :class="activeWord ? statusButtonClasses(activeWord.id, 'normal') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'normal')" :aria-label="t('clearMark')">
               <span class="material-symbols-outlined" :class="activeWord && isStatusActive(activeWord.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
             </button>
             <button type="button" class="flex h-14 w-14 items-center justify-center rounded-full border transition-all active:scale-95" :class="activeWord ? statusButtonClasses(activeWord.id, 'favorite') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'favorite')" :aria-label="t('markFavorite')">
@@ -628,8 +610,8 @@
       <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('learn')"></span>
     </button>
 
-    <button type="button" data-testid="nav-list" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'list' || activeView === 'tags' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('list')">
-      <span class="material-symbols-outlined" :class="activeView === 'list' || activeView === 'tags' ? 'fill-icon' : ''">list_alt</span>
+    <button type="button" data-testid="nav-list" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'list' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('list')">
+      <span class="material-symbols-outlined" :class="activeView === 'list' ? 'fill-icon' : ''">list_alt</span>
       <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('library')"></span>
     </button>
 
