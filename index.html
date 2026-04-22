@@ -532,43 +532,37 @@
   </div>
 
   <div x-cloak x-show="detailModalOpen && activeWord" class="fixed inset-0 z-[60] flex items-center justify-center bg-surface/90 p-6 backdrop-blur-sm" @click.self="closeWordDetails()" x-transition.opacity>
-    <div class="relative flex aspect-[4/5] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-surface-container-low shadow-2xl">
+    <div data-testid="modal-card" class="relative flex h-[480px] w-full max-w-md flex-col overflow-hidden rounded-xl bg-surface-container-low shadow-2xl" :style="activeWordCardStyle()">
       <button type="button" data-testid="modal-close" class="absolute right-6 top-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-surface/40 text-on-surface transition-colors hover:bg-surface/60" @click="closeWordDetails()" :aria-label="t('closeModal')">
         <span class="material-symbols-outlined">close</span>
       </button>
 
-      <div class="absolute inset-0 z-0 bg-surface-container-highest"></div>
-      <img x-show="activeWord && activeWord.img" class="absolute inset-0 z-0 h-full w-full object-cover opacity-30 grayscale-[20%]" :src="activeWord ? activeWord.img : ''" :alt="getWordText(activeWord, displayLanguage1)" @error="handleImageError($event)">
+      <div class="pointer-events-none absolute inset-0 bg-surface-container-highest/30"></div>
       <div class="absolute inset-0 z-0 bg-gradient-to-t from-surface via-surface/50 to-transparent"></div>
 
-      <div class="relative z-10 flex flex-1 flex-col justify-center px-8 text-center">
-        <h2 class="mb-4 max-h-40 overflow-y-auto break-words font-headline text-5xl font-black tracking-[0.05em] text-on-surface drop-shadow-xl md:max-h-56 md:text-7xl" x-text="getWordText(activeWord, displayLanguage1)"></h2>
-        <div class="mb-10 rounded-full glass-panel border border-outline-variant/15 px-6 py-2">
-          <span class="text-sm font-medium uppercase tracking-[0.2em] text-tertiary" x-text="getWordText(activeWord, displayLanguage2)"></span>
-        </div>
-
-        <div class="space-y-4">
-          <button type="button" class="flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-br from-primary to-primary-container py-5 shadow-lg shadow-primary-container/20 transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="playAudio(activeWord)" :disabled="!hasAudio(activeWord)" :aria-label="t('playAudio')">
-            <span class="material-symbols-outlined fill-icon text-on-primary">volume_up</span>
-            <span class="text-sm font-headline font-bold tracking-widest text-on-primary" x-text="t('listen')"></span>
+      <div class="relative z-10 flex flex-1 flex-col justify-between px-6 pb-7 pt-8 text-center">
+        <div class="mx-auto flex w-full max-w-xl flex-col items-center">
+          <h2 class="mb-4 max-h-40 max-w-full overflow-y-auto break-words rounded-[2rem] bg-black/25 px-5 py-4 font-headline text-5xl font-black leading-tight tracking-[0.05em] text-on-surface shadow-2xl md:max-h-56 md:text-7xl" x-text="getWordText(activeWord, cardHeadlineLanguage())"></h2>
+          <button type="button" data-testid="modal-audio-button" class="group/btn flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-container shadow-lg shadow-primary/20 transition-shadow active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="playAudio(activeWord)" :disabled="!hasAudio(activeWord)" :aria-label="t('playAudio')">
+            <span class="material-symbols-outlined fill-icon text-3xl text-on-primary">volume_up</span>
           </button>
-
-          <div class="flex items-center justify-center gap-3">
-            <button type="button" class="flex h-14 w-14 items-center justify-center rounded-full border transition-all active:scale-95" :class="activeWord ? statusButtonClasses(activeWord.id, 'normal') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'normal')" :aria-label="t('clearMark')">
-              <span class="material-symbols-outlined" :class="activeWord && isStatusActive(activeWord.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
-            </button>
-            <button type="button" class="flex h-14 w-14 items-center justify-center rounded-full border transition-all active:scale-95" :class="activeWord ? statusButtonClasses(activeWord.id, 'favorite') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'favorite')" :aria-label="t('markFavorite')">
-              <span class="material-symbols-outlined" :class="activeWord && isStatusActive(activeWord.id, 'favorite') ? 'fill-icon' : ''">favorite</span>
-            </button>
-            <button type="button" class="flex h-14 w-14 items-center justify-center rounded-full border transition-all active:scale-95" :class="activeWord ? statusButtonClasses(activeWord.id, 'ignored') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'ignored')" :aria-label="t('markIgnored')">
-              <span class="material-symbols-outlined">do_not_disturb_on</span>
-            </button>
-          </div>
         </div>
-      </div>
 
-      <div class="relative h-12 w-full pb-4">
-        <div class="mx-auto h-1 w-3/4 rounded-t-full bg-surface-container-high opacity-50"></div>
+        <div class="flex items-center justify-center">
+          <button type="button" data-testid="modal-translation-toggle" class="rounded-full border border-white/10 bg-black/25 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-primary transition-all hover:border-primary/30 hover:bg-white/5 active:scale-95" @click="showCardTranslation = !showCardTranslation" x-text="translationToggleLabel()"></button>
+        </div>
+
+        <div class="flex justify-center gap-3">
+          <button type="button" data-testid="modal-status-normal" :class="activeWord ? statusButtonClasses(activeWord.id, 'normal') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'normal')" :aria-label="t('clearMark')">
+            <span class="material-symbols-outlined" :class="activeWord && isStatusActive(activeWord.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
+          </button>
+          <button type="button" data-testid="modal-status-favorite" :class="activeWord ? statusButtonClasses(activeWord.id, 'favorite') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'favorite')" :aria-label="t('markFavorite')">
+            <span class="material-symbols-outlined" :class="activeWord && isStatusActive(activeWord.id, 'favorite') ? 'fill-icon' : ''">favorite</span>
+          </button>
+          <button type="button" data-testid="modal-status-ignored" :class="activeWord ? statusButtonClasses(activeWord.id, 'ignored') : ''" @click="if (activeWord) toggleWordStatus(activeWord.id, 'ignored')" :aria-label="t('markIgnored')">
+            <span class="material-symbols-outlined">do_not_disturb_on</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

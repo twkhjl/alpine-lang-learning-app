@@ -357,6 +357,18 @@ function lexiconApp() {
       };
     },
 
+    activeWordCardStyle() {
+      const backgroundImage = this.activeWord?.img
+        ? `url(${this.activeWord.img})`
+        : "linear-gradient(135deg, rgba(94, 92, 230, 0.26), rgba(14, 13, 21, 0.88))";
+
+      return {
+        backgroundImage,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      };
+    },
+
     get activeTagSummary() {
       if (!this.selectedTagIds.length) {
         return this.t("allTerms");
