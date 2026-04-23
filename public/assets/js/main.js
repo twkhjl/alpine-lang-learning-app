@@ -891,6 +891,8 @@ function lexiconApp() {
     },
 
     setWordStatus(wordId, nextStatus) {
+      const previousCardWordId =
+        this.activeView === "card" ? this.currentCardWord?.id || null : null;
       const normalized = applyExclusiveStatus(
         wordId,
         nextStatus,
@@ -903,6 +905,12 @@ function lexiconApp() {
 
       if (this.activeView === "card") {
         this.clampCardIndex();
+      }
+
+      const nextCardWordId =
+        this.activeView === "card" ? this.currentCardWord?.id || null : null;
+      if (previousCardWordId !== nextCardWordId) {
+        document.activeElement?.blur?.();
       }
 
       if (this.activeWordId === wordId && nextStatus === STATUS.NORMAL) {
