@@ -4,6 +4,11 @@
     "lang_zh-TW": "好",
     "lang_id": "bagus",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "hǎo",
+      "id": "",
+      "en": ""
+    },
     "img": "public/assets/imgs/202604120952.jpg",
     "audio": {
       "zh-TW": "好.mp3",
@@ -17,6 +22,11 @@
     "lang_zh-TW": "亂",
     "lang_id": "berantakan",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "luàn",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "亂.mp3",
@@ -30,6 +40,11 @@
     "lang_zh-TW": "重",
     "lang_id": "berat",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "zhòng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "重.mp3",
@@ -43,6 +58,11 @@
     "lang_zh-TW": "高品質",
     "lang_id": "berkualitas",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "gāo pǐn zhí",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "高品質.mp3",
@@ -56,6 +76,11 @@
     "lang_zh-TW": "困惑",
     "lang_id": "bingung",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "kùn huò",
+      "id": "",
+      "en": ""
+    },
     "img": "public/assets/imgs/202604120954.jpg",
     "audio": {
       "zh-TW": "困惑.mp3",
@@ -69,6 +94,11 @@
     "lang_zh-TW": "先進",
     "lang_id": "canggih",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "xiān jìn",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "先進.mp3",
@@ -82,6 +112,11 @@
     "lang_zh-TW": "累",
     "lang_id": "capek",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "lèi",
+      "id": "",
+      "en": ""
+    },
     "img": "public/assets/imgs/202604120956.jpg",
     "audio": {
       "zh-TW": "累.mp3",
@@ -95,6 +130,11 @@
     "lang_zh-TW": "厲害",
     "lang_id": "hebat",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "lì hài",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "厲害.mp3",
@@ -108,6 +148,11 @@
     "lang_zh-TW": "粗糙",
     "lang_id": "kasar",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "cū cāo",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "粗糙.mp3",
@@ -121,6 +166,11 @@
     "lang_zh-TW": "酷",
     "lang_id": "keren",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "kù",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "酷.mp3",
@@ -134,6 +184,11 @@
     "lang_zh-TW": "不爽",
     "lang_id": "kesal",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "bù shuǎng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "不爽.mp3",
@@ -147,6 +202,11 @@
     "lang_zh-TW": "柔軟",
     "lang_id": "lembut",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "róu ruǎn",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "柔軟.mp3",
@@ -160,6 +220,11 @@
     "lang_zh-TW": "黏",
     "lang_id": "lengket",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "nián",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "黏.mp3",
@@ -173,6 +238,11 @@
     "lang_zh-TW": "很棒",
     "lang_id": "mantap",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "hěn bàng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "很棒.mp3",
@@ -186,6 +256,11 @@
     "lang_zh-TW": "舒服",
     "lang_id": "nyaman",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "shū fu",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "舒服.mp3",
@@ -199,6 +274,11 @@
     "lang_zh-TW": "很嚴重；很誇張",
     "lang_id": "parah",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "hěn yán zhòng; hěn kuā zhāng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "很嚴重；很誇張.mp3",
@@ -212,6 +292,11 @@
     "lang_zh-TW": "整齊",
     "lang_id": "rapi",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "zhěng qí",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "整齊.mp3",
@@ -225,6 +310,11 @@
     "lang_zh-TW": "麻煩",
     "lang_id": "ribet",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "má fan",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "麻煩.mp3",
@@ -238,6 +328,11 @@
     "lang_zh-TW": "輕",
     "lang_id": "ringan",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "qīng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "輕.mp3",
@@ -251,6 +346,11 @@
     "lang_zh-TW": "複雜",
     "lang_id": "rumit",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "fù zá",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "複雜.mp3",
@@ -264,6 +364,11 @@
     "lang_zh-TW": "樸素",
     "lang_id": "sederhana",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "pú sù",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "樸素.mp3",
@@ -277,6 +382,11 @@
     "lang_zh-TW": "健康",
     "lang_id": "sehat",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "jiàn kāng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "健康.mp3",
@@ -290,6 +400,11 @@
     "lang_zh-TW": "涼爽",
     "lang_id": "sejuk",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "liáng shuǎng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "涼爽.mp3",
@@ -303,6 +418,11 @@
     "lang_zh-TW": "完整",
     "lang_id": "utuh",
     "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "wán zhěng",
+      "id": "",
+      "en": ""
+    },
     "img": "",
     "audio": {
       "zh-TW": "完整.mp3",

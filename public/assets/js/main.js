@@ -150,6 +150,19 @@ function resolveWordText(word, languageCode, fallbacks = ["zh-TW", "id", "en"]) 
   return "";
 }
 
+function getPronunciationValue(word, languageCode) {
+  const value = word?.pronunciation?.[languageCode];
+  return typeof value === "string" ? value : "";
+}
+
+function resolveWordPronunciation(word, languageCode) {
+  if (!word) {
+    return "";
+  }
+
+  return getPronunciationValue(word, languageCode);
+}
+
 function wordMatchesQuery(word, query) {
   const normalized = (query || "").trim().toLowerCase();
   if (!normalized) {
@@ -262,6 +275,7 @@ window.lexiconTestUtils = {
   uniqueStringArray,
   normalizeStatusCollections,
   resolveWordText,
+  resolveWordPronunciation,
   wordMatchesQuery,
   normalizePreferences,
   getWordStatus,
@@ -514,6 +528,11 @@ function lexiconApp() {
         ...word,
         lang_en: word.lang_en || "",
         img: typeof word.img === "string" ? word.img : "",
+        pronunciation: {
+          "zh-TW": word.pronunciation?.["zh-TW"] || "",
+          id: word.pronunciation?.id || "",
+          en: word.pronunciation?.en || "",
+        },
         audioPaths: {
           "zh-TW":
             word.audio && word.audio["zh-TW"]
@@ -911,6 +930,10 @@ function lexiconApp() {
       return resolveWordText(word, languageCode);
     },
 
+    getWordPronunciation(word, languageCode) {
+      return resolveWordPronunciation(word, languageCode);
+    },
+
     getLocalizedLanguageLabel(code, interfaceLanguage = this.nativeLanguage) {
       const labels = {
         "zh-TW": {
@@ -1146,6 +1169,14 @@ function lexiconApp() {
 
     cardHeadlineText() {
       return resolveWordText(this.currentCardWord, this.cardHeadlineLanguage());
+    },
+
+    cardPronunciationText() {
+      return resolveWordPronunciation(this.currentCardWord, this.cardHeadlineLanguage());
+    },
+
+    activeWordPronunciationText() {
+      return resolveWordPronunciation(this.activeWord, this.cardHeadlineLanguage());
     },
 
     statusButtonClasses(wordId, status) {
