@@ -25,21 +25,28 @@
       <h1 class="font-headline text-lg font-black tracking-tighter text-primary">The Lexicon</h1>
     </div>
 
-    <div class="relative" @click.outside="quickLangOpen = false">
-      <button type="button" data-testid="quick-lang-toggle" class="flex items-center gap-2 text-primary transition-opacity hover:opacity-80 active:opacity-60" @click="quickLangOpen = !quickLangOpen" :aria-label="t('changeInterfaceLanguage')">
-        <span class="material-symbols-outlined">language</span>
+    <div class="flex items-center gap-4">
+      <button x-show="!loading && !error && activeView !== 'settings'" type="button" data-testid="header-filter-toggle" class="flex items-center gap-2 rounded-full bg-surface-container-high px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel(activeView)" :aria-label="t('filters')">
+        <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
+        <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
       </button>
 
-      <div x-cloak x-show="quickLangOpen" x-transition class="glass-panel absolute right-0 top-12 w-64 overflow-hidden rounded-xl shadow-2xl">
-        <div class="space-y-1 p-2">
-          <template x-for="language in languages" :key="language.code">
-            <button type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left transition-colors" :class="nativeLanguage === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click="nativeLanguage = language.code; quickLangOpen = false; applyDocumentLanguage(); persistPreferences()">
-              <div>
-                <p class="text-sm font-medium" :data-testid="`quick-lang-option-label-${language.code}`" x-text="language.nativeLabel || language.label"></p>
-              </div>
-              <span x-show="nativeLanguage === language.code" class="material-symbols-outlined text-sm fill-icon">check_circle</span>
-            </button>
-          </template>
+      <div class="relative" @click.outside="quickLangOpen = false">
+        <button type="button" data-testid="quick-lang-toggle" class="flex items-center gap-2 text-primary transition-opacity hover:opacity-80 active:opacity-60" @click="quickLangOpen = !quickLangOpen" :aria-label="t('changeInterfaceLanguage')">
+          <span class="material-symbols-outlined">language</span>
+        </button>
+
+        <div x-cloak x-show="quickLangOpen" x-transition class="glass-panel absolute right-0 top-12 w-64 overflow-hidden rounded-xl shadow-2xl">
+          <div class="space-y-1 p-2">
+            <template x-for="language in languages" :key="language.code">
+              <button type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left transition-colors" :class="nativeLanguage === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click="nativeLanguage = language.code; quickLangOpen = false; applyDocumentLanguage(); persistPreferences()">
+                <div>
+                  <p class="text-sm font-medium" :data-testid="`quick-lang-option-label-${language.code}`" x-text="language.nativeLabel || language.label"></p>
+                </div>
+                <span x-show="nativeLanguage === language.code" class="material-symbols-outlined text-sm fill-icon">check_circle</span>
+              </button>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -69,17 +76,6 @@
 
     <div x-cloak x-show="!loading && !error">
       <section x-show="activeView === 'card'" class="min-h-[70vh]">
-        <div class="mb-3 flex items-center justify-between gap-4">
-          <div class="flex min-w-0 items-center gap-3">
-            <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel('card')" :aria-label="t('filters')">
-              <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
-              <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
-            </button>
-            <div class="h-4 w-px bg-outline/20"></div>
-            <span class="hidden font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant sm:inline" x-text="activeTagSummary"></span>
-          </div>
-        </div>
-
         <template x-if="visibleCardWords.length">
           <div>
             <section class="relative flex min-h-[500px] items-start justify-center py-1">
@@ -175,18 +171,6 @@
           </div>
         </div>
 
-        <div class="mb-6 flex items-center gap-4">
-          <div class="flex items-center gap-3">
-            <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel('list')" :aria-label="t('filters')">
-              <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
-              <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
-            </button>
-            <div class="h-4 w-px bg-outline/20"></div>
-          </div>
-
-          <div class="flex-1"></div>
-        </div>
-
         <template x-if="filteredListWords.length">
           <div class="space-y-4">
             <template x-for="word in filteredListWords" :key="word.id">
@@ -275,16 +259,7 @@
           </div>
         </div>
 
-        <div class="mb-6 flex items-center justify-between gap-4">
-          <div class="flex min-w-0 items-center gap-3">
-            <button type="button" class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-surface transition-all hover:bg-surface-container-highest active:scale-95" @click="openFilterPanel('favorites')" :aria-label="t('filters')">
-              <span class="material-symbols-outlined" :class="activeFilterCount ? 'fill-icon text-primary' : ''">tune</span>
-              <span class="hidden sm:inline" x-text="activeFilterSummary"></span>
-            </button>
-            <div class="h-4 w-px bg-outline/20"></div>
-            <span class="hidden font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant sm:inline" x-text="activeTagSummary"></span>
-          </div>
-
+        <div class="mb-6 flex justify-end">
           <div class="rounded-full bg-primary-container px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-on-primary-container">
             <span x-text="t('favorites')"></span>
           </div>
