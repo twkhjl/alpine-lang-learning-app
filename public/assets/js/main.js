@@ -268,6 +268,10 @@ function applyExclusiveStatus(wordId, nextStatus, favoriteWordIds, ignoredWordId
   return normalizeStatusCollections(cleanedFavorites, cleanedIgnored);
 }
 
+function sortWordsByDescendingId(words) {
+  return [...words].sort((left, right) => right.id - left.id);
+}
+
 window.lexiconTestUtils = {
   STATUS,
   DEFAULT_PREFERENCES,
@@ -280,6 +284,7 @@ window.lexiconTestUtils = {
   normalizePreferences,
   getWordStatus,
   applyExclusiveStatus,
+  sortWordsByDescendingId,
 };
 
 function lexiconApp() {
@@ -497,7 +502,9 @@ function lexiconApp() {
         await this.loadTranslations(this.languages);
 
         this.tags = tags.map((tag) => this.normalizeTag(tag));
-        this.words = words.map((word) => this.normalizeWord(word));
+        this.words = sortWordsByDescendingId(
+          words.map((word) => this.normalizeWord(word)),
+        );
 
         this.loadPreferences();
         this.ensureLanguagesAreValid();
