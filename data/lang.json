@@ -430,5 +430,59 @@
       "en": ""
     },
     "tags": [4]
+  },
+  {
+    "id": 25,
+    "lang_zh-TW": "阻止",
+    "lang_id": "cegah",
+    "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "Zǔzhǐ",
+      "id": "",
+      "en": ""
+    },
+    "img": "",
+    "audio": {
+      "zh-TW": "阻止.mp3",
+      "id": "cegah.mp3",
+      "en": ""
+    },
+    "tags": [4]
+  },
+  {
+    "id": 26,
+    "lang_zh-TW": "反對",
+    "lang_id": "lawan",
+    "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "fǎnduì",
+      "id": "",
+      "en": ""
+    },
+    "img": "",
+    "audio": {
+      "zh-TW": "反對.mp3",
+      "id": "lawan.mp3",
+      "en": ""
+    },
+    "tags": [4]
+  },
+  {
+    "id": 27,
+    "lang_zh-TW": "煩惱",
+    "lang_id": "kepikiran",
+    "lang_en": "",
+    "pronunciation": {
+      "zh-TW": "fánnǎo",
+      "id": "",
+      "en": ""
+    },
+    "img": "",
+    "audio": {
+      "zh-TW": "煩惱.mp3",
+      "id": "kepikiran.mp3",
+      "en": ""
+    },
+    "tags": [4]
   }
 ]
