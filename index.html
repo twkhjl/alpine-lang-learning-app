@@ -27,7 +27,7 @@
 
     <div class="relative" @click.outside="quickLangOpen = false">
       <button type="button" data-testid="quick-lang-toggle" class="flex items-center gap-2 text-primary transition-opacity hover:opacity-80 active:opacity-60" @click="quickLangOpen = !quickLangOpen" :aria-label="t('changeInterfaceLanguage')">
-        <span class="material-symbols-outlined">translate</span>
+        <span class="material-symbols-outlined">language</span>
       </button>
 
       <div x-cloak x-show="quickLangOpen" x-transition class="glass-panel absolute right-0 top-12 w-64 overflow-hidden rounded-xl shadow-2xl">
@@ -35,8 +35,7 @@
           <template x-for="language in languages" :key="language.code">
             <button type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left transition-colors" :class="nativeLanguage === language.code ? 'bg-primary-container text-on-primary-container' : 'hover:bg-surface-bright text-on-surface'" @click="nativeLanguage = language.code; quickLangOpen = false; applyDocumentLanguage(); persistPreferences()">
               <div>
-                <p class="text-sm font-medium" x-text="language.label"></p>
-                <p class="text-xs text-on-surface-variant/80" :class="nativeLanguage === language.code ? 'text-on-primary-container/80' : 'text-on-surface-variant/80'" x-text="language.description"></p>
+                <p class="text-sm font-medium" :data-testid="`quick-lang-option-label-${language.code}`" x-text="language.nativeLabel || language.label"></p>
               </div>
               <span x-show="nativeLanguage === language.code" class="material-symbols-outlined text-sm fill-icon">check_circle</span>
             </button>

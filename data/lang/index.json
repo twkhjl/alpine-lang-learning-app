@@ -3,6 +3,7 @@
     {
       "code": "zh-TW",
       "label": "繁體中文",
+      "nativeLabel": "繁體中文",
       "description": "Traditional Chinese",
       "shortLabel": "繁中",
       "symbol": "ZH"
@@ -10,6 +11,7 @@
     {
       "code": "id",
       "label": "印尼文",
+      "nativeLabel": "Bahasa Indonesia",
       "description": "Bahasa Indonesia",
       "shortLabel": "ID",
       "symbol": "ID"
@@ -17,6 +19,7 @@
     {
       "code": "en",
       "label": "英文",
+      "nativeLabel": "English",
       "description": "English",
       "shortLabel": "EN",
       "symbol": "EN"
