@@ -7,4 +7,4 @@ local-tests/
 *.test.local.*
 page_example/
 spec/*
-
+AGENTS.md
