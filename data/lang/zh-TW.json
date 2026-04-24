@@ -4,7 +4,7 @@
   "favoritesNav": "最愛",
   "settingsNav": "設定",
   "loadingTitle": "正在準備單字卡",
-  "loadingDescription": "資料會從 data 與 public/assets 載入，接著你就可以在卡片、字庫、最愛、標籤與設定之間切換。",
+  "loadingDescription": "資料會從 data 載入，圖片與音檔會從雲端資源載入，接著你就可以在卡片、字庫、最愛、標籤與設定之間切換。",
   "loadErrorTitle": "載入資料失敗",
   "retry": "重新載入",
   "changeInterfaceLanguage": "切換介面語言",

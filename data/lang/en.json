@@ -4,7 +4,7 @@
   "favoritesNav": "Favorites",
   "settingsNav": "Settings",
   "loadingTitle": "Preparing your cards",
-  "loadingDescription": "Data is loading from the data and public/assets folders. Once ready, you can move between cards, library, favorites, tags, and settings.",
+  "loadingDescription": "Data is loading from the data folder, with images and audio loaded from cloud assets. Once ready, you can move between cards, library, favorites, tags, and settings.",
   "loadErrorTitle": "Failed to load data",
   "retry": "Reload",
   "changeInterfaceLanguage": "Change interface language",

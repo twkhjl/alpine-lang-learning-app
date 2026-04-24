@@ -4,7 +4,7 @@
   "favoritesNav": "Favorit",
   "settingsNav": "Pengaturan",
   "loadingTitle": "Sedang menyiapkan kartu",
-  "loadingDescription": "Data akan dimuat dari folder data dan public/assets, lalu kamu bisa berpindah antara kartu, daftar, favorit, tag, dan pengaturan.",
+  "loadingDescription": "Data akan dimuat dari folder data, sedangkan gambar dan audio dimuat dari aset cloud. Setelah siap, kamu bisa berpindah antara kartu, daftar, favorit, tag, dan pengaturan.",
   "loadErrorTitle": "Gagal memuat data",
   "retry": "Muat ulang",
   "changeInterfaceLanguage": "Ganti bahasa antarmuka",

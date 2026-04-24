@@ -91,6 +91,39 @@ const DEFAULT_PREFERENCES = {
 
 const VALID_VIEWS = ["card", "list", "favorites", "settings"];
 const VALID_STATUS_FILTERS = ["all", "favorite", "ignored", "normal"];
+const R2_PUBLIC_BASE_URL =
+  "https://pub-0ab02e3e2bda4c4c99e33c093612b10c.r2.dev";
+
+function resolveMediaUrl(path) {
+  if (typeof path !== "string" || !path.trim()) {
+    return "";
+  }
+
+  const trimmed = path.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const normalizedPath = trimmed
+    .replace(/^\.?\//, "")
+    .replace(/^public\/assets\//, "");
+
+  return `${R2_PUBLIC_BASE_URL}/${normalizedPath}`;
+}
+
+function resolveAudioUrl(languageCode, filename) {
+  if (typeof languageCode !== "string" || typeof filename !== "string") {
+    return "";
+  }
+
+  const cleanLanguageCode = languageCode.trim();
+  const cleanFilename = filename.trim();
+  if (!cleanLanguageCode || !cleanFilename) {
+    return "";
+  }
+
+  return resolveMediaUrl(`audios/${cleanLanguageCode}/${cleanFilename}`);
+}
 
 function uniqueNumberArray(value) {
   if (!Array.isArray(value)) {
@@ -281,6 +314,8 @@ window.lexiconTestUtils = {
   resolveWordText,
   resolveWordPronunciation,
   wordMatchesQuery,
+  resolveMediaUrl,
+  resolveAudioUrl,
   normalizePreferences,
   getWordStatus,
   applyExclusiveStatus,
@@ -534,7 +569,7 @@ function lexiconApp() {
       return {
         ...word,
         lang_en: word.lang_en || "",
-        img: typeof word.img === "string" ? word.img : "",
+        img: resolveMediaUrl(word.img),
         pronunciation: {
           "zh-TW": word.pronunciation?.["zh-TW"] || "",
           id: word.pronunciation?.id || "",
@@ -543,15 +578,15 @@ function lexiconApp() {
         audioPaths: {
           "zh-TW":
             word.audio && word.audio["zh-TW"]
-              ? `public/assets/audios/zh-TW/${word.audio["zh-TW"]}`
+              ? resolveAudioUrl("zh-TW", word.audio["zh-TW"])
               : "",
           id:
             word.audio && word.audio.id
-              ? `public/assets/audios/id/${word.audio.id}`
+              ? resolveAudioUrl("id", word.audio.id)
               : "",
           en:
             word.audio && word.audio.en
-              ? `public/assets/audios/en/${word.audio.en}`
+              ? resolveAudioUrl("en", word.audio.en)
               : "",
         },
       };
