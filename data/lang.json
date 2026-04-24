@@ -451,18 +451,18 @@
   },
   {
     "id": 26,
-    "lang_zh-TW": "反對",
-    "lang_id": "lawan",
+    "lang_zh-TW": "同意",
+    "lang_id": "setuju",
     "lang_en": "",
     "pronunciation": {
-      "zh-TW": "fǎnduì",
+      "zh-TW": "Tóngyì",
       "id": "",
       "en": ""
     },
     "img": "",
     "audio": {
-      "zh-TW": "反對.mp3",
-      "id": "lawan.mp3",
+      "zh-TW": "同意.mp3",
+      "id": "setuju.mp3",
       "en": ""
     },
     "tags": [4]
