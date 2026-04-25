@@ -9,3 +9,4 @@ page_example/
 spec/*
 AGENTS.md
 supabase/.temp/
+local/*
