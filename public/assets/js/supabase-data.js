@@ -66,7 +66,7 @@
     const config = globalObject.LEXICON_SUPABASE_CONFIG;
     const supabaseFactory = globalObject.supabase;
 
-    if (!config?.url || !config?.anonKey) {
+    if (!config?.url || !config?.publishableKey) {
       throw new Error("Supabase config is required.");
     }
 
@@ -74,7 +74,7 @@
       throw new Error("Supabase client library is required.");
     }
 
-    return supabaseFactory.createClient(config.url, config.anonKey, {
+    return supabaseFactory.createClient(config.url, config.publishableKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,

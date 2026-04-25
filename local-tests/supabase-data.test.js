@@ -70,7 +70,7 @@ test("creates Supabase client without auth session persistence", () => {
   const client = createSupabaseClient({
     LEXICON_SUPABASE_CONFIG: {
       url: "https://example.supabase.co",
-      anonKey: "publishable-key",
+      publishableKey: "publishable-key",
     },
     supabase: {
       createClient(url, anonKey, options) {
