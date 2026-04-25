@@ -408,6 +408,26 @@ async function run() {
       await expect(cardStatus.ignored.length === 0, "card favorite should clear ignored state");
     });
 
+    await step("mobile card controls stay visible in short viewport", async () => {
+      await page.setViewportSize({ width: 390, height: 720 });
+      await waitForAppReady(page);
+
+      const buttonBoxes = await Promise.all([
+        page.getByTestId("card-status-normal").boundingBox(),
+        page.getByTestId("card-status-favorite").boundingBox(),
+        page.getByTestId("card-status-ignored").boundingBox(),
+      ]);
+
+      const viewportHeight = 720;
+      for (let index = 0; index < buttonBoxes.length; index += 1) {
+        const buttonBox = buttonBoxes[index];
+        await expect(
+          !!buttonBox && buttonBox.y + buttonBox.height <= viewportHeight,
+          `card status button ${index + 1} should fit within viewport`,
+        );
+      }
+    });
+
     await step("card ignore should not leave next ignore button focused", async () => {
       await waitForAppReady(page);
       await page.getByTestId("nav-card").click();
