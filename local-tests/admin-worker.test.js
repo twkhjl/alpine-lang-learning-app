@@ -151,7 +151,7 @@ test("worker resolves username and returns session payload", async () => {
           return Promise.resolve({
             ok: true,
             json() {
-              return Promise.resolve({ user: { email: "admin-user-1@internal.local" } });
+              return Promise.resolve({ email: "admin-user-1@internal.local" });
             },
           });
         }

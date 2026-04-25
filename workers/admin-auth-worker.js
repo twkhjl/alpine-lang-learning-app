@@ -166,7 +166,7 @@
       return null;
     });
 
-    return payload?.user?.email || null;
+    return payload?.user?.email || payload?.email || null;
   }
 
   async function signInWithEmail(fetchImpl, config, email, password) {
