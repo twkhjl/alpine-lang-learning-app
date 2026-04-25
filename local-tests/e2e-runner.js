@@ -408,6 +408,28 @@ async function run() {
       await expect(cardStatus.ignored.length === 0, "card favorite should clear ignored state");
     });
 
+    await step("card view should use reduced bottom padding", async () => {
+      await page.getByTestId("nav-card").click();
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const state =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return state?.activeView === "card";
+      });
+
+      const mainPaddingBottom = await page.evaluate(() => {
+        const main = document.querySelector("main");
+        return main ? window.getComputedStyle(main).paddingBottom : "";
+      });
+
+      await expect(
+        mainPaddingBottom === "80px",
+        "card view main bottom padding should be reduced for card view",
+      );
+    });
+
     await step("mobile card controls stay visible in short viewport", async () => {
       await page.setViewportSize({ width: 390, height: 720 });
       await waitForAppReady(page);

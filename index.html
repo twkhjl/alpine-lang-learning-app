@@ -55,7 +55,7 @@
     </div>
   </header>
 
-  <main class="mx-auto min-h-screen max-w-4xl px-6 pb-32 pt-20">
+  <main class="mx-auto min-h-screen max-w-4xl px-6 pt-20" :class="activeView === 'card' ? 'pb-20' : 'pb-32'">
     <section x-cloak x-show="loading" class="flex min-h-[70vh] items-center justify-center">
       <div class="glass-panel w-full max-w-md rounded-3xl p-8 text-center shadow-ambient">
         <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-container/20 text-primary">
@@ -78,7 +78,7 @@
     </section>
 
     <div x-cloak x-show="!loading && !error">
-      <section x-show="activeView === 'card'" class="min-h-[70vh]">
+      <section x-show="activeView === 'card'" class="min-h-[70vh] pb-6">
         <template x-if="visibleCardWords.length">
           <div>
             <section class="relative flex min-h-[500px] items-start justify-center py-1">
