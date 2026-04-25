@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - LingoCMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="public/assets/css/admin.css" />
+  </head>
+  <body class="admin-page" data-admin-page="admin-dashboard.html" style="visibility: hidden;">
+    <div class="admin-shell">
+      <aside class="admin-sidebar" aria-label="後台導覽">
+        <div class="admin-brand">
+          <h1>LingoCMS</h1>
+          <p>Lexicon admin workspace</p>
+        </div>
+
+        <nav class="admin-sidebar-nav">
+          <a class="admin-nav-link" data-admin-nav="admin-dashboard.html">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboard</span>
+          </a>
+          <a class="admin-nav-link" data-admin-nav="admin-words.html">
+            <span class="material-symbols-outlined">menu_book</span>
+            <span>Words</span>
+          </a>
+          <a class="admin-nav-link" data-admin-nav="admin-word-edit.html">
+            <span class="material-symbols-outlined">edit_square</span>
+            <span>Edit Word</span>
+          </a>
+          <a class="admin-nav-link" data-admin-nav="admin-assets.html">
+            <span class="material-symbols-outlined">perm_media</span>
+            <span>Assets</span>
+          </a>
+          <a class="admin-nav-link" data-admin-nav="admin-tags.html">
+            <span class="material-symbols-outlined">sell</span>
+            <span>Tags</span>
+          </a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <a class="admin-nav-link" href="#">
+            <span class="material-symbols-outlined">help</span>
+            <span>Support</span>
+          </a>
+          <a class="admin-nav-link" data-admin-nav="admin-login.html">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Logout</span>
+          </a>
+        </div>
+      </aside>
+
+      <div class="admin-content">
+        <header class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h2>Dashboard</h2>
+            <p>Static skeleton for Supabase Auth, R2, and admin API integration.</p>
+          </div>
+
+          <div class="admin-topbar-actions">
+            <label class="admin-search" aria-label="Search">
+              <span class="material-symbols-outlined">search</span>
+              <input type="search" placeholder="搜尋單字、標籤或媒體" />
+            </label>
+            <button class="admin-icon-button" type="button" aria-label="通知">
+              <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <button class="admin-icon-button" type="button" aria-label="系統紀錄">
+              <span class="material-symbols-outlined">history</span>
+            </button>
+            <div class="admin-avatar" aria-hidden="true">AL</div>
+          </div>
+        </header>
+
+        <main class="admin-main">
+          <section class="admin-page-header">
+            <div>
+              <h1>Dashboard Overview</h1>
+              <p>檢視詞庫總覽、最近更新紀錄與核心服務狀態。</p>
+            </div>
+            <a class="admin-button" data-admin-nav="admin-word-edit.html">
+              <span class="material-symbols-outlined">add</span>
+              <span>新增單字</span>
+            </a>
+          </section>
+
+          <section class="admin-grid stats" aria-label="摘要統計">
+            <article class="admin-card admin-stat-card">
+              <div class="admin-stat-head">
+                <span>單字總數</span>
+                <span class="material-symbols-outlined">format_quote</span>
+              </div>
+              <div>
+                <p class="admin-stat-value">12,482</p>
+                <div class="admin-stat-trend">
+                  <span class="material-symbols-outlined">trending_up</span>
+                  <span>本週 +4.2%</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="admin-card admin-stat-card">
+              <div class="admin-stat-head">
+                <span>標籤數量</span>
+                <span class="material-symbols-outlined">sell</span>
+              </div>
+              <div>
+                <p class="admin-stat-value">340</p>
+                <div class="admin-stat-trend" style="color: var(--admin-text-muted)">
+                  <span class="material-symbols-outlined">remove</span>
+                  <span>結構穩定</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="admin-card admin-stat-card">
+              <div class="admin-stat-head">
+                <span>已上傳圖片</span>
+                <span class="material-symbols-outlined">image</span>
+              </div>
+              <div>
+                <p class="admin-stat-value">8,910</p>
+                <div class="admin-stat-trend">
+                  <span class="material-symbols-outlined">trending_up</span>
+                  <span>今日 +120</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="admin-card admin-stat-card">
+              <div class="admin-stat-head">
+                <span>已上傳音檔</span>
+                <span class="material-symbols-outlined">graphic_eq</span>
+              </div>
+              <div>
+                <p class="admin-stat-value">11,204</p>
+                <div class="admin-stat-trend">
+                  <span class="material-symbols-outlined">trending_up</span>
+                  <span>今日 +54</span>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="admin-grid columns">
+            <article class="admin-card">
+              <div class="admin-section-header">
+                <h3>最近更新的單字</h3>
+                <a class="admin-text-link" data-admin-nav="admin-words.html">查看全部</a>
+              </div>
+
+              <div style="overflow-x: auto">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>單字</th>
+                      <th>語言</th>
+                      <th>標籤</th>
+                      <th>媒體</th>
+                      <th>更新時間</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>桌子</strong>
+                        <div class="admin-table-meta">meja</div>
+                      </td>
+                      <td>zh-TW / id</td>
+                      <td>
+                        <div class="admin-pill-list">
+                          <span class="admin-pill">家具</span>
+                          <span class="admin-pill">名詞</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="admin-media-flags">
+                          <span class="material-symbols-outlined">image</span>
+                          <span class="material-symbols-outlined">volume_up</span>
+                        </div>
+                      </td>
+                      <td>2 分鐘前</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>好</strong>
+                        <div class="admin-table-meta">bagus</div>
+                      </td>
+                      <td>zh-TW / id</td>
+                      <td>
+                        <div class="admin-pill-list">
+                          <span class="admin-pill">日常</span>
+                          <span class="admin-pill">形容詞</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="admin-media-flags">
+                          <span class="material-symbols-outlined">image</span>
+                          <span class="material-symbols-outlined">volume_up</span>
+                        </div>
+                      </td>
+                      <td>15 分鐘前</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>困惑</strong>
+                        <div class="admin-table-meta">bingung</div>
+                      </td>
+                      <td>zh-TW / id</td>
+                      <td>
+                        <div class="admin-pill-list">
+                          <span class="admin-pill">情緒</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="admin-media-flags">
+                          <span class="material-symbols-outlined">hide_image</span>
+                          <span class="material-symbols-outlined">volume_up</span>
+                        </div>
+                      </td>
+                      <td>1 小時前</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>累</strong>
+                        <div class="admin-table-meta">capek</div>
+                      </td>
+                      <td>zh-TW / id</td>
+                      <td>
+                        <div class="admin-pill-list">
+                          <span class="admin-pill">身體狀態</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="admin-media-flags">
+                          <span class="material-symbols-outlined">image</span>
+                          <span class="material-symbols-outlined">volume_up</span>
+                        </div>
+                      </td>
+                      <td>3 小時前</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <aside class="admin-card admin-status-panel">
+              <div class="admin-section-header" style="padding: 0 0 8px; border-bottom: 0">
+                <h3>System Status</h3>
+              </div>
+
+              <section class="admin-status-row">
+                <div class="admin-status-meta">
+                  <span class="material-symbols-outlined">database</span>
+                  <div>
+                    <p class="admin-status-label">Supabase Database</p>
+                    <p>Lexicon read model</p>
+                  </div>
+                </div>
+                <div class="admin-status-indicator">
+                  <span class="admin-dot"></span>
+                  <span>Operational</span>
+                </div>
+              </section>
+
+              <section class="admin-status-row">
+                <div class="admin-status-meta">
+                  <span class="material-symbols-outlined">shield_lock</span>
+                  <div>
+                    <p class="admin-status-label">Supabase Auth</p>
+                    <p>Admin session gateway</p>
+                  </div>
+                </div>
+                <div class="admin-status-indicator">
+                  <span class="admin-dot"></span>
+                  <span>Operational</span>
+                </div>
+              </section>
+
+              <section class="admin-status-row">
+                <div class="admin-status-meta">
+                  <span class="material-symbols-outlined">cloud</span>
+                  <div>
+                    <p class="admin-status-label">Cloudflare R2</p>
+                    <p>Image and audio storage</p>
+                  </div>
+                </div>
+                <div class="admin-status-indicator">
+                  <span class="admin-dot"></span>
+                  <span>Operational</span>
+                </div>
+              </section>
+
+              <section class="admin-status-row">
+                <div class="admin-status-meta">
+                  <span class="material-symbols-outlined">api</span>
+                  <div>
+                    <p class="admin-status-label">Admin API</p>
+                    <p>Protected write pipeline</p>
+                  </div>
+                </div>
+                <div class="admin-status-indicator">
+                  <span class="admin-dot warning"></span>
+                  <span>Prototype</span>
+                </div>
+              </section>
+
+              <div class="admin-status-footer">最後檢查時間：剛剛</div>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-shell.js"></script>
+    <script src="public/assets/js/admin-auth.js"></script>
+    <script>
+      (function () {
+        window.lexiconAdminAuth.protectAdminPage(window);
+      })();
+    </script>
+  </body>
+</html>

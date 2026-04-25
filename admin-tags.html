@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tag Management - LingoCMS</title>
+    <link rel="stylesheet" href="public/assets/css/admin.css" />
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --surface: #ffffff;
+        --surface-soft: #eef4ff;
+        --border: #d5deec;
+        --text: #10203a;
+        --muted: #5b677a;
+        --accent: #2563eb;
+        --sidebar: #0f172a;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: "Inter", "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); }
+      .layout { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        background: var(--sidebar);
+        color: #fff;
+        padding: 24px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .sidebar a {
+        color: #dbeafe;
+        text-decoration: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+      }
+      .sidebar a[aria-current="page"] { background: rgba(37, 99, 235, 0.22); }
+      .main { display: grid; grid-template-rows: auto 1fr; }
+      .topbar {
+        padding: 20px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        background: rgba(255,255,255,0.88);
+        border-bottom: 1px solid var(--border);
+      }
+      .content { padding: 28px; display: grid; gap: 24px; }
+      .hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+      .hero h1, .hero p { margin: 0; }
+      .button {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+        text-decoration: none;
+      }
+      .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+      .panel-header, .panel-footer {
+        padding: 16px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .panel-header { border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+      .panel-footer { border-top: 1px solid var(--border); }
+      .filter-row { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; }
+      th { background: var(--surface-soft); color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .icon-chip, .modal-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-grid;
+        place-items: center;
+        background: #e0ebff;
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.42);
+        display: grid;
+        place-items: center;
+        padding: 20px;
+      }
+      .modal {
+        width: min(100%, 520px);
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.24);
+      }
+      .modal header, .modal footer {
+        padding: 18px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .modal header { border-bottom: 1px solid var(--border); }
+      .modal footer { border-top: 1px solid var(--border); }
+      .modal-body { padding: 20px; display: grid; gap: 16px; }
+      .field { display: grid; gap: 8px; }
+      .field label { color: var(--muted); font-size: 13px; }
+      .field input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      @media (max-width: 900px) {
+        .layout { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body class="admin-page" data-admin-page="admin-tags.html" style="visibility: hidden;">
+    <div class="layout">
+      <aside class="sidebar">
+        <div>
+          <strong style="font-size:24px">LingoCMS</strong>
+          <div style="color:#94a3b8; margin-top: 6px">Taxonomy Admin</div>
+        </div>
+        <a data-admin-nav="admin-dashboard.html">Dashboard</a>
+        <a data-admin-nav="admin-words.html">Words</a>
+        <a data-admin-nav="admin-word-edit.html">Edit Word</a>
+        <a data-admin-nav="admin-assets.html">Assets</a>
+        <a data-admin-nav="admin-tags.html">Tags</a>
+        <a class="button" data-admin-nav="admin-login.html" style="margin-top: auto">Logout</a>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div>標籤管理原型，後續接 Supabase tags CRUD</div>
+          <div>Admin User</div>
+        </header>
+        <main class="content">
+          <section class="hero">
+            <div>
+              <h1>標籤管理</h1>
+              <p>保留 `linguistcms_1` 的高密度表格與 modal 流程，整理成產品用 taxonomy 頁面。</p>
+            </div>
+            <a class="button primary" href="#">新增標籤</a>
+          </section>
+          <section class="panel">
+            <div class="panel-header">
+              <div class="filter-row">
+                <span>Filter</span>
+                <span>Sort</span>
+                <span>142 個標籤</span>
+              </div>
+              <div style="color: var(--muted)">顯示 1-5 筆</div>
+            </div>
+            <div style="overflow:auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tag ID</th>
+                    <th>Icon</th>
+                    <th>中文名稱</th>
+                    <th>印尼文名稱</th>
+                    <th>英文名稱</th>
+                    <th>單字數量</th>
+                    <th style="text-align:right">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>tag_furniture</td>
+                    <td><span class="icon-chip">F</span></td>
+                    <td>家具</td>
+                    <td>perabotan</td>
+                    <td>furniture</td>
+                    <td>38</td>
+                    <td style="text-align:right">編輯 / 刪除</td>
+                  </tr>
+                  <tr>
+                    <td>tag_daily_conversation</td>
+                    <td><span class="icon-chip">D</span></td>
+                    <td>日常對話</td>
+                    <td>percakapan harian</td>
+                    <td>daily conversation</td>
+                    <td>112</td>
+                    <td style="text-align:right">編輯 / 刪除</td>
+                  </tr>
+                  <tr>
+                    <td>tag_basic_adjective</td>
+                    <td><span class="icon-chip">A</span></td>
+                    <td>基礎形容詞</td>
+                    <td>kata sifat dasar</td>
+                    <td>basic adjective</td>
+                    <td>54</td>
+                    <td style="text-align:right">編輯 / 刪除</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel-footer">
+              <a class="button" href="#">上一頁</a>
+              <div class="filter-row"><span>1</span><span>2</span><span>3</span></div>
+              <a class="button" href="#">下一頁</a>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div class="modal-backdrop" aria-hidden="true">
+      <section class="modal" aria-label="Tag editor preview">
+        <header>
+          <strong>新增 / 編輯標籤</strong>
+          <span style="color: var(--muted)">預覽</span>
+        </header>
+        <div class="modal-body">
+          <div class="field">
+            <label for="tag-id">Tag ID</label>
+            <input id="tag-id" value="tag_furniture" />
+          </div>
+          <div class="field">
+            <label for="tag-icon">Icon</label>
+            <div style="display:flex; gap:12px; align-items:center">
+              <span class="modal-icon">F</span>
+              <input id="tag-icon" value="chair" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="tag-zh">中文名稱</label>
+            <input id="tag-zh" value="家具" />
+          </div>
+          <div class="field">
+            <label for="tag-idn">印尼文名稱</label>
+            <input id="tag-idn" value="perabotan" />
+          </div>
+          <div class="field">
+            <label for="tag-en">英文名稱</label>
+            <input id="tag-en" value="furniture" />
+          </div>
+        </div>
+        <footer>
+          <a class="button" href="#">取消</a>
+          <a class="button primary" href="#">儲存標籤</a>
+        </footer>
+      </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-shell.js"></script>
+    <script src="public/assets/js/admin-auth.js"></script>
+    <script>
+      (function () {
+        window.lexiconAdminAuth.protectAdminPage(window);
+      })();
+    </script>
+  </body>
+</html>

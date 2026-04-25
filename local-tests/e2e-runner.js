@@ -108,6 +108,31 @@ async function run() {
   try {
     await resetAppState(page);
 
+    await step("admin login shell loads", async () => {
+      await page.goto(`${baseUrl}/admin-login.html`, { waitUntil: "domcontentloaded" });
+      await expect(
+        (await page.locator("body[data-admin-page='admin-login.html']").count()) > 0,
+        "admin login body not tagged",
+      );
+      await expect(
+        (await page.locator(".login-form").count()) > 0,
+        "admin login form missing",
+      );
+    });
+
+    await step("signed-out admin dashboard redirects to login", async () => {
+      await page.goto(`${baseUrl}/admin-dashboard.html`, { waitUntil: "domcontentloaded" });
+      await page.waitForURL("**/admin-login.html", { timeout: 15000 });
+      await expect(
+        page.url().endsWith("/admin-login.html"),
+        "signed-out admin dashboard should redirect to admin-login.html",
+      );
+      await expect(
+        (await page.locator("body[data-admin-page='admin-login.html']").count()) > 0,
+        "admin login body not tagged after redirect",
+      );
+    });
+
     await step("load app", async () => {
       await waitForAppReady(page);
       await expect(await page.locator("text=The Lexicon").count(), "app header not visible");

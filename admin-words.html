@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Management - LingoCMS</title>
+    <link rel="stylesheet" href="public/assets/css/admin.css" />
+    <style>
+      :root {
+        --bg: #f3f6fb;
+        --surface: #ffffff;
+        --surface-soft: #eef4ff;
+        --sidebar: #0f172a;
+        --sidebar-muted: #94a3b8;
+        --border: #d7dfec;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+        --danger: #dc2626;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Inter", "Noto Sans TC", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        background: var(--sidebar);
+        color: #fff;
+        padding: 24px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .brand h1, .brand p, .page-header h1, .page-header p { margin: 0; }
+      .brand h1 { font-size: 24px; }
+      .brand p, .sidebar-section-label, .meta-text, .filters label, .table-meta { color: var(--sidebar-muted); }
+      .nav-links { display: grid; gap: 8px; }
+      .nav-links a {
+        color: #dbe7ff;
+        text-decoration: none;
+        padding: 11px 14px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .nav-links a[aria-current="page"] { background: rgba(37, 99, 235, 0.22); }
+      .main {
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 20px 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.86);
+        backdrop-filter: blur(10px);
+      }
+      .topbar .search {
+        width: min(360px, 100%);
+        padding: 11px 14px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #fff;
+      }
+      .content { padding: 28px; display: grid; gap: 24px; }
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+      .button {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+        text-decoration: none;
+      }
+      .button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+      .filters {
+        padding: 18px;
+        display: grid;
+        grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 0.8fr)) auto;
+        gap: 14px;
+        align-items: end;
+      }
+      .filters .field { display: grid; gap: 8px; }
+      .filters input, .filters select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .table-wrap { overflow: auto; }
+      table { width: 100%; border-collapse: collapse; min-width: 1040px; }
+      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+      th { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; background: var(--surface-soft); }
+      .thumb {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #dbeafe, #eff6ff);
+        border: 1px solid #bfdbfe;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tags span {
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--surface-soft);
+        border: 1px solid #cddcff;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
+      .row-actions button {
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+      .row-actions .danger { color: var(--danger); }
+      .footer {
+        padding: 16px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .pagination { display: flex; gap: 8px; }
+      .pagination span, .pagination a {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--muted);
+        background: #fff;
+      }
+      .pagination .active {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      @media (max-width: 960px) {
+        .layout { grid-template-columns: 1fr; }
+        .sidebar { padding-bottom: 12px; }
+        .filters { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body class="admin-page" data-admin-page="admin-words.html" style="visibility: hidden;">
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <h1>LingoCMS</h1>
+          <p>Lexicon Admin</p>
+        </div>
+        <div class="nav-links">
+          <a data-admin-nav="admin-dashboard.html">Dashboard</a>
+          <a data-admin-nav="admin-words.html">Words</a>
+          <a data-admin-nav="admin-word-edit.html">Edit Word</a>
+          <a data-admin-nav="admin-assets.html">Assets</a>
+          <a data-admin-nav="admin-tags.html">Tags</a>
+        </div>
+        <div style="margin-top: auto">
+          <a class="button" data-admin-nav="admin-login.html">Logout</a>
+        </div>
+        <div>
+          <div class="sidebar-section-label">原型狀態</div>
+          <p class="meta-text">列表與搜尋 UI 已就位，後續再接 Supabase list query 與刪除流程。</p>
+        </div>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <input class="search" type="search" placeholder="搜尋單字、翻譯或標籤" />
+          <div>Admin User</div>
+        </header>
+        <main class="content">
+          <section class="page-header">
+            <div>
+              <h1>單字管理</h1>
+              <p>延用 `linguistcms_6` 的高密度表格結構，整理成可接後台資料流的列表頁。</p>
+            </div>
+            <div class="button-row">
+              <a class="button" href="#">匯入 CSV</a>
+              <a class="button primary" href="admin-word-edit.html">新增單字</a>
+            </div>
+          </section>
+          <section class="card">
+            <div class="filters">
+              <div class="field">
+                <label for="word-search">關鍵字搜尋</label>
+                <input id="word-search" type="text" placeholder="例如：桌子、meja、food" />
+              </div>
+              <div class="field">
+                <label for="tag-filter">標籤</label>
+                <select id="tag-filter">
+                  <option>全部標籤</option>
+                  <option>家具</option>
+                  <option>日常對話</option>
+                  <option>基礎形容詞</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="image-filter">圖片</label>
+                <select id="image-filter">
+                  <option>全部</option>
+                  <option>有圖片</option>
+                  <option>無圖片</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="audio-filter">音檔</label>
+                <select id="audio-filter">
+                  <option>全部</option>
+                  <option>有音檔</option>
+                  <option>缺少音檔</option>
+                </select>
+              </div>
+              <a class="button" href="#">更多篩選</a>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>圖片</th>
+                    <th>繁中</th>
+                    <th>印尼文</th>
+                    <th>英文</th>
+                    <th>標籤</th>
+                    <th>音檔</th>
+                    <th>更新時間</th>
+                    <th style="text-align:right">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>#28</td>
+                    <td><span class="thumb">IMG</span></td>
+                    <td>桌子</td>
+                    <td>meja</td>
+                    <td>table</td>
+                    <td><div class="tags"><span>家具</span><span>初級</span></div></td>
+                    <td>zh-TW / id</td>
+                    <td>2026-04-25 14:20</td>
+                    <td>
+                      <div class="row-actions">
+                        <button>預覽</button>
+                        <button onclick="location.href='admin-word-edit.html'">編輯</button>
+                        <button class="danger">刪除</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>#27</td>
+                    <td><span class="thumb">TXT</span></td>
+                    <td>困惑</td>
+                    <td>bingung</td>
+                    <td>confused</td>
+                    <td><div class="tags"><span>情緒</span><span>日常對話</span></div></td>
+                    <td>zh-TW / id / en</td>
+                    <td>2026-04-24 19:08</td>
+                    <td>
+                      <div class="row-actions">
+                        <button>預覽</button>
+                        <button onclick="location.href='admin-word-edit.html'">編輯</button>
+                        <button class="danger">刪除</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>#26</td>
+                    <td><span class="thumb">IMG</span></td>
+                    <td>好</td>
+                    <td>bagus</td>
+                    <td>good</td>
+                    <td><div class="tags"><span>基礎形容詞</span></div></td>
+                    <td>zh-TW / id</td>
+                    <td>2026-04-23 11:55</td>
+                    <td>
+                      <div class="row-actions">
+                        <button>預覽</button>
+                        <button onclick="location.href='admin-word-edit.html'">編輯</button>
+                        <button class="danger">刪除</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="footer">
+              <div class="table-meta">顯示 1-3 筆，共 28 筆單字</div>
+              <div class="pagination">
+                <span>&lt;</span>
+                <span class="active">1</span>
+                <a href="#">2</a>
+                <a href="#">3</a>
+                <span>&gt;</span>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-shell.js"></script>
+    <script src="public/assets/js/admin-auth.js"></script>
+    <script>
+      (function () {
+        window.lexiconAdminAuth.protectAdminPage(window);
+      })();
+    </script>
+  </body>
+</html>

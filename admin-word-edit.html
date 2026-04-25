@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Word - LingoCMS</title>
+    <link rel="stylesheet" href="public/assets/css/admin.css" />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111c32;
+        --panel-soft: #16223b;
+        --panel-strong: #0b1220;
+        --border: rgba(148, 163, 184, 0.22);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --accent: #3b82f6;
+        --chip: rgba(59, 130, 246, 0.18);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Inter", "Noto Sans TC", sans-serif;
+        background: linear-gradient(180deg, #020617 0%, #0f172a 20%, #111827 100%);
+        color: var(--text);
+      }
+      .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        background: rgba(2, 6, 23, 0.76);
+        border-right: 1px solid var(--border);
+        padding: 24px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .sidebar a {
+        color: #dbeafe;
+        text-decoration: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+      }
+      .sidebar a[aria-current="page"] { background: rgba(59,130,246,0.2); }
+      .main { display: grid; grid-template-rows: auto 1fr auto; }
+      .topbar, .footerbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(2, 6, 23, 0.58);
+        backdrop-filter: blur(10px);
+      }
+      .footerbar { border-top: 1px solid var(--border); border-bottom: 0; }
+      .content { padding: 28px; display: grid; gap: 24px; }
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+      }
+      .status-chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--chip);
+        color: #bfdbfe;
+        border: 1px solid rgba(96, 165, 250, 0.2);
+      }
+      .grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr); gap: 24px; }
+      .stack { display: grid; gap: 24px; }
+      .card {
+        background: rgba(17, 28, 50, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 20px 40px rgba(2, 6, 23, 0.22);
+      }
+      .card h2, .card h3, .hero h1, .hero p { margin: 0; }
+      .card-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+      .field-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .field, .audio-row { display: grid; gap: 8px; }
+      .field.full { grid-column: 1 / -1; }
+      label { color: var(--muted); font-size: 13px; }
+      input, textarea, select {
+        width: 100%;
+        padding: 11px 13px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel-strong);
+        color: var(--text);
+      }
+      textarea { min-height: 92px; resize: vertical; }
+      .chip-row, .actions, .audio-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+      .chip-row span, .button {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+      }
+      .chip-row span { background: var(--chip); color: #dbeafe; }
+      .button {
+        background: transparent;
+        color: var(--text);
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .asset-preview, .asset-slot {
+        border-radius: 14px;
+        border: 1px dashed var(--border);
+        background: linear-gradient(135deg, rgba(59,130,246,0.14), rgba(15,23,42,0.32));
+        min-height: 190px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 18px;
+      }
+      .asset-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; margin-top: 12px; }
+      .audio-row {
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(11, 18, 32, 0.55);
+      }
+      .audio-row header { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+      .r2-path {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-family: Consolas, monospace;
+        font-size: 12px;
+      }
+      @media (max-width: 1080px) {
+        .layout { grid-template-columns: 1fr; }
+        .grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 720px) {
+        .field-grid { grid-template-columns: 1fr; }
+        .topbar, .footerbar, .content { padding: 18px; }
+      }
+    </style>
+  </head>
+  <body class="admin-page" data-admin-page="admin-word-edit.html" style="visibility: hidden;">
+    <div class="layout">
+      <aside class="sidebar">
+        <div>
+          <strong style="font-size: 24px">LingoCMS</strong>
+          <div style="color: var(--muted); margin-top: 6px">Edit Workflow</div>
+        </div>
+        <a data-admin-nav="admin-dashboard.html">Dashboard</a>
+        <a data-admin-nav="admin-words.html">Words</a>
+        <a data-admin-nav="admin-word-edit.html">Edit Word</a>
+        <a data-admin-nav="admin-assets.html">Assets</a>
+        <a data-admin-nav="admin-tags.html">Tags</a>
+        <a class="button" data-admin-nav="admin-login.html" style="margin-top: auto">Logout</a>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div>編輯頁原型，後續掛入 Supabase detail / save API</div>
+          <div>管理員</div>
+        </header>
+        <main class="content">
+          <section class="hero">
+            <div>
+              <h1>編輯單字</h1>
+              <p>以 `linguistcms_2` 的雙欄編輯器為基礎，整理成正式 CMS 骨架。</p>
+            </div>
+            <div class="status-chip">狀態：草稿</div>
+          </section>
+          <section class="grid">
+            <div class="stack">
+              <article class="card">
+                <div class="card-header">
+                  <h2>基本資料</h2>
+                  <span style="color: var(--muted)">ID 將由後端產生</span>
+                </div>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="word-id">單字 ID</label>
+                    <input id="word-id" value="28" readonly />
+                  </div>
+                  <div class="field">
+                    <label for="word-status">發布狀態</label>
+                    <select id="word-status">
+                      <option>草稿</option>
+                      <option>已發布</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="zh-word">繁中</label>
+                    <input id="zh-word" value="桌子" />
+                  </div>
+                  <div class="field">
+                    <label for="id-word">印尼文</label>
+                    <input id="id-word" value="meja" />
+                  </div>
+                  <div class="field">
+                    <label for="en-word">英文</label>
+                    <input id="en-word" value="table" />
+                  </div>
+                  <div class="field">
+                    <label for="pron-zh">繁中發音</label>
+                    <input id="pron-zh" value="Zhuo zi" />
+                  </div>
+                  <div class="field">
+                    <label for="pron-id">印尼文發音</label>
+                    <input id="pron-id" value="me-ja" />
+                  </div>
+                  <div class="field">
+                    <label for="pron-en">英文發音</label>
+                    <input id="pron-en" value="tei-buhl" />
+                  </div>
+                  <div class="field full">
+                    <label for="word-note">補充說明</label>
+                    <textarea id="word-note">常見家具名詞，可用於介紹家中物品與教室場景。</textarea>
+                  </div>
+                </div>
+              </article>
+              <article class="card">
+                <div class="card-header">
+                  <h2>音檔管理</h2>
+                  <div class="actions">
+                    <button class="button">批次替換</button>
+                    <button class="button primary">新增語音</button>
+                  </div>
+                </div>
+                <div class="stack" style="gap: 14px">
+                  <section class="audio-row">
+                    <header>
+                      <strong>繁中音檔</strong>
+                      <div class="audio-actions">
+                        <button class="button">播放</button>
+                        <button class="button">替換</button>
+                        <button class="button">刪除</button>
+                      </div>
+                    </header>
+                    <div>檔名：桌子.mp3</div>
+                    <div class="r2-path">audios/zh-TW/桌子.mp3</div>
+                  </section>
+                  <section class="audio-row">
+                    <header>
+                      <strong>印尼文音檔</strong>
+                      <div class="audio-actions">
+                        <button class="button">播放</button>
+                        <button class="button">替換</button>
+                        <button class="button">刪除</button>
+                      </div>
+                    </header>
+                    <div>檔名：meja.mp3</div>
+                    <div class="r2-path">audios/id/meja.mp3</div>
+                  </section>
+                  <section class="audio-row">
+                    <header>
+                      <strong>英文音檔</strong>
+                      <div class="audio-actions">
+                        <button class="button primary">上傳</button>
+                      </div>
+                    </header>
+                    <div>目前尚未綁定英文音檔。</div>
+                    <div class="r2-path">audios/en/table.mp3</div>
+                  </section>
+                </div>
+              </article>
+            </div>
+            <div class="stack">
+              <article class="card">
+                <div class="card-header">
+                  <h3>圖片資產</h3>
+                  <button class="button">更換圖片</button>
+                </div>
+                <div class="asset-preview">
+                  <div>
+                    <strong>目前圖片預覽區</strong>
+                    <p style="color: var(--muted)">後續改接 Cloudflare R2 與真實上傳流程。</p>
+                  </div>
+                </div>
+                <div class="asset-meta">
+                  <span>檔名：202604120952.jpg</span>
+                  <span>狀態：已綁定</span>
+                </div>
+                <div class="r2-path" style="margin-top: 12px">imgs/202604120952.jpg</div>
+              </article>
+              <article class="card">
+                <div class="card-header">
+                  <h3>標籤與屬性</h3>
+                </div>
+                <div class="chip-row">
+                  <span>家具</span>
+                  <span>初級</span>
+                  <span>教室</span>
+                  <button class="button">新增標籤</button>
+                </div>
+                <div class="field" style="margin-top: 18px">
+                  <label for="difficulty">難度</label>
+                  <select id="difficulty">
+                    <option>A1</option>
+                    <option>A2</option>
+                    <option>B1</option>
+                  </select>
+                </div>
+              </article>
+              <article class="card">
+                <div class="card-header">
+                  <h3>未儲存變更</h3>
+                </div>
+                <p style="margin: 0; color: var(--muted)">
+                  後續將在這裡接入 dirty state、toast 與成功/失敗訊息。
+                </p>
+              </article>
+            </div>
+          </section>
+        </main>
+        <footer class="footerbar">
+          <button class="button">取消</button>
+          <div class="actions">
+            <button class="button">儲存草稿</button>
+            <button class="button primary">發布 / 更新</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-shell.js"></script>
+    <script src="public/assets/js/admin-auth.js"></script>
+    <script>
+      (function () {
+        window.lexiconAdminAuth.protectAdminPage(window);
+      })();
+    </script>
+  </body>
+</html>
