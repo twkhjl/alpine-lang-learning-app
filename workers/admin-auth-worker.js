@@ -29,16 +29,28 @@
       return "*";
     }
 
-    return request.headers.get("origin") || configuredOrigin;
+    const requestOrigin = request.headers.get("origin");
+
+    if (requestOrigin === configuredOrigin) {
+      return requestOrigin;
+    }
+
+    return null;
   }
 
   function createCorsHeaders(request, env) {
-    return {
-      "access-control-allow-origin": getAllowedOrigin(request, env),
+    const allowedOrigin = getAllowedOrigin(request, env);
+    const headers = {
       "access-control-allow-methods": "POST, OPTIONS",
       "access-control-allow-headers": "content-type",
       vary: "origin",
     };
+
+    if (allowedOrigin) {
+      headers["access-control-allow-origin"] = allowedOrigin;
+    }
+
+    return headers;
   }
 
   function jsonResponse(request, env, body, status) {
@@ -83,9 +95,37 @@
 
   async function resolveAdminAccount(fetchImpl, config, username) {
     const url = new URL(config.url + "/rest/v1/admin_accounts");
-    url.searchParams.set("select", "user_id,is_active,admin_users!inner(user_id)");
+    url.searchParams.set("select", "user_id,is_active");
     url.searchParams.set("username", "eq." + username);
     url.searchParams.set("is_active", "eq.true");
+    url.searchParams.set("limit", "1");
+
+    const response = await fetchImpl(url.toString(), {
+      headers: {
+        apikey: config.serviceRoleKey,
+        authorization: "Bearer " + config.serviceRoleKey,
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const rows = await response.json().catch(function () {
+      return [];
+    });
+
+    if (!Array.isArray(rows) || rows.length === 0 || !rows[0]?.user_id) {
+      return null;
+    }
+
+    return rows[0];
+  }
+
+  async function resolveAdminUser(fetchImpl, config, userId) {
+    const url = new URL(config.url + "/rest/v1/admin_users");
+    url.searchParams.set("select", "user_id");
+    url.searchParams.set("user_id", "eq." + userId);
     url.searchParams.set("limit", "1");
 
     const response = await fetchImpl(url.toString(), {
@@ -181,6 +221,12 @@
       return jsonResponse(request, env, buildGenericFailure(), 401);
     }
 
+    const adminUser = await resolveAdminUser(fetchImpl, config, adminAccount.user_id);
+
+    if (!adminUser?.user_id) {
+      return jsonResponse(request, env, buildGenericFailure(), 401);
+    }
+
     const internalEmail = await resolveAuthEmail(fetchImpl, config, adminAccount.user_id);
 
     if (!internalEmail) {
@@ -230,6 +276,7 @@
     handleLogin,
     handleRequest,
     resolveAdminAccount,
+    resolveAdminUser,
     resolveAuthEmail,
     signInWithEmail,
   };

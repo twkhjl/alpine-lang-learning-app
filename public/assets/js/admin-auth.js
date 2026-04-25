@@ -70,8 +70,42 @@
   function getAdminAuthLoginUrl(globalObject, options = {}) {
     const activeRoot = resolveGlobalObject(globalObject);
     const config = activeRoot.LEXICON_SUPABASE_CONFIG || {};
+    const configuredUrl = options.loginUrl || config.adminAuthApiUrl;
+    const fallbackPath = "/api/admin/auth/login";
 
-    return options.loginUrl || config.adminAuthApiUrl || "/api/admin/auth/login";
+    if (typeof configuredUrl === "string") {
+      const trimmedUrl = configuredUrl.trim();
+
+      if (trimmedUrl) {
+        if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmedUrl)) {
+          return trimmedUrl;
+        }
+
+        if (activeRoot.location?.origin && activeRoot.location.origin !== "null") {
+          try {
+            return new URL(trimmedUrl, activeRoot.location.origin).toString();
+          } catch (error) {
+            // Fall back to the path-based contract below.
+          }
+        }
+
+        if (trimmedUrl.startsWith("/")) {
+          return trimmedUrl;
+        }
+
+        return "/" + trimmedUrl.replace(/^\/+/, "");
+      }
+    }
+
+    if (activeRoot.location?.origin && activeRoot.location.origin !== "null") {
+      try {
+        return new URL(fallbackPath, activeRoot.location.origin).toString();
+      } catch (error) {
+        // Fall back to the path-based contract below.
+      }
+    }
+
+    return fallbackPath;
   }
 
   async function requestAdminLogin(globalObject, username, password, options = {}) {

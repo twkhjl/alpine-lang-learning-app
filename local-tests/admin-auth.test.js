@@ -309,6 +309,42 @@ test("username login uses worker endpoint and persists Supabase session", async 
   assert.equal(signOutCalls.length, 0);
 });
 
+test("admin auth login URL resolves relative config against the current origin", () => {
+  const configuredUrl = getAdminAuthLoginUrl(
+    {
+      location: {
+        origin: "https://admin.example.com",
+      },
+      LEXICON_SUPABASE_CONFIG: {
+        adminAuthApiUrl: "api/admin/auth/login",
+      },
+    },
+    {},
+  );
+
+  assert.equal(
+    configuredUrl,
+    "https://admin.example.com/api/admin/auth/login",
+  );
+});
+
+test("admin auth login URL falls back to the current origin when unset", () => {
+  const fallbackUrl = getAdminAuthLoginUrl(
+    {
+      location: {
+        origin: "https://admin.example.com",
+      },
+      LEXICON_SUPABASE_CONFIG: {},
+    },
+    {},
+  );
+
+  assert.equal(
+    fallbackUrl,
+    "https://admin.example.com/api/admin/auth/login",
+  );
+});
+
 test("username login returns generic failure when API or session write fails", async () => {
   const failedLogin = await signInAdminWithUsername(
     {

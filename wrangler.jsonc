@@ -2,5 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "alpine-lang-learning-app-admin-auth",
   "main": "workers/admin-auth-worker.js",
+  // This Worker is deployed as a standalone API endpoint.
+  // Frontend config must point adminAuthApiUrl at the deployed Worker URL.
   "compatibility_date": "2026-04-25"
 }
