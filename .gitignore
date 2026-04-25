@@ -3,8 +3,9 @@
 .serena
 .venv
 node_modules/
-local-tests/
+local-tests/output/
 *.test.local.*
 page_example/
 spec/*
 AGENTS.md
+supabase/.temp/

@@ -515,30 +515,12 @@ function lexiconApp() {
       this.error = "";
 
       try {
-        const [wordsResponse, tagsResponse, langIndexResponse] = await Promise.all([
-          fetch("./data/lang.json"),
-          fetch("./data/tags.json"),
-          fetch("./data/lang/index.json"),
-        ]);
-
-        if (!wordsResponse.ok || !tagsResponse.ok || !langIndexResponse.ok) {
-          throw new Error(
-            "Unable to load JSON data. Please use a local HTTP server to open this page.",
-          );
-        }
-
-        const [words, tags, langIndex] = await Promise.all([
-          wordsResponse.json(),
-          tagsResponse.json(),
-          langIndexResponse.json(),
-        ]);
-
-        this.languages = Array.isArray(langIndex.languages) ? langIndex.languages : [];
-        await this.loadTranslations(this.languages);
-
-        this.tags = tags.map((tag) => this.normalizeTag(tag));
+        const dataset = await this.loadAppData();
+        this.languages = dataset.languages;
+        this.translations = dataset.translations;
+        this.tags = dataset.tags.map((tag) => this.normalizeTag(tag));
         this.words = sortWordsByDescendingId(
-          words.map((word) => this.normalizeWord(word)),
+          dataset.words.map((word) => this.normalizeWord(word)),
         );
 
         this.loadPreferences();
@@ -553,6 +535,17 @@ function lexiconApp() {
 
       this.keydownHandler = this.handleKeydown.bind(this);
       window.addEventListener("keydown", this.keydownHandler);
+    },
+
+    async loadAppData() {
+      const dataApi = window.lexiconSupabaseData;
+      const supabaseClient = dataApi?.createSupabaseClient?.(window);
+
+      if (!dataApi?.loadSupabaseDataset || !supabaseClient) {
+        throw new Error("Supabase data loader is not available.");
+      }
+
+      return dataApi.loadSupabaseDataset(supabaseClient);
     },
 
     normalizeTag(tag) {
@@ -590,21 +583,6 @@ function lexiconApp() {
               : "",
         },
       };
-    },
-
-    async loadTranslations(languages) {
-      const loaded = {};
-      await Promise.all(
-        languages.map(async (language) => {
-          const response = await fetch(`./data/lang/${language.code}.json`);
-          if (!response.ok) {
-            throw new Error(`Unable to load translations for ${language.code}.`);
-          }
-          loaded[language.code] = await response.json();
-        }),
-      );
-
-      this.translations = loaded;
     },
 
     loadPreferences() {

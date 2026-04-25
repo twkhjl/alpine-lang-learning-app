@@ -1,0 +1,12 @@
+{
+  "name": "alpine-lang-learning-app",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test local-tests/*.test.js",
+    "test:e2e": "node local-tests/e2e-runner.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
