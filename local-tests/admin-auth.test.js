@@ -5,7 +5,11 @@ const {
   createAdminSupabaseClient,
   isAdminUser,
   getAdminRedirectPath,
+  getAdminAuthLoginUrl,
+  requestAdminLogin,
+  persistAdminSession,
   signInAdmin,
+  signInAdminWithUsername,
   signOutAdmin,
   getAdminSession,
   requireAdminPageAccess,
@@ -196,6 +200,191 @@ test("browser workflow helpers handle auth state and guard decisions", async () 
     reason: "ok",
     session: { user: { id: "user-1" } },
   });
+});
+
+test("username login uses worker endpoint and persists Supabase session", async () => {
+  const session = {
+    access_token: "access-token",
+    refresh_token: "refresh-token",
+    expires_in: 3600,
+    expires_at: 1777777777,
+    token_type: "bearer",
+    user: { id: "user-1" },
+  };
+  const fetchCalls = [];
+  const setSessionCalls = [];
+  const signOutCalls = [];
+
+  assert.equal(
+    getAdminAuthLoginUrl(
+      {
+        LEXICON_SUPABASE_CONFIG: {
+          adminAuthApiUrl: "https://worker.example/api/admin/auth/login",
+        },
+      },
+      {},
+    ),
+    "https://worker.example/api/admin/auth/login",
+  );
+
+  const loginResult = await requestAdminLogin(
+    {
+      LEXICON_SUPABASE_CONFIG: {
+        adminAuthApiUrl: "https://worker.example/api/admin/auth/login",
+      },
+      fetch(url, options) {
+        fetchCalls.push({ url, options });
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({ ok: true, session });
+          },
+        });
+      },
+    },
+    "admin",
+    "secret",
+  );
+
+  assert.equal(loginResult.error, null);
+  assert.deepEqual(loginResult.data, session);
+  assert.equal(fetchCalls.length, 1);
+  assert.equal(fetchCalls[0].url, "https://worker.example/api/admin/auth/login");
+  assert.deepEqual(JSON.parse(fetchCalls[0].options.body), {
+    username: "admin",
+    password: "secret",
+  });
+
+  const persistResult = await persistAdminSession(
+    {
+      auth: {
+        setSession(payload) {
+          setSessionCalls.push(payload);
+          return Promise.resolve({ data: { session }, error: null });
+        },
+      },
+    },
+    session,
+  );
+
+  assert.deepEqual(setSessionCalls, [
+    { access_token: "access-token", refresh_token: "refresh-token" },
+  ]);
+  assert.deepEqual(persistResult, { data: { session }, error: null });
+
+  const signInResult = await signInAdminWithUsername(
+    {
+      auth: {
+        setSession(payload) {
+          setSessionCalls.push(payload);
+          return Promise.resolve({ data: { session }, error: null });
+        },
+        signOut() {
+          signOutCalls.push(true);
+          return Promise.resolve({ error: null });
+        },
+      },
+    },
+    "admin",
+    "secret",
+    {
+      globalObject: {
+        LEXICON_SUPABASE_CONFIG: {
+          adminAuthApiUrl: "https://worker.example/api/admin/auth/login",
+        },
+        fetch() {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ ok: true, session });
+            },
+          });
+        },
+      },
+    },
+  );
+
+  assert.equal(signInResult.error, null);
+  assert.deepEqual(signInResult.data, session);
+  assert.equal(signOutCalls.length, 0);
+});
+
+test("username login returns generic failure when API or session write fails", async () => {
+  const failedLogin = await signInAdminWithUsername(
+    {
+      auth: {
+        setSession() {
+          return Promise.resolve({ data: null, error: null });
+        },
+        signOut() {
+          return Promise.resolve({ error: null });
+        },
+      },
+    },
+    "admin",
+    "secret",
+    {
+      globalObject: {
+        LEXICON_SUPABASE_CONFIG: {
+          adminAuthApiUrl: "https://worker.example/api/admin/auth/login",
+        },
+        fetch() {
+          return Promise.resolve({
+            ok: false,
+            json() {
+              return Promise.resolve({
+                ok: false,
+                message: "Login failed. Please check your username or password.",
+              });
+            },
+          });
+        },
+      },
+    },
+  );
+
+  assert.match(failedLogin.error.message, /Login failed/);
+
+  let signOutCalls = 0;
+  const failedSessionWrite = await signInAdminWithUsername(
+    {
+      auth: {
+        setSession() {
+          return Promise.resolve({ data: null, error: new Error("cannot persist") });
+        },
+        signOut() {
+          signOutCalls += 1;
+          return Promise.resolve({ error: null });
+        },
+      },
+    },
+    "admin",
+    "secret",
+    {
+      globalObject: {
+        LEXICON_SUPABASE_CONFIG: {
+          adminAuthApiUrl: "https://worker.example/api/admin/auth/login",
+        },
+        fetch() {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({
+                ok: true,
+                session: {
+                  access_token: "access-token",
+                  refresh_token: "refresh-token",
+                },
+              });
+            },
+          });
+        },
+      },
+    },
+  );
+
+  assert.match(failedSessionWrite.error.message, /Login failed/);
+  assert.equal(signOutCalls, 1);
 });
 
 test("getAdminSession rejects when getSession returns an error", async () => {

@@ -1,0 +1,6 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "alpine-lang-learning-app-admin-auth",
+  "main": "workers/admin-auth-worker.js",
+  "compatibility_date": "2026-04-25"
+}

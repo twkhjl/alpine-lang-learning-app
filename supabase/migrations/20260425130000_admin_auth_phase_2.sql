@@ -3,6 +3,17 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
+create extension if not exists citext;
+
+create table if not exists public.admin_accounts (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  username citext not null unique,
+  display_name text not null default '',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.member_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default '',
@@ -12,6 +23,7 @@ create table if not exists public.member_profiles (
 );
 
 alter table public.admin_users enable row level security;
+alter table public.admin_accounts enable row level security;
 alter table public.member_profiles enable row level security;
 
 drop policy if exists "Admin users can read own row" on public.admin_users;

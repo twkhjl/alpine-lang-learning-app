@@ -182,10 +182,10 @@
           <strong>LingoCMS</strong>
         </div>
         <h1>&#x7BA1;&#x7406;&#x54E1;&#x767B;&#x5165;</h1>
-        <h2>&#x4EE5; Supabase Auth &#x9A57;&#x8B49;&#x5F8C;&#x9032;&#x5165;&#x5F8C;&#x53F0;</h2>
+        <h2>以使用者名稱驗證後進入後台</h2>
         <p>
-          &#x9019;&#x500B;&#x9801;&#x9762;&#x6703;&#x4F7F;&#x7528; Supabase Auth &#x9032;&#x884C;&#x767B;&#x5165;&#x9A57;&#x8B49;&#xFF0C;&#x901A;&#x904E;&#x5F8C;&#x624D;&#x6703;&#x9032;&#x5165;&#x7BA1;&#x7406;&#x5F8C;&#x53F0;&#x3002;
-          &#x82E5;&#x5E33;&#x865F;&#x4E0D;&#x662F;&#x7BA1;&#x7406;&#x54E1;&#xFF0C;&#x7CFB;&#x7D71;&#x6703;&#x81EA;&#x52D5;&#x767B;&#x51FA;&#x4E26;&#x505C;&#x7559;&#x5728;&#x6B64;&#x9801;&#x3002;
+          這個頁面會將管理員輸入的使用者名稱與密碼送到受保護的登入 API，驗證成功後才會進入管理後台。
+          若帳號沒有管理權限，系統會自動登出並停留在此頁。
         </p>
         <div class="status-chip">&#x767B;&#x5165;&#x5B8C;&#x6210;&#x5F8C;&#x6703;&#x81EA;&#x52D5;&#x5C0E;&#x5411;&#x5F8C;&#x53F0;&#x9801;&#x9762;</div>
       </section>
@@ -197,16 +197,16 @@
           </div>
           <div style="margin-top: 22px; display: grid; gap: 6px">
             <h2>&#x7BA1;&#x7406;&#x54E1;&#x767B;&#x5165;</h2>
-            <p>&#x8ACB;&#x4F7F;&#x7528;&#x7BA1;&#x7406;&#x54E1;&#x5E33;&#x865F;&#x767B;&#x5165;&#xFF0C;&#x9A57;&#x8B49;&#x6210;&#x529F;&#x5F8C;&#x6703;&#x81EA;&#x52D5;&#x524D;&#x5F80;&#x5F8C;&#x53F0;&#x3002;</p>
+            <p>請使用管理員使用者名稱登入，驗證成功後會自動前往後台。</p>
           </div>
           <form class="login-form" action="#" method="post" novalidate>
             <div class="field">
-              <label for="admin-email">Email</label>
+              <label for="admin-username">使用者名稱</label>
               <input
-                id="admin-email"
-                name="email"
-                type="email"
-                placeholder="admin@example.com"
+                id="admin-username"
+                name="username"
+                type="text"
+                placeholder="admin"
                 autocomplete="username"
                 required
               />
@@ -229,7 +229,7 @@
             <button class="primary-button" type="submit">&#x767B;&#x5165;&#x7BA1;&#x7406;&#x54E1;</button>
           </form>
           <p id="admin-login-message" class="note" role="status" aria-live="polite">
-            &#x8ACB;&#x8F38;&#x5165;&#x7BA1;&#x7406;&#x54E1;&#x5E33;&#x865F;&#x8207;&#x5BC6;&#x78BC;&#xFF0C;&#x767B;&#x5165;&#x6210;&#x529F;&#x5F8C;&#x6703;&#x81EA;&#x52D5;&#x524D;&#x5F80;&#x5F8C;&#x53F0;&#x3002;
+            請輸入管理員使用者名稱與密碼，登入成功後會自動前往後台。
           </p>
         </div>
       </section>
@@ -239,10 +239,10 @@
     <script>
       (function () {
         const defaultMessage =
-          "\u8acb\u8f38\u5165\u7ba1\u7406\u54e1\u5e33\u865f\u8207\u5bc6\u78bc\uff0c\u767b\u5165\u6210\u529f\u5f8c\u6703\u81ea\u52d5\u524d\u5f80\u5f8c\u53f0\u3002";
+          "請輸入管理員使用者名稱與密碼，登入成功後會自動前往後台。";
         const loginMessage = document.getElementById("admin-login-message");
         const loginForm = document.querySelector(".login-form");
-        const emailInput = document.getElementById("admin-email");
+        const usernameInput = document.getElementById("admin-username");
         const passwordInput = document.getElementById("admin-password");
         const submitButton = loginForm?.querySelector('button[type="submit"]');
         const dashboardPath = "admin-dashboard.html";
@@ -264,8 +264,8 @@
               : "\u767b\u5165\u7ba1\u7406\u54e1";
           }
 
-          if (emailInput) {
-            emailInput.disabled = isBusy;
+          if (usernameInput) {
+            usernameInput.disabled = isBusy;
           }
 
           if (passwordInput) {
@@ -327,19 +327,20 @@
             setBusy(true);
             setMessage("\u6b63\u5728\u9a57\u8b49\u767b\u5165\u8cc7\u6599\uff0c\u8acb\u7a0d\u5019...", false);
 
-            const email = emailInput?.value.trim() || "";
+            const username = usernameInput?.value.trim() || "";
             const password = passwordInput?.value || "";
 
             try {
-              const signInResult = await window.lexiconAdminAuth.signInAdmin(
+              const signInResult = await window.lexiconAdminAuth.signInAdminWithUsername(
                 client,
-                email,
+                username,
                 password,
+                { globalObject: window },
               );
 
               if (signInResult?.error) {
                 setMessage(
-                  "\u767b\u5165\u5931\u6557\uff0c\u8acb\u78ba\u8A8D Email \u8207\u5bc6\u78bc\u662f\u5426\u6b63\u78ba\u3002",
+                  "登入失敗，請確認使用者名稱或密碼是否正確。",
                   true,
                 );
                 return;
@@ -352,7 +353,7 @@
               }
             } catch (error) {
               setMessage(
-                "\u767b\u5165\u5931\u6557\uff0c\u8acb\u78ba\u8A8D Email \u8207\u5bc6\u78bc\u662f\u5426\u6b63\u78ba\u3002",
+                "登入失敗，請確認使用者名稱或密碼是否正確。",
                 true,
               );
             } finally {

@@ -7,6 +7,8 @@
 
   root.lexiconAdminAuth = api;
 })(typeof window !== "undefined" ? window : globalThis, function (root) {
+  const GENERIC_ADMIN_LOGIN_ERROR = "Login failed. Please check your username or password.";
+
   function resolveGlobalObject(globalObject) {
     return globalObject || root;
   }
@@ -65,12 +67,105 @@
     return isAuthenticated ? "admin-dashboard.html" : "admin-login.html";
   }
 
+  function getAdminAuthLoginUrl(globalObject, options = {}) {
+    const activeRoot = resolveGlobalObject(globalObject);
+    const config = activeRoot.LEXICON_SUPABASE_CONFIG || {};
+
+    return options.loginUrl || config.adminAuthApiUrl || "/api/admin/auth/login";
+  }
+
+  async function requestAdminLogin(globalObject, username, password, options = {}) {
+    const activeRoot = resolveGlobalObject(globalObject);
+    const fetchImpl = options.fetch || activeRoot.fetch;
+
+    if (typeof fetchImpl !== "function") {
+      throw new Error("Fetch API is required.");
+    }
+
+    try {
+      const response = await fetchImpl(getAdminAuthLoginUrl(activeRoot, options), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      const payload = await response.json().catch(function () {
+        return null;
+      });
+
+      if (!response.ok || !payload?.ok || !payload?.session) {
+        return {
+          data: null,
+          error: new Error(payload?.message || GENERIC_ADMIN_LOGIN_ERROR),
+        };
+      }
+
+      return {
+        data: payload.session,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: new Error(GENERIC_ADMIN_LOGIN_ERROR),
+      };
+    }
+  }
+
+  async function persistAdminSession(client, session) {
+    if (!client?.auth?.setSession) {
+      throw new Error("Supabase auth client is required.");
+    }
+
+    const result = await client.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+
+    if (result?.error) {
+      throw result.error;
+    }
+
+    return result;
+  }
+
   async function signInAdmin(client, email, password) {
     if (!client?.auth?.signInWithPassword) {
       throw new Error("Supabase auth client is required.");
     }
 
     return client.auth.signInWithPassword({ email, password });
+  }
+
+  async function signInAdminWithUsername(client, username, password, options = {}) {
+    const loginResult = await requestAdminLogin(options.globalObject, username, password, options);
+
+    if (loginResult.error) {
+      return loginResult;
+    }
+
+    try {
+      await persistAdminSession(client, loginResult.data);
+
+      return {
+        data: loginResult.data,
+        error: null,
+      };
+    } catch (error) {
+      await signOutAdmin(client).catch(function () {
+        return null;
+      });
+
+      return {
+        data: null,
+        error: new Error(GENERIC_ADMIN_LOGIN_ERROR),
+      };
+    }
   }
 
   async function signOutAdmin(client) {
@@ -241,7 +336,11 @@
     createAdminSupabaseClient,
     isAdminUser,
     getAdminRedirectPath,
+    getAdminAuthLoginUrl,
+    requestAdminLogin,
+    persistAdminSession,
     signInAdmin,
+    signInAdminWithUsername,
     signOutAdmin,
     getAdminSession,
     requireAdminPageAccess,
