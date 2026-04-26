@@ -3,8 +3,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const adminPages = [
-  "admin-login.html",
+const shellApi = require("../public/assets/js/admin-shell");
+
+const shellPages = [
   "admin-dashboard.html",
   "admin-words.html",
   "admin-word-edit.html",
@@ -12,31 +13,35 @@ const adminPages = [
   "admin-tags.html",
 ];
 
-test("each admin page points at shared assets and real admin links", () => {
-  for (const file of adminPages) {
+test("shared admin nav excludes edit word from visible sidebar links", () => {
+  const links = shellApi.renderAdminNavLinks("admin-word-edit.html");
+
+  assert.deepEqual(
+    links.map((link) => link.path),
+    [
+      "admin-dashboard.html",
+      "admin-words.html",
+      "admin-assets.html",
+      "admin-tags.html",
+    ],
+  );
+  assert.equal(links.find((link) => link.navKey === "words")?.active, true);
+  assert.equal(links.some((link) => link.path === "admin-word-edit.html"), false);
+});
+
+test("admin shell pages rely on the shared sidebar placeholder", () => {
+  for (const file of shellPages) {
     const html = fs.readFileSync(path.join(process.cwd(), file), "utf8");
-    assert.match(html, /public\/assets\/css\/admin\.css/);
-    assert.match(html, /public\/assets\/js\/admin-shell\.js/);
-    if (file !== "admin-login.html") {
-      assert.match(html, /data-admin-nav="admin-dashboard\.html"/);
-      assert.match(html, /data-admin-nav="admin-words\.html"/);
-      assert.match(html, /data-admin-nav="admin-assets\.html"/);
-      assert.match(html, /data-admin-nav="admin-tags\.html"/);
-    }
+
+    assert.match(html, /data-admin-sidebar/);
+    assert.match(html, /public\/assets\/js\/admin-i18n\.js/);
+    assert.doesNotMatch(html, /data-admin-nav="admin-word-edit\.html"/);
   }
 });
 
-test("admin pages use readable copy and valid key labels", () => {
-  const wordsHtml = fs.readFileSync(path.join(process.cwd(), "admin-words.html"), "utf8");
-  const dashboardHtml = fs.readFileSync(path.join(process.cwd(), "admin-dashboard.html"), "utf8");
-  const assetsHtml = fs.readFileSync(path.join(process.cwd(), "admin-assets.html"), "utf8");
+test("login page loads shared admin i18n without sidebar shell", () => {
+  const html = fs.readFileSync(path.join(process.cwd(), "admin-login.html"), "utf8");
 
-  assert.match(wordsHtml, /字詞管理/);
-  assert.match(wordsHtml, /搜尋字詞或標籤/);
-  assert.match(wordsHtml, /建立字詞/);
-  assert.match(dashboardHtml, /aria-label="歷史紀錄"/);
-  assert.match(dashboardHtml, /最近更新的字詞/);
-  assert.match(assetsHtml, /媒體參考瀏覽/);
-  assert.match(assetsHtml, /此功能即將推出/);
-  assert.match(assetsHtml, /<button class="button primary" type="button" disabled>/);
+  assert.match(html, /public\/assets\/js\/admin-i18n\.js/);
+  assert.doesNotMatch(html, /data-admin-sidebar/);
 });

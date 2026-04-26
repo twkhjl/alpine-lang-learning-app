@@ -3,239 +3,101 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tag Management - LingoCMS</title>
+    <title>標籤管理 - LingoCMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="public/assets/css/admin.css" />
-    <style>
-      :root {
-        --bg: #f5f7fb;
-        --surface: #ffffff;
-        --surface-soft: #eef4ff;
-        --border: #d5deec;
-        --text: #10203a;
-        --muted: #5b677a;
-        --accent: #2563eb;
-        --sidebar: #0f172a;
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; font-family: "Inter", "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); }
-      .layout { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
-      .sidebar {
-        background: var(--sidebar);
-        color: #fff;
-        padding: 24px 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-      }
-      .sidebar a {
-        color: #dbeafe;
-        text-decoration: none;
-        padding: 10px 14px;
-        border-radius: 10px;
-      }
-      .sidebar a[aria-current="page"] { background: rgba(37, 99, 235, 0.22); }
-      .main { display: grid; grid-template-rows: auto 1fr; }
-      .topbar {
-        padding: 20px 28px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        background: rgba(255,255,255,0.88);
-        border-bottom: 1px solid var(--border);
-      }
-      .content { padding: 28px; display: grid; gap: 24px; }
-      .hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
-      .hero h1, .hero p { margin: 0; }
-      .button {
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #fff;
-        color: var(--text);
-        text-decoration: none;
-      }
-      .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-      .panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-      }
-      .panel-header, .panel-footer {
-        padding: 16px 18px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-      }
-      .panel-header { border-bottom: 1px solid var(--border); background: var(--surface-soft); }
-      .panel-footer { border-top: 1px solid var(--border); }
-      .filter-row { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; }
-      th { background: var(--surface-soft); color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
-      .icon-chip, .modal-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        display: inline-grid;
-        place-items: center;
-        background: #e0ebff;
-        color: var(--accent);
-        font-weight: 700;
-      }
-      .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.42);
-        display: grid;
-        place-items: center;
-        padding: 20px;
-      }
-      .modal {
-        width: min(100%, 520px);
-        background: #fff;
-        border-radius: 18px;
-        border: 1px solid var(--border);
-        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.24);
-      }
-      .modal header, .modal footer {
-        padding: 18px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-      }
-      .modal header { border-bottom: 1px solid var(--border); }
-      .modal footer { border-top: 1px solid var(--border); }
-      .modal-body { padding: 20px; display: grid; gap: 16px; }
-      .field { display: grid; gap: 8px; }
-      .field label { color: var(--muted); font-size: 13px; }
-      .field input {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-      }
-      .admin-empty-state {
-        padding: 18px;
-        border-radius: 12px;
-        border: 1px dashed var(--border);
-        background: var(--surface-soft);
-        color: var(--muted);
-        text-align: center;
-      }
-      @media (max-width: 900px) {
-        .layout { grid-template-columns: 1fr; }
-      }
-    </style>
   </head>
   <body class="admin-page" data-admin-page="admin-tags.html" style="visibility: hidden;">
-    <div class="layout">
-      <aside class="sidebar">
-        <div>
-          <strong style="font-size:24px">LingoCMS</strong>
-          <div style="color:#94a3b8; margin-top: 6px">Taxonomy Admin</div>
-        </div>
-        <a data-admin-nav="admin-dashboard.html">Dashboard</a>
-        <a data-admin-nav="admin-words.html">Words</a>
-        <a data-admin-nav="admin-word-edit.html">Edit Word</a>
-        <a data-admin-nav="admin-assets.html">Assets</a>
-        <a data-admin-nav="admin-tags.html">Tags</a>
-        <a class="button" data-admin-nav="admin-login.html" style="margin-top: auto">Logout</a>
-      </aside>
-      <div class="main">
-        <header class="topbar">
-          <div>標籤管理原型，後續接 Supabase tags CRUD</div>
-          <div>Admin User</div>
+    <div class="admin-shell">
+      <aside class="admin-sidebar" data-admin-sidebar></aside>
+      <div class="admin-content">
+        <header class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h2 data-i18n="tags.header.title">標籤管理</h2>
+            <p data-i18n="tags.header.description">維護 taxonomy 標籤與多語名稱。</p>
+          </div>
+          <div class="admin-topbar-user">
+            <span class="material-symbols-outlined">sell</span>
+            <span data-i18n="shell.userLabel">管理員</span>
+          </div>
         </header>
-        <main class="content">
-          <section class="hero">
+        <main class="admin-main">
+          <section class="admin-page-header">
             <div>
-              <h1>標籤管理</h1>
-              <p>保留 `linguistcms_1` 的高密度表格與 modal 流程，整理成產品用 taxonomy 頁面。</p>
+              <h1 data-i18n="tags.header.title">標籤管理</h1>
+              <p data-i18n="tags.header.description">維護 taxonomy 標籤與多語名稱。</p>
             </div>
-            <button class="button primary" type="button" data-tag-create>新增標籤</button>
+            <button class="admin-button" type="button" data-tag-create data-i18n="tags.actions.create">新增標籤</button>
           </section>
-          <section class="panel">
-            <div class="panel-header">
-              <div class="filter-row">
-                <span>Filter</span>
-                <span>Sort</span>
-                <span data-tags-summary>0 個標籤</span>
-              </div>
-              <div style="color: var(--muted)" data-tags-status>載入中...</div>
+
+          <section class="admin-card">
+            <div class="admin-table-footer">
+              <div class="admin-help-text" data-tags-summary>--</div>
+              <div class="admin-status-text" data-tags-status data-i18n="tags.status.loading">載入標籤中...</div>
             </div>
-            <div style="overflow:auto">
-              <table>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>Tag ID</th>
-                    <th>Icon</th>
-                    <th>中文名稱</th>
-                    <th>印尼文名稱</th>
-                    <th>英文名稱</th>
-                    <th>單字數量</th>
-                    <th style="text-align:right">操作</th>
+                    <th data-i18n="tags.table.id">ID</th>
+                    <th data-i18n="tags.table.icon">圖示</th>
+                    <th data-i18n="tags.table.zhTw">繁中</th>
+                    <th data-i18n="tags.table.idName">印尼文</th>
+                    <th data-i18n="tags.table.en">英文</th>
+                    <th data-i18n="tags.table.usage">使用數</th>
+                    <th data-i18n="tags.table.actions">操作</th>
                   </tr>
                 </thead>
                 <tbody data-tags-table-body>
                   <tr>
-                    <td colspan="7">
-                      <div class="admin-empty-state">載入中...</div>
-                    </td>
+                    <td colspan="7"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
                   </tr>
                 </tbody>
               </table>
-            </div>
-            <div class="panel-footer">
-              <a class="button" href="#">上一頁</a>
-              <div class="filter-row"><span>1</span><span>2</span><span>3</span></div>
-              <a class="button" href="#">下一頁</a>
             </div>
           </section>
         </main>
       </div>
     </div>
-    <div class="modal-backdrop" aria-hidden="true" hidden>
-      <section class="modal" aria-label="Tag editor preview">
+
+    <div class="admin-modal-backdrop" hidden>
+      <section class="admin-modal" aria-label="Tag editor">
         <header>
-          <strong data-tag-modal-title>新增 / 編輯標籤</strong>
-          <span style="color: var(--muted)">預覽</span>
+          <strong data-tag-modal-title data-i18n="tags.modal.create">新增標籤</strong>
+          <span class="admin-help-text">Taxonomy</span>
         </header>
-        <div class="modal-body">
-          <div class="field">
-            <label for="tag-id">Tag ID</label>
-            <input id="tag-id" value="" readonly />
+        <div class="admin-modal-body">
+          <div class="admin-field">
+            <label for="tag-id" data-i18n="tags.form.idReadonly">標籤 ID</label>
+            <input id="tag-id" readonly />
           </div>
-          <div class="field">
-            <label for="tag-icon">Icon</label>
-            <div style="display:flex; gap:12px; align-items:center">
-              <span class="modal-icon">F</span>
-              <input id="tag-icon" value="sell" />
-            </div>
+          <div class="admin-field">
+            <label for="tag-icon" data-i18n="tags.form.icon">圖示</label>
+            <input id="tag-icon" value="sell" />
           </div>
-          <div class="field">
-            <label for="tag-zh">中文名稱</label>
-            <input id="tag-zh" value="" />
+          <div class="admin-field">
+            <label for="tag-zh" data-i18n="tags.form.zhTw">繁中名稱</label>
+            <input id="tag-zh" />
           </div>
-          <div class="field">
-            <label for="tag-idn">印尼文名稱</label>
-            <input id="tag-idn" value="" />
+          <div class="admin-field">
+            <label for="tag-idn" data-i18n="tags.form.id">印尼文名稱</label>
+            <input id="tag-idn" />
           </div>
-          <div class="field">
-            <label for="tag-en">英文名稱</label>
-            <input id="tag-en" value="" />
+          <div class="admin-field">
+            <label for="tag-en" data-i18n="tags.form.en">英文名稱</label>
+            <input id="tag-en" />
           </div>
         </div>
         <footer>
-          <button class="button" type="button" data-tag-cancel>取消</button>
-          <button class="button primary" type="button" data-tag-save>儲存標籤</button>
+          <button class="admin-button secondary" type="button" data-tag-cancel data-i18n="tags.modal.cancel">取消</button>
+          <button class="admin-button" type="button" data-tag-save data-i18n="tags.modal.save">儲存</button>
         </footer>
       </section>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-i18n.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
     <script src="public/assets/js/admin-api.js"></script>

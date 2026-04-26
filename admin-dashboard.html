@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - LingoCMS</title>
+    <title>後台總覽 - LingoCMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -12,109 +12,55 @@
   </head>
   <body class="admin-page" data-admin-page="admin-dashboard.html" style="visibility: hidden;">
     <div class="admin-shell">
-      <aside class="admin-sidebar" aria-label="管理側欄">
-        <div class="admin-brand">
-          <h1>LingoCMS</h1>
-          <p>Lexicon admin workspace</p>
-        </div>
-
-        <nav class="admin-sidebar-nav">
-          <a class="admin-nav-link" data-admin-nav="admin-dashboard.html">
-            <span class="material-symbols-outlined">dashboard</span>
-            <span>Dashboard</span>
-          </a>
-          <a class="admin-nav-link" data-admin-nav="admin-words.html">
-            <span class="material-symbols-outlined">menu_book</span>
-            <span>Words</span>
-          </a>
-          <a class="admin-nav-link" data-admin-nav="admin-word-edit.html">
-            <span class="material-symbols-outlined">edit_square</span>
-            <span>Edit Word</span>
-          </a>
-          <a class="admin-nav-link" data-admin-nav="admin-assets.html">
-            <span class="material-symbols-outlined">perm_media</span>
-            <span>Assets</span>
-          </a>
-          <a class="admin-nav-link" data-admin-nav="admin-tags.html">
-            <span class="material-symbols-outlined">sell</span>
-            <span>Tags</span>
-          </a>
-        </nav>
-
-        <div class="admin-sidebar-footer">
-          <a class="admin-nav-link" href="#">
-            <span class="material-symbols-outlined">help</span>
-            <span>Support</span>
-          </a>
-          <a class="admin-nav-link" data-admin-nav="admin-login.html">
-            <span class="material-symbols-outlined">logout</span>
-            <span>Logout</span>
-          </a>
-        </div>
-      </aside>
-
+      <aside class="admin-sidebar" data-admin-sidebar></aside>
       <div class="admin-content">
         <header class="admin-topbar">
           <div class="admin-topbar-title">
-            <h2>Dashboard</h2>
-            <p>監看後台資料總覽、媒體缺漏與最近更新動態。</p>
+            <h2 data-i18n="dashboard.header.title">後台總覽</h2>
+            <p data-i18n="dashboard.header.description">查看字詞、標籤與媒體覆蓋情況，快速掌握後台狀態。</p>
           </div>
-
-          <div class="admin-topbar-actions">
-            <label class="admin-search" aria-label="Search">
-              <span class="material-symbols-outlined">search</span>
-              <input type="search" placeholder="搜尋字詞或標籤" />
-            </label>
-            <button class="admin-icon-button" type="button" aria-label="通知">
-              <span class="material-symbols-outlined">notifications</span>
-            </button>
-            <button class="admin-icon-button" type="button" aria-label="歷史紀錄">
-              <span class="material-symbols-outlined">history</span>
-            </button>
-            <div class="admin-avatar" aria-hidden="true">AL</div>
+          <div class="admin-topbar-user">
+            <span class="material-symbols-outlined">shield_lock</span>
+            <span data-i18n="shell.userLabel">管理員</span>
           </div>
         </header>
-
         <main class="admin-main">
           <section class="admin-page-header">
             <div>
-              <h1>Dashboard Overview</h1>
-              <p>快速確認字詞數量、標籤數量、缺圖缺音狀態，以及最近被更新的內容。</p>
+              <h1 data-i18n="dashboard.header.title">後台總覽</h1>
+              <p data-i18n="dashboard.header.description">查看字詞、標籤與媒體覆蓋情況，快速掌握後台狀態。</p>
             </div>
-            <a class="admin-button" data-admin-nav="admin-word-edit.html">
+            <a class="admin-button" data-admin-nav="admin-word-edit.html?mode=create" href="admin-word-edit.html?mode=create">
               <span class="material-symbols-outlined">add</span>
-              <span>建立字詞</span>
+              <span data-i18n="dashboard.header.primaryAction">建立字詞</span>
             </a>
           </section>
 
-          <section class="admin-grid stats" aria-label="統計卡片">
+          <section class="admin-grid stats">
             <article class="admin-card admin-stat-card">
               <div class="admin-stat-head">
-                <span>字詞總數</span>
+                <span data-i18n="dashboard.metrics.totalWords">字詞總數</span>
                 <span class="material-symbols-outlined">format_quote</span>
               </div>
               <p class="admin-stat-value" data-dashboard-total-words>--</p>
             </article>
-
             <article class="admin-card admin-stat-card">
               <div class="admin-stat-head">
-                <span>標籤總數</span>
+                <span data-i18n="dashboard.metrics.totalTags">標籤總數</span>
                 <span class="material-symbols-outlined">sell</span>
               </div>
               <p class="admin-stat-value" data-dashboard-total-tags>--</p>
             </article>
-
             <article class="admin-card admin-stat-card">
               <div class="admin-stat-head">
-                <span>缺少圖片</span>
+                <span data-i18n="dashboard.metrics.missingImage">缺少圖片</span>
                 <span class="material-symbols-outlined">image</span>
               </div>
               <p class="admin-stat-value" data-dashboard-missing-image>--</p>
             </article>
-
             <article class="admin-card admin-stat-card">
               <div class="admin-stat-head">
-                <span>缺少音檔</span>
+                <span data-i18n="dashboard.metrics.missingAudio">缺少音檔</span>
                 <span class="material-symbols-outlined">graphic_eq</span>
               </div>
               <p class="admin-stat-value" data-dashboard-missing-audio>--</p>
@@ -124,24 +70,23 @@
           <section class="admin-grid columns">
             <article class="admin-card">
               <div class="admin-section-header">
-                <h3>最近更新的字詞</h3>
-                <a class="admin-text-link" data-admin-nav="admin-words.html">前往字詞列表</a>
+                <h3 data-i18n="dashboard.recentWords.title">最近更新的字詞</h3>
+                <a class="admin-text-link" data-admin-nav="admin-words.html" data-i18n="dashboard.recentWords.viewAll">查看全部</a>
               </div>
-
-              <div style="overflow-x: auto">
+              <div class="admin-table-wrap">
                 <table class="admin-table">
                   <thead>
                     <tr>
-                      <th>字詞</th>
-                      <th>支援語言</th>
-                      <th>標籤</th>
-                      <th>音檔</th>
-                      <th>更新時間</th>
+                      <th data-i18n="dashboard.table.word">字詞</th>
+                      <th data-i18n="dashboard.recentWords.languages">支援語言</th>
+                      <th data-i18n="dashboard.table.tags">標籤</th>
+                      <th data-i18n="dashboard.table.audio">音檔</th>
+                      <th data-i18n="dashboard.table.updatedAt">更新時間</th>
                     </tr>
                   </thead>
                   <tbody data-dashboard-recent-words>
                     <tr>
-                      <td colspan="5"><div class="admin-empty-state">載入中...</div></td>
+                      <td colspan="5"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
                     </tr>
                   </tbody>
                 </table>
@@ -149,53 +94,49 @@
             </article>
 
             <aside class="admin-card admin-status-panel">
-              <div class="admin-section-header" style="padding: 0 0 8px; border-bottom: 0">
-                <h3>System Status</h3>
+              <div class="admin-section-header" style="padding: 0">
+                <h3 data-i18n="dashboard.status.title">系統狀態</h3>
               </div>
-
               <section class="admin-status-row">
                 <div class="admin-status-meta">
                   <span class="material-symbols-outlined">database</span>
                   <div>
                     <p class="admin-status-label">Supabase Database</p>
-                    <p>Lexicon read model</p>
+                    <p data-i18n="dashboard.status.description.database">Lexicon 讀取模型</p>
                   </div>
                 </div>
                 <div class="admin-status-indicator">
                   <span class="admin-dot"></span>
-                  <span>Operational</span>
+                  <span data-i18n="dashboard.status.active">運作中</span>
                 </div>
               </section>
-
               <section class="admin-status-row">
                 <div class="admin-status-meta">
                   <span class="material-symbols-outlined">shield_lock</span>
                   <div>
                     <p class="admin-status-label">Supabase Auth</p>
-                    <p>Admin session gateway</p>
+                    <p data-i18n="dashboard.status.description.auth">管理員登入與 session 驗證</p>
                   </div>
                 </div>
                 <div class="admin-status-indicator">
                   <span class="admin-dot"></span>
-                  <span>Operational</span>
+                  <span data-i18n="dashboard.status.active">運作中</span>
                 </div>
               </section>
-
               <section class="admin-status-row">
                 <div class="admin-status-meta">
                   <span class="material-symbols-outlined">api</span>
                   <div>
                     <p class="admin-status-label">Admin API</p>
-                    <p>Protected write pipeline</p>
+                    <p data-i18n="dashboard.status.description.api">受保護的寫入 API</p>
                   </div>
                 </div>
                 <div class="admin-status-indicator">
                   <span class="admin-dot warning"></span>
-                  <span>Active</span>
+                  <span data-i18n="dashboard.status.active">運作中</span>
                 </div>
               </section>
-
-              <div class="admin-status-footer" data-dashboard-status>載入中...</div>
+              <div class="admin-status-footer" data-dashboard-status data-i18n="dashboard.status.loading">載入 dashboard 中...</div>
             </aside>
           </section>
         </main>
@@ -204,6 +145,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-i18n.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
     <script src="public/assets/js/admin-api.js"></script>

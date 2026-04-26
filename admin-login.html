@@ -3,367 +3,61 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Login - LingoCMS</title>
+    <title>管理員登入 - LingoCMS</title>
     <link rel="stylesheet" href="public/assets/css/admin.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="public/assets/js/supabase-config.js"></script>
-    <style>
-      :root {
-        color-scheme: light;
-        --bg: #0f172a;
-        --panel: rgba(15, 23, 42, 0.88);
-        --panel-strong: #111827;
-        --border: rgba(148, 163, 184, 0.26);
-        --text: #e5eefc;
-        --muted: #94a3b8;
-        --accent: #3b82f6;
-        --accent-strong: #1d4ed8;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Inter", "Noto Sans TC", sans-serif;
-        background:
-          radial-gradient(circle at top left, rgba(59, 130, 246, 0.28), transparent 30%),
-          linear-gradient(135deg, #020617 0%, #0f172a 55%, #111827 100%);
-        color: var(--text);
-      }
-
-      .login-layout {
-        display: grid;
-        min-height: 100vh;
-        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 520px);
-      }
-
-      .login-brand {
-        padding: 72px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 24px;
-      }
-
-      .login-brand h1,
-      .login-brand h2,
-      .login-card h2,
-      .login-card p {
-        margin: 0;
-      }
-
-      .login-card-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 32px;
-        backdrop-filter: blur(18px);
-        background: rgba(2, 6, 23, 0.52);
-      }
-
-      .login-card {
-        width: min(100%, 420px);
-        padding: 32px;
-        border-radius: 16px;
-        border: 1px solid var(--border);
-        background: var(--panel);
-        box-shadow: 0 30px 80px rgba(2, 6, 23, 0.42);
-      }
-
-      .brand-chip,
-      .status-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: rgba(15, 23, 42, 0.5);
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .brand-mark {
-        width: 44px;
-        height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 14px;
-        background: rgba(59, 130, 246, 0.15);
-        color: #bfdbfe;
-        font-size: 22px;
-        font-weight: 700;
-      }
-
-      .login-form {
-        display: grid;
-        gap: 18px;
-        margin-top: 28px;
-      }
-
-      .field {
-        display: grid;
-        gap: 8px;
-      }
-
-      .field label {
-        font-size: 14px;
-        color: var(--muted);
-      }
-
-      .field input {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: var(--panel-strong);
-        color: var(--text);
-      }
-
-      .actions {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .primary-button {
-        width: 100%;
-        padding: 12px 16px;
-        border: 0;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-        color: #fff;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .primary-button:disabled {
-        cursor: wait;
-        opacity: 0.78;
-      }
-
-      .note {
-        margin-top: 18px;
-        padding-top: 18px;
-        border-top: 1px solid var(--border);
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.6;
-        min-height: 3.2em;
-      }
-
-      .note.is-error {
-        color: #fda4af;
-      }
-
-      @media (max-width: 960px) {
-        .login-layout {
-          grid-template-columns: 1fr;
-        }
-
-        .login-brand {
-          display: none;
-        }
-      }
-    </style>
   </head>
   <body class="admin-page admin-login-page" data-admin-page="admin-login.html">
-    <main class="login-layout">
-      <section class="login-brand" aria-label="LingoCMS admin introduction">
-        <div class="brand-chip">
-          <span class="brand-mark">L</span>
-          <strong>LingoCMS</strong>
+    <div class="admin-login-switcher">
+      <button class="admin-language-button active" type="button" data-admin-locale="zh-TW">繁中</button>
+      <button class="admin-language-button" type="button" data-admin-locale="en">EN</button>
+    </div>
+    <main class="admin-login-layout">
+      <section class="admin-login-brand">
+        <div class="admin-brand">
+          <h1>LingoCMS</h1>
+          <p data-i18n="shell.brand.tagline">Lexicon admin workspace</p>
         </div>
-        <h1>&#x7BA1;&#x7406;&#x54E1;&#x767B;&#x5165;</h1>
-        <h2>以使用者名稱驗證後進入後台</h2>
-        <p>
-          這個頁面會將管理員輸入的使用者名稱與密碼送到受保護的登入 API，驗證成功後才會進入管理後台。
-          若帳號沒有管理權限，系統會自動登出並停留在此頁。
-        </p>
-        <div class="status-chip">&#x767B;&#x5165;&#x5B8C;&#x6210;&#x5F8C;&#x6703;&#x81EA;&#x52D5;&#x5C0E;&#x5411;&#x5F8C;&#x53F0;&#x9801;&#x9762;</div>
+        <div>
+          <h1 data-i18n="login.brand.title">管理員登入</h1>
+          <h2 data-i18n="login.brand.heading">管理員工作區</h2>
+          <p data-i18n="login.brand.body">使用管理員帳密登入後，系統會透過受保護的 API 寫入 Supabase session，並驗證是否具有 admin 權限。</p>
+        </div>
+        <div class="admin-topbar-user">
+          <span class="material-symbols-outlined">lock</span>
+          <span data-i18n="login.brand.status">登入成功後會自動導向後台頁面</span>
+        </div>
       </section>
-      <section class="login-card-wrap">
-        <div class="login-card">
-          <div class="brand-chip">
-            <span class="brand-mark">L</span>
-            <strong>LingoCMS Admin</strong>
+      <section class="admin-login-card-wrap">
+        <div class="admin-login-card">
+          <div class="admin-brand">
+            <h1>LingoCMS Admin</h1>
+            <p data-i18n="login.brand.heading">管理員工作區</p>
           </div>
-          <div style="margin-top: 22px; display: grid; gap: 6px">
-            <h2>&#x7BA1;&#x7406;&#x54E1;&#x767B;&#x5165;</h2>
-            <p>請使用管理員使用者名稱登入，驗證成功後會自動前往後台。</p>
-          </div>
-          <form class="login-form" action="#" method="post" novalidate>
-            <div class="field">
-              <label for="admin-username">使用者名稱</label>
-              <input
-                id="admin-username"
-                name="username"
-                type="text"
-                placeholder="admin"
-                autocomplete="username"
-                required
-              />
+          <form class="admin-login-form" action="#" method="post" novalidate>
+            <div class="admin-field">
+              <label for="admin-username" data-i18n="login.form.username">使用者名稱</label>
+              <input id="admin-username" name="username" type="text" placeholder="admin" autocomplete="username" required />
             </div>
-            <div class="field">
-              <label for="admin-password">&#x5BC6;&#x78BC;</label>
-              <input
-                id="admin-password"
-                name="password"
-                type="password"
-                placeholder="&#x8ACB;&#x8F38;&#x5165;&#x5BC6;&#x78BC;"
-                autocomplete="current-password"
-                required
-              />
+            <div class="admin-field">
+              <label for="admin-password" data-i18n="login.form.password">密碼</label>
+              <input id="admin-password" name="password" type="password" autocomplete="current-password" required />
             </div>
-            <div class="actions">
-              <span>&#x767B;&#x5165;&#x5F8C;&#x5C07;&#x81EA;&#x52D5;&#x524D;&#x5F80;&#x5F8C;&#x53F0;</span>
-              <span style="color: #93c5fd">&#x4E0D;&#x8981;&#x76F4;&#x63A5;&#x958B;&#x555F;&#x5F8C;&#x53F0;&#x9801;&#x9762;</span>
+            <div class="admin-help-text">
+              <div data-i18n="login.actions.autoRedirect">登入後會自動前往後台首頁</div>
+              <div data-i18n="login.actions.noDirectOpen">請勿直接開啟受保護頁面</div>
             </div>
-            <button class="primary-button" type="submit">&#x767B;&#x5165;&#x7BA1;&#x7406;&#x54E1;</button>
+            <button class="admin-button" type="submit" data-i18n="login.button.submit">登入管理員</button>
           </form>
-          <p id="admin-login-message" class="note" role="status" aria-live="polite">
-            請輸入管理員使用者名稱與密碼，登入成功後會自動前往後台。
-          </p>
+          <p id="admin-login-message" class="admin-status-text" role="status" aria-live="polite" data-i18n="login.defaultMessage">請輸入管理員帳號密碼以存取後台。</p>
         </div>
       </section>
     </main>
+
+    <script src="public/assets/js/admin-i18n.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
-    <script>
-      (function () {
-        const defaultMessage =
-          "請輸入管理員使用者名稱與密碼，登入成功後會自動前往後台。";
-        const loginMessage = document.getElementById("admin-login-message");
-        const loginForm = document.querySelector(".login-form");
-        const usernameInput = document.getElementById("admin-username");
-        const passwordInput = document.getElementById("admin-password");
-        const submitButton = loginForm?.querySelector('button[type="submit"]');
-        const dashboardPath = "admin-dashboard.html";
-
-        function setMessage(text, isError) {
-          if (!loginMessage) {
-            return;
-          }
-
-          loginMessage.textContent = text || defaultMessage;
-          loginMessage.classList.toggle("is-error", Boolean(isError));
-        }
-
-        function setBusy(isBusy) {
-          if (submitButton) {
-            submitButton.disabled = isBusy;
-            submitButton.textContent = isBusy
-              ? "\u767b\u5165\u4e2d..."
-              : "\u767b\u5165\u7ba1\u7406\u54e1";
-          }
-
-          if (usernameInput) {
-            usernameInput.disabled = isBusy;
-          }
-
-          if (passwordInput) {
-            passwordInput.disabled = isBusy;
-          }
-        }
-
-        async function redirectIfAuthorized(client) {
-          const access = await window.lexiconAdminAuth.requireAdminPageAccess(client);
-
-          if (access.allowed) {
-            window.location.replace(dashboardPath);
-            return true;
-          }
-
-          if (access.reason === "unauthorized") {
-            setMessage("\u9019\u500b\u5e33\u865f\u4e0d\u662f\u7ba1\u7406\u54e1\uff0c\u5df2\u81ea\u52d5\u767b\u51fa\u3002", true);
-          }
-
-          return false;
-        }
-
-        async function bootstrap() {
-          if (!window.lexiconAdminAuth?.createAdminSupabaseClient) {
-            setMessage(
-              "\u767b\u5165\u6a21\u7d44\u5c1a\u672a\u8f09\u5165\u5b8c\u6210\uff0c\u8acb\u91cd\u65b0\u6574\u7406\u9801\u9762\u5f8c\u518d\u8a66\u3002",
-              true,
-            );
-            return;
-          }
-
-          let client;
-
-          try {
-            client = window.lexiconAdminAuth.createAdminSupabaseClient(window);
-          } catch (error) {
-            setMessage(
-              "\u7121\u6cd5\u5efa\u7acb\u767b\u5165\u9023\u7dda\uff0c\u8acb\u78ba\u8A8D Supabase \u8A2D\u5B9A\u662F\u5426\u6B63\u78BA\u3002",
-              true,
-            );
-            return;
-          }
-
-          try {
-            const alreadyAuthorized = await redirectIfAuthorized(client);
-
-            if (alreadyAuthorized) {
-              return;
-            }
-          } catch (error) {
-            setMessage(
-              "\u76EE\u524D\u7121\u6cd5\u6aa2\u67e5\u767b\u5165\u72c0\u614b\uff0c\u8acb\u7a0d\u5f8c\u518d\u8a66\u3002",
-              true,
-            );
-          }
-
-          loginForm?.addEventListener("submit", async function (event) {
-            event.preventDefault();
-            setBusy(true);
-            setMessage("\u6b63\u5728\u9a57\u8b49\u767b\u5165\u8cc7\u6599\uff0c\u8acb\u7a0d\u5019...", false);
-
-            const username = usernameInput?.value.trim() || "";
-            const password = passwordInput?.value || "";
-
-            try {
-              const signInResult = await window.lexiconAdminAuth.signInAdminWithUsername(
-                client,
-                username,
-                password,
-                { globalObject: window },
-              );
-
-              if (signInResult?.error) {
-                setMessage(
-                  "登入失敗，請確認使用者名稱或密碼是否正確。",
-                  true,
-                );
-                return;
-              }
-
-              const allowed = await redirectIfAuthorized(client);
-
-              if (!allowed) {
-                return;
-              }
-            } catch (error) {
-              setMessage(
-                "登入失敗，請確認使用者名稱或密碼是否正確。",
-                true,
-              );
-            } finally {
-              setBusy(false);
-            }
-          });
-        }
-
-        bootstrap();
-      })();
-    </script>
+    <script src="public/assets/js/admin-login.js"></script>
   </body>
 </html>

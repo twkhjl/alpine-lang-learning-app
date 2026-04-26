@@ -26,7 +26,7 @@
   }
 
   function buildEditWordUrl(wordId) {
-    return `admin-word-edit.html?id=${Number(wordId)}`;
+    return "admin-word-edit.html?id=" + Number(wordId);
   }
 
   function buildCreateWordUrl() {
@@ -38,11 +38,11 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
+      .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
-  function formatUpdatedAt(value) {
+  function formatUpdatedAt(value, locale) {
     if (!value) {
       return "-";
     }
@@ -53,7 +53,7 @@
       return "-";
     }
 
-    return date.toLocaleString("zh-TW", {
+    return date.toLocaleString(locale === "en" ? "en-US" : "zh-TW", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -62,75 +62,75 @@
     });
   }
 
-  function renderWordRow(item) {
+  function renderWordRow(item, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const locale = options.locale || "zh-TW";
     const mediaFlags = [
-      item.has_image ? "有圖片" : "無圖片",
-      item.audio_languages.length > 0 ? `音檔：${item.audio_languages.join(", ")}` : "缺少音檔",
+      item.has_image ? t("words.table.imageReady") : t("words.table.imageMissing"),
+      item.audio_languages.length > 0
+        ? t("words.table.audioReady", { languages: item.audio_languages.join(", ") })
+        : t("words.table.audioMissing"),
     ].join(" / ");
     const tagMarkup = item.tags.length
       ? item.tags.map(function (tagId) {
-          return `<span>Tag #${tagId}</span>`;
+          return "<span>Tag #" + escapeHtml(tagId) + "</span>";
         }).join("")
-      : "<span>無標籤</span>";
+      : "<span>" + escapeHtml(t("words.table.tagFallback")) + "</span>";
 
-    return `
-      <tr>
-        <td>${escapeHtml(item.id)}</td>
-        <td><span class="thumb">${item.has_image ? "IMG" : "-"}</span></td>
-        <td>${escapeHtml(item.lang_zh_tw)}</td>
-        <td>${escapeHtml(item.lang_id)}</td>
-        <td>${escapeHtml(item.lang_en)}</td>
-        <td><div class="tags">${tagMarkup}</div></td>
-        <td>${escapeHtml(mediaFlags)}</td>
-        <td>${escapeHtml(formatUpdatedAt(item.updated_at))}</td>
-        <td>
-          <div class="row-actions">
-            <a class="button" href="${escapeHtml(buildEditWordUrl(item.id))}">編輯</a>
-          </div>
-        </td>
-      </tr>
-    `.trim();
+    return [
+      "<tr>",
+      "<td>" + escapeHtml(item.id) + "</td>",
+      '<td><span class="admin-thumb">' + (item.has_image ? "IMG" : "-") + "</span></td>",
+      "<td>" + escapeHtml(item.lang_zh_tw) + "</td>",
+      "<td>" + escapeHtml(item.lang_id) + "</td>",
+      "<td>" + escapeHtml(item.lang_en) + "</td>",
+      '<td><div class="admin-tags">' + tagMarkup + "</div></td>",
+      "<td>" + escapeHtml(mediaFlags) + "</td>",
+      "<td>" + escapeHtml(formatUpdatedAt(item.updated_at, locale)) + "</td>",
+      '<td><div class="admin-row-actions"><a class="admin-button secondary" href="' + escapeHtml(buildEditWordUrl(item.id)) + '">' + escapeHtml(t("words.table.edit")) + "</a></div></td>",
+      "</tr>",
+    ].join("");
   }
 
-  function renderWordRows(items) {
+  function renderWordRows(items, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+
     if (!Array.isArray(items) || items.length === 0) {
-      return `
-        <tr>
-          <td colspan="9">
-            <div class="admin-empty-state">目前沒有符合條件的字詞。</div>
-          </td>
-        </tr>
-      `.trim();
+      return [
+        "<tr>",
+        '<td colspan="9"><div class="admin-empty-state">' + escapeHtml(t("words.table.empty")) + "</div></td>",
+        "</tr>",
+      ].join("");
     }
 
-    return items.map(renderWordRow).join("\n");
+    return items.map(function (item) {
+      return renderWordRow(item, options);
+    }).join("\n");
   }
 
   function renderPagination(state, total) {
     const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
-    const previousPage = Math.max(1, state.page - 1);
-    const nextPage = Math.min(totalPages, state.page + 1);
-
     return {
-      totalPages,
-      previousPage,
-      nextPage,
+      totalPages: totalPages,
+      previousPage: Math.max(1, state.page - 1),
+      nextPage: Math.min(totalPages, state.page + 1),
       canGoPrevious: state.page > 1,
       canGoNext: state.page < totalPages,
     };
   }
 
-  function syncTagFilterOptions(selectNode, tags) {
+  function syncTagFilterOptions(selectNode, tags, translator) {
     if (!selectNode) {
       return;
     }
 
+    const t = typeof translator === "function" ? translator : function (key) { return key; };
     const currentValue = selectNode.value;
     const options = [
-      '<option value="">全部標籤</option>',
+      '<option value="">' + escapeHtml(t("words.filters.unset")) + "</option>",
       ...tags.map(function (tag) {
-        const label = tag.translations?.["zh-TW"]?.name || tag.translations?.en?.name || `Tag #${tag.id}`;
-        return `<option value="${escapeHtml(tag.id)}">${escapeHtml(label)}</option>`;
+        const label = tag.translations?.["zh-TW"]?.name || tag.translations?.en?.name || "Tag #" + tag.id;
+        return '<option value="' + escapeHtml(tag.id) + '">' + escapeHtml(label) + "</option>";
       }),
     ];
 
@@ -152,6 +152,11 @@
       return;
     }
 
+    const translator = activeRoot.lexiconAdminI18n?.createTranslator?.(activeRoot) || {
+      locale: "zh-TW",
+      t: function (key) { return key; },
+    };
+    const t = translator.t;
     const client = pageGuard.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
     const searchInput = activeDocument.getElementById("word-search");
     const tagFilter = activeDocument.getElementById("tag-filter");
@@ -173,16 +178,16 @@
 
     try {
       const tagResult = await activeRoot.lexiconAdminApi.loadTagList(client);
-      syncTagFilterOptions(tagFilter, tagResult.data || []);
+      syncTagFilterOptions(tagFilter, tagResult.data || [], t);
     } catch (error) {
       if (statusNode) {
-        statusNode.textContent = "載入標籤失敗。";
+        statusNode.textContent = error.message || t("words.status.error");
       }
     }
 
     async function loadWords() {
       if (statusNode) {
-        statusNode.textContent = "載入中...";
+        statusNode.textContent = t("words.status.loading");
       }
 
       try {
@@ -190,17 +195,27 @@
         const pagination = renderPagination(state, result.data.total);
 
         if (tableBody) {
-          tableBody.innerHTML = renderWordRows(result.data.items);
+          tableBody.innerHTML = renderWordRows(result.data.items, {
+            locale: translator.locale,
+            t: t,
+          });
         }
 
         if (summaryNode) {
           const start = result.data.total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
           const end = Math.min(result.data.total, state.page * state.pageSize);
-          summaryNode.textContent = `顯示 ${start}-${end} 筆，共 ${result.data.total} 筆字詞`;
+          summaryNode.textContent = t("words.summary", {
+            end: end,
+            start: start,
+            total: result.data.total,
+          });
         }
 
         if (pageNode) {
-          pageNode.textContent = `${state.page} / ${pagination.totalPages}`;
+          pageNode.textContent = t("words.pagination.label", {
+            page: state.page,
+            totalPages: pagination.totalPages,
+          });
         }
 
         if (previousButton) {
@@ -212,21 +227,15 @@
         }
 
         if (statusNode) {
-          statusNode.textContent = result.data.total === 0 ? "目前沒有符合條件的字詞。" : "";
+          statusNode.textContent = result.data.total === 0 ? t("words.empty") : "";
         }
       } catch (error) {
         if (tableBody) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="9">
-                <div class="admin-empty-state">載入字詞失敗。</div>
-              </td>
-            </tr>
-          `;
+          tableBody.innerHTML = renderWordRows([], { t: t });
         }
 
         if (statusNode) {
-          statusNode.textContent = "載入字詞失敗。";
+          statusNode.textContent = error.message || t("words.status.error");
         }
       }
     }
@@ -278,12 +287,12 @@
   }
 
   return {
-    bootstrap,
-    buildCreateWordUrl,
-    buildEditWordUrl,
-    normalizeWordsPageState,
-    renderPagination,
-    renderWordRow,
-    renderWordRows,
+    bootstrap: bootstrap,
+    buildCreateWordUrl: buildCreateWordUrl,
+    buildEditWordUrl: buildEditWordUrl,
+    normalizeWordsPageState: normalizeWordsPageState,
+    renderPagination: renderPagination,
+    renderWordRow: renderWordRow,
+    renderWordRows: renderWordRows,
   };
 });

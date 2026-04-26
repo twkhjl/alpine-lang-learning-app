@@ -19,6 +19,6 @@ test("admin shell exposes the six expected routes", () => {
       "admin-login.html",
     ],
   );
-  assert.equal(getAdminPageTitle("admin-assets.html"), "Media Library");
+  assert.equal(getAdminPageTitle("admin-assets.html"), "admin.pageTitle.assets");
   assert.equal(isAdminRoute("admin-login.html"), true);
 });

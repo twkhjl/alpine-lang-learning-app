@@ -3,234 +3,99 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>媒體參考瀏覽 - LingoCMS</title>
+    <title>素材參考 - LingoCMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="public/assets/css/admin.css" />
-    <style>
-      :root {
-        --bg: #f4f7fb;
-        --surface: #ffffff;
-        --surface-soft: #eef4ff;
-        --border: #d6deea;
-        --text: #10203a;
-        --muted: #52627a;
-        --accent: #2563eb;
-        --sidebar: #0f172a;
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; font-family: "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); }
-      .layout { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
-      .sidebar {
-        padding: 24px 18px;
-        background: var(--sidebar);
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-      }
-      .sidebar a {
-        color: #dbeafe;
-        text-decoration: none;
-        padding: 10px 14px;
-        border-radius: 10px;
-      }
-      .sidebar a[aria-current="page"] { background: rgba(37, 99, 235, 0.22); }
-      .main { display: grid; grid-template-rows: auto 1fr; }
-      .topbar {
-        padding: 20px 28px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        background: rgba(255, 255, 255, 0.86);
-        border-bottom: 1px solid var(--border);
-      }
-      .content { padding: 28px; display: grid; gap: 24px; }
-      .hero { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
-      .hero h1, .hero p { margin: 0; }
-      .button {
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #fff;
-        color: var(--text);
-        text-decoration: none;
-      }
-      .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-      .button[disabled] {
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-      .toolbar, .layout-grid, .tab-row, .filter-row, .asset-grid { display: grid; gap: 16px; }
-      .panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-      }
-      .toolbar { padding: 18px; }
-      .tab-row {
-        grid-template-columns: repeat(3, minmax(0, 140px));
-        align-items: center;
-      }
-      .tab-row a {
-        text-align: center;
-        text-decoration: none;
-        padding: 10px 14px;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        color: var(--muted);
-        background: #fff;
-      }
-      .tab-row a.active {
-        color: #fff;
-        background: var(--accent);
-        border-color: var(--accent);
-      }
-      .filter-row { grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.8fr) auto; align-items: end; }
-      .field { display: grid; gap: 8px; }
-      .field label { color: var(--muted); font-size: 13px; }
-      .field input, .field select {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #fff;
-      }
-      .layout-grid { grid-template-columns: minmax(0, 1fr) 320px; }
-      .asset-canvas { padding: 18px; display: grid; gap: 24px; }
-      .asset-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .asset-card, .admin-card {
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        background: #fff;
-      }
-      .asset-card { padding: 14px; display: grid; gap: 12px; }
-      .asset-thumb, .admin-empty-state {
-        min-height: 120px;
-        display: grid;
-        place-items: center;
-        text-align: center;
-        padding: 18px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #eff6ff, #f8fbff);
-        border: 1px dashed #bfd1f8;
-        color: var(--muted);
-        word-break: break-all;
-      }
-      .asset-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 13px; }
-      .asset-path {
-        color: var(--muted);
-        font-size: 12px;
-        word-break: break-all;
-      }
-      table { width: 100%; border-collapse: collapse; overflow: hidden; }
-      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-      th { background: var(--surface-soft); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-      .drawer { padding: 18px; display: grid; gap: 18px; }
-      .drawer h2, .drawer h3 { margin: 0; }
-      .meta-block { padding: 12px 14px; border-radius: 12px; background: var(--surface-soft); display: grid; gap: 8px; color: var(--muted); }
-      @media (max-width: 1180px) {
-        .asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .layout-grid { grid-template-columns: 1fr; }
-      }
-      @media (max-width: 900px) {
-        .layout { grid-template-columns: 1fr; }
-        .filter-row { grid-template-columns: 1fr; }
-      }
-    </style>
   </head>
   <body class="admin-page" data-admin-page="admin-assets.html" style="visibility: hidden;">
-    <div class="layout">
-      <aside class="sidebar">
-        <div>
-          <strong style="font-size:24px">LingoCMS</strong>
-          <div style="color:#94a3b8; margin-top: 6px">Media References</div>
-        </div>
-        <a data-admin-nav="admin-dashboard.html">Dashboard</a>
-        <a data-admin-nav="admin-words.html">Words</a>
-        <a data-admin-nav="admin-word-edit.html">Edit Word</a>
-        <a data-admin-nav="admin-assets.html">Assets</a>
-        <a data-admin-nav="admin-tags.html">Tags</a>
-        <a class="button" data-admin-nav="admin-login.html" style="margin-top: auto">Logout</a>
-      </aside>
-      <div class="main">
-        <header class="topbar">
-          <div>僅顯示資料庫中已被字詞引用的圖片與音檔參考，不會主動探測 R2 物件。</div>
-          <div>Admin User</div>
+    <div class="admin-shell">
+      <aside class="admin-sidebar" data-admin-sidebar></aside>
+      <div class="admin-content">
+        <header class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h2 data-i18n="assets.header.title">素材參考</h2>
+            <p data-i18n="assets.header.description">瀏覽圖片與音檔引用關係，並確認資料庫中的 stored path。</p>
+          </div>
+          <div class="admin-topbar-user">
+            <span class="material-symbols-outlined">perm_media</span>
+            <span data-i18n="shell.userLabel">管理員</span>
+          </div>
         </header>
-        <main class="content">
-          <section class="hero">
+        <main class="admin-main">
+          <section class="admin-page-header">
             <div>
-              <h1>媒體參考瀏覽</h1>
-              <p>這一頁只用來查詢目前資料庫中已存的媒體路徑，顯示時維持原始 stored path，不推論也不改寫。</p>
+              <h1 data-i18n="assets.header.title">素材參考</h1>
+              <p data-i18n="assets.header.description">瀏覽圖片與音檔引用關係，並確認資料庫中的 stored path。</p>
             </div>
-            <button class="button primary" type="button" disabled>此功能即將推出</button>
+            <button class="admin-button secondary" type="button" disabled data-i18n="assets.uploadSoon">上傳功能即將推出</button>
           </section>
-          <section class="panel toolbar">
-            <div class="tab-row">
-              <a class="active" href="#" data-asset-type="">全部</a>
-              <a href="#" data-asset-type="image">圖片</a>
-              <a href="#" data-asset-type="audio">音檔</a>
+
+          <section class="admin-card" style="padding: 18px; display: grid; gap: 18px;">
+            <div class="admin-tab-row">
+              <a class="active" href="#" data-asset-type="" data-i18n="assets.tabs.all">全部</a>
+              <a href="#" data-asset-type="image" data-i18n="assets.tabs.image">圖片</a>
+              <a href="#" data-asset-type="audio" data-i18n="assets.tabs.audio">音檔</a>
             </div>
-            <div class="filter-row">
-              <div class="field">
-                <label for="asset-search">搜尋路徑或檔名</label>
-                <input id="asset-search" type="search" placeholder="例如：audios/id/meja.mp3" />
+            <div class="admin-filters" style="padding: 0; grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.8fr) auto;">
+              <div class="admin-field">
+                <label for="asset-search" data-i18n="assets.search.label">搜尋 stored path</label>
+                <input id="asset-search" type="search" data-i18n-placeholder="assets.search.placeholder" placeholder="例如 audios/id/meja.mp3" />
               </div>
-              <div class="field">
-                <label for="lang-filter">語言</label>
+              <div class="admin-field">
+                <label for="lang-filter" data-i18n="assets.language.label">語言</label>
                 <select id="lang-filter">
-                  <option value="">全部語言</option>
+                  <option value="" data-i18n="assets.language.all">全部語言</option>
                   <option value="zh-TW">zh-TW</option>
                   <option value="id">id</option>
                   <option value="en">en</option>
                 </select>
               </div>
-              <div style="color: var(--muted)" data-assets-status>載入中...</div>
+              <div class="admin-status-text" data-assets-status data-i18n="assets.status.loading">載入素材參考中...</div>
             </div>
           </section>
-          <section class="layout-grid">
-            <div class="panel asset-canvas">
-              <div class="asset-grid" data-assets-cards>
-                <div class="admin-empty-state">載入中...</div>
-              </div>
-              <div class="panel" style="overflow:auto">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>完整路徑</th>
-                      <th>語言</th>
-                      <th>類型</th>
-                      <th>被哪些字詞引用</th>
-                    </tr>
-                  </thead>
-                  <tbody data-assets-table-body>
-                    <tr>
-                      <td colspan="4"><div class="admin-empty-state">載入中...</div></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+
+          <section class="admin-asset-layout">
+            <div class="admin-stack">
+              <section class="admin-card" style="padding: 18px;">
+                <div class="admin-asset-grid" data-assets-cards>
+                  <div class="admin-empty-state" data-i18n="common.loading">載入中...</div>
+                </div>
+              </section>
+              <section class="admin-card">
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th data-i18n="assets.table.path">Stored Path</th>
+                        <th data-i18n="assets.table.language">語言</th>
+                        <th data-i18n="assets.table.type">類型</th>
+                        <th data-i18n="assets.table.references">引用字詞</th>
+                      </tr>
+                    </thead>
+                    <tbody data-assets-table-body>
+                      <tr>
+                        <td colspan="4"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
-            <aside class="panel drawer">
-              <h2>頁面規則</h2>
-              <div class="meta-block">
-                <div>圖片與音檔皆直接顯示 stored path。</div>
-                <div>不會自動補全相對路徑，也不會改寫檔名。</div>
-                <div>不會在這一階段列出 R2 bucket 真實物件。</div>
-              </div>
-              <div class="meta-block">
-                <h3>後續規劃</h3>
-                <div>受保護的上傳 API</div>
-                <div>媒體替換與刪除流程</div>
-                <div>R2 物件存在性檢查</div>
-              </div>
+
+            <aside class="admin-card admin-drawer">
+              <h2 data-i18n="assets.drawer.title">使用說明</h2>
+              <p data-i18n="assets.drawer.body1">目前顯示的是資料庫中的 stored path。</p>
+              <p data-i18n="assets.drawer.body2">你可以確認哪些字詞正在引用這個素材。</p>
+              <p data-i18n="assets.drawer.body3">這個頁面暫時不提供 R2 實體檔案管理。</p>
             </aside>
           </section>
         </main>
       </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-i18n.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
     <script src="public/assets/js/admin-api.js"></script>

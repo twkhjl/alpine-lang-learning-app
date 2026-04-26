@@ -68,23 +68,27 @@
     return payload;
   }
 
-  function buildTagOptionMarkup(tags, selectedTagIds) {
+  function buildTagOptionMarkup(tags, selectedTagIds, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
     const selected = new Set(selectedTagIds || []);
 
+    if (!Array.isArray(tags) || tags.length === 0) {
+      return '<div class="admin-empty-state">' + t("wordEdit.tags.empty") + "</div>";
+    }
+
     return tags.map(function (tag) {
-      const label = tag.translations?.["zh-TW"]?.name || tag.translations?.en?.name || `Tag #${tag.id}`;
-      return `
-        <label class="button" style="display:inline-flex; align-items:center; gap:8px;">
-          <input type="checkbox" data-tag-option value="${tag.id}" ${selected.has(tag.id) ? "checked" : ""} />
-          <span>${label}</span>
-        </label>
-      `.trim();
+      const label = tag.translations?.["zh-TW"]?.name || tag.translations?.en?.name || "Tag #" + tag.id;
+      return [
+        '<label class="admin-checkbox-chip">',
+        '<input type="checkbox" data-tag-option value="' + tag.id + '"' + (selected.has(tag.id) ? " checked" : "") + " />",
+        "<span>" + label + "</span>",
+        "</label>",
+      ].join("");
     }).join("\n");
   }
 
   function collectFormValues(doc) {
     const activeDocument = doc || root.document;
-
     return {
       image_url: activeDocument.getElementById("image-url")?.value || "",
       translations: {
@@ -114,7 +118,7 @@
     const activeDocument = doc || root.document;
     const payload = detail || createEmptyWordDetail();
 
-    activeDocument.getElementById("word-id").value = payload.id || (mode === "create" ? "建立後自動產生" : "");
+    activeDocument.getElementById("word-id").value = payload.id || (mode === "create" ? "" : "");
     activeDocument.getElementById("zh-word").value = payload.translations["zh-TW"].text || "";
     activeDocument.getElementById("id-word").value = payload.translations.id.text || "";
     activeDocument.getElementById("en-word").value = payload.translations.en.text || "";
@@ -130,13 +134,12 @@
   function setWordEditStatus(doc, message, isError) {
     const activeDocument = doc || root.document;
     const node = activeDocument.querySelector("[data-word-edit-status]");
-
     if (!node) {
       return;
     }
 
     node.textContent = message || "";
-    node.style.color = isError ? "#fca5a5" : "#94a3b8";
+    node.classList.toggle("error", Boolean(isError));
   }
 
   function setSaveDisabled(doc, disabled) {
@@ -144,6 +147,32 @@
     activeDocument.querySelectorAll("[data-word-save]").forEach(function (button) {
       button.disabled = Boolean(disabled);
     });
+  }
+
+  function setPageCopy(doc, mode, translator) {
+    const activeDocument = doc || root.document;
+    const t = typeof translator === "function" ? translator : function (key) { return key; };
+    const titleNode = activeDocument.querySelector("[data-word-edit-title]");
+    const descriptionNode = activeDocument.querySelector("[data-word-edit-description]");
+
+    if (!titleNode || !descriptionNode) {
+      return;
+    }
+
+    if (mode === "create") {
+      titleNode.textContent = t("wordEdit.header.createTitle");
+      descriptionNode.textContent = t("wordEdit.header.createDescription");
+      return;
+    }
+
+    if (mode === "invalid") {
+      titleNode.textContent = t("wordEdit.invalid.title");
+      descriptionNode.textContent = t("wordEdit.invalid.description");
+      return;
+    }
+
+    titleNode.textContent = t("wordEdit.header.editTitle");
+    descriptionNode.textContent = t("wordEdit.header.editDescription");
   }
 
   async function bootstrap(globalObject) {
@@ -155,57 +184,53 @@
     }
 
     const access = await activeRoot.lexiconAdminAuth.protectAdminPage(activeRoot);
-
     if (!access?.allowed) {
       return;
     }
 
+    const translator = activeRoot.lexiconAdminI18n?.createTranslator?.(activeRoot) || {
+      t: function (key) { return key; },
+    };
+    const t = translator.t;
     const client = access.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
     const params = parseWordEditParams(activeRoot.location?.search || "");
     const tagContainer = activeDocument.querySelector("[data-tag-options]");
-    const pageTitle = activeDocument.querySelector("[data-word-edit-title]");
     const saveButtons = activeDocument.querySelectorAll("[data-word-save]");
     const cancelButton = activeDocument.querySelector("[data-word-cancel]");
-
     let currentWordId = params.wordId;
     let currentMode = params.mode;
+
+    setPageCopy(activeDocument, currentMode, t);
 
     try {
       const tagResult = await activeRoot.lexiconAdminApi.loadTagList(client);
       if (tagContainer) {
-        tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], []);
+        tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], [], { t: t });
       }
 
       if (currentMode === "invalid") {
         applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
-        if (pageTitle) {
-          pageTitle.textContent = "無效的字詞連結";
-        }
-        setWordEditStatus(activeDocument, "無效的字詞 ID，請從字詞列表重新進入。", true);
+        setWordEditStatus(activeDocument, t("wordEdit.status.invalidId"), true);
         setSaveDisabled(activeDocument, true);
         return;
       }
 
       if (currentMode === "edit" && currentWordId) {
+        setWordEditStatus(activeDocument, t("wordEdit.status.loading"), false);
         const detailResult = await activeRoot.lexiconAdminApi.loadWordDetail(client, currentWordId);
         applyWordDetail(activeDocument, detailResult.data, currentMode);
         if (tagContainer) {
-          tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], detailResult.data.tag_ids || []);
-        }
-        if (pageTitle) {
-          pageTitle.textContent = "編輯字詞";
+          tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], detailResult.data.tag_ids || [], { t: t });
         }
       } else {
         applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
-        if (pageTitle) {
-          pageTitle.textContent = "建立字詞";
-        }
       }
 
+      setPageCopy(activeDocument, currentMode, t);
       setSaveDisabled(activeDocument, false);
-      setWordEditStatus(activeDocument, "請確認欄位後再儲存。", false);
+      setWordEditStatus(activeDocument, t("wordEdit.status.ready"), false);
     } catch (error) {
-      setWordEditStatus(activeDocument, error.message || "載入字詞資料失敗。", true);
+      setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
       setSaveDisabled(activeDocument, true);
     }
 
@@ -216,27 +241,24 @@
     saveButtons.forEach(function (button) {
       button.addEventListener("click", async function () {
         const formPayload = normalizeWordEditorPayload(collectFormValues(activeDocument));
-        setWordEditStatus(activeDocument, "儲存中...", false);
+        setWordEditStatus(activeDocument, t("common.loading"), false);
 
         try {
           let savedWord;
-
           if (currentMode === "edit" && currentWordId) {
             savedWord = await activeRoot.lexiconAdminApi.updateWord(client, currentWordId, formPayload);
           } else {
             savedWord = await activeRoot.lexiconAdminApi.createWord(client, formPayload);
             currentMode = "edit";
             currentWordId = savedWord.id;
-            activeRoot.history?.replaceState?.({}, "", `admin-word-edit.html?id=${savedWord.id}`);
+            activeRoot.history?.replaceState?.({}, "", "admin-word-edit.html?id=" + savedWord.id);
             activeDocument.getElementById("word-id").value = savedWord.id;
-            if (pageTitle) {
-              pageTitle.textContent = "編輯字詞";
-            }
           }
 
-          setWordEditStatus(activeDocument, "字詞已儲存。", false);
+          setPageCopy(activeDocument, "edit", t);
+          setWordEditStatus(activeDocument, t("wordEdit.status.saved"), false);
         } catch (error) {
-          setWordEditStatus(activeDocument, error.message || "儲存字詞失敗。", true);
+          setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
         }
       });
     });
@@ -249,14 +271,14 @@
   }
 
   return {
-    applyWordDetail,
-    bootstrap,
-    buildTagOptionMarkup,
-    collectFormValues,
-    createEmptyWordDetail,
-    normalizeWordEditorPayload,
-    parseWordEditParams,
-    setSaveDisabled,
-    setWordEditStatus,
+    applyWordDetail: applyWordDetail,
+    bootstrap: bootstrap,
+    buildTagOptionMarkup: buildTagOptionMarkup,
+    collectFormValues: collectFormValues,
+    createEmptyWordDetail: createEmptyWordDetail,
+    normalizeWordEditorPayload: normalizeWordEditorPayload,
+    parseWordEditParams: parseWordEditParams,
+    setSaveDisabled: setSaveDisabled,
+    setWordEditStatus: setWordEditStatus,
   };
 });

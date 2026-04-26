@@ -8,6 +8,16 @@ const {
   renderTagRows,
 } = require("../public/assets/js/admin-tags");
 
+const zhTranslator = function (key) {
+  const table = {
+    "tags.actions.delete": "刪除",
+    "tags.actions.edit": "編輯",
+    "tags.empty": "目前沒有標籤資料。",
+  };
+
+  return table[key] || key;
+};
+
 test("createEmptyTagDetail returns canonical empty tag shape", () => {
   const detail = createEmptyTagDetail();
   assert.equal(detail.id, null);
@@ -38,16 +48,19 @@ test("normalizeTagEditorPayload trims names and applies default icon", () => {
 });
 
 test("renderTagRow renders usage-aware actions", () => {
-  const markup = renderTagRow({
-    id: 4,
-    icon: "sell",
-    translations: {
-      "zh-TW": { name: "形容詞" },
-      id: { name: "kata sifat" },
-      en: { name: "adjective" },
+  const markup = renderTagRow(
+    {
+      id: 4,
+      icon: "sell",
+      translations: {
+        "zh-TW": { name: "形容詞" },
+        id: { name: "kata sifat" },
+        en: { name: "adjective" },
+      },
+      usage_count: 27,
     },
-    usage_count: 27,
-  });
+    { t: zhTranslator },
+  );
 
   assert.match(markup, /形容詞/);
   assert.match(markup, /data-tag-edit="4"/);
@@ -56,7 +69,7 @@ test("renderTagRow renders usage-aware actions", () => {
 });
 
 test("renderTagRows returns explicit empty state when no tags exist", () => {
-  const markup = renderTagRows([]);
-  assert.match(markup, /目前沒有標籤資料/);
+  const markup = renderTagRows([], { t: zhTranslator });
+  assert.match(markup, /目前沒有標籤資料。/);
   assert.match(markup, /colspan="7"/);
 });

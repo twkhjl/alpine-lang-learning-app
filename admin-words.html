@@ -4,282 +4,103 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>字詞管理 - LingoCMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="public/assets/css/admin.css" />
-    <style>
-      :root {
-        --bg: #f3f6fb;
-        --surface: #ffffff;
-        --surface-soft: #eef4ff;
-        --sidebar: #0f172a;
-        --sidebar-muted: #94a3b8;
-        --border: #d7dfec;
-        --text: #0f172a;
-        --muted: #475569;
-        --accent: #2563eb;
-      }
-
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: "Noto Sans TC", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-      .layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
-      .sidebar {
-        background: var(--sidebar);
-        color: #fff;
-        padding: 24px 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-      .brand h1, .brand p, .page-header h1, .page-header p { margin: 0; }
-      .brand h1 { font-size: 24px; }
-      .brand p, .sidebar-section-label, .meta-text, .filters label, .table-meta { color: var(--sidebar-muted); }
-      .nav-links { display: grid; gap: 8px; }
-      .nav-links a {
-        color: #dbe7ff;
-        text-decoration: none;
-        padding: 11px 14px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.03);
-      }
-      .nav-links a[aria-current="page"] { background: rgba(37, 99, 235, 0.22); }
-      .main { display: grid; grid-template-rows: auto 1fr; }
-      .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-        padding: 20px 28px;
-        border-bottom: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.86);
-        backdrop-filter: blur(10px);
-      }
-      .topbar .search {
-        width: min(360px, 100%);
-        padding: 11px 14px;
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        background: #fff;
-      }
-      .content { padding: 28px; display: grid; gap: 24px; }
-      .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 20px;
-      }
-      .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
-      .button {
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #fff;
-        color: var(--text);
-        text-decoration: none;
-      }
-      .button.primary {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: #fff;
-      }
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-      }
-      .filters {
-        padding: 18px;
-        display: grid;
-        grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 0.8fr)) auto;
-        gap: 14px;
-        align-items: end;
-      }
-      .filters .field { display: grid; gap: 8px; }
-      .filters input, .filters select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: #fff;
-      }
-      .table-wrap { overflow: auto; }
-      table { width: 100%; border-collapse: collapse; min-width: 1040px; }
-      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-      th { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; background: var(--surface-soft); }
-      .thumb {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #dbeafe, #eff6ff);
-        border: 1px solid #bfdbfe;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 700;
-      }
-      .tags { display: flex; gap: 8px; flex-wrap: wrap; }
-      .tags span {
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: var(--surface-soft);
-        border: 1px solid #cddcff;
-        color: var(--muted);
-        font-size: 12px;
-      }
-      .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
-      .admin-empty-state {
-        padding: 18px;
-        border-radius: 12px;
-        border: 1px dashed var(--border);
-        background: var(--surface-soft);
-        color: var(--muted);
-        text-align: center;
-      }
-      .footer {
-        padding: 16px 18px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-      }
-      .pagination { display: flex; gap: 8px; }
-      .pagination span, .pagination button {
-        width: 34px;
-        height: 34px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        color: var(--muted);
-        background: #fff;
-        cursor: pointer;
-      }
-      .pagination .active {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-      }
-      @media (max-width: 960px) {
-        .layout { grid-template-columns: 1fr; }
-        .sidebar { padding-bottom: 12px; }
-        .filters { grid-template-columns: 1fr; }
-      }
-    </style>
   </head>
   <body class="admin-page" data-admin-page="admin-words.html" style="visibility: hidden;">
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <h1>LingoCMS</h1>
-          <p>Lexicon Admin</p>
-        </div>
-        <div class="nav-links">
-          <a data-admin-nav="admin-dashboard.html">Dashboard</a>
-          <a data-admin-nav="admin-words.html">Words</a>
-          <a data-admin-nav="admin-word-edit.html">Edit Word</a>
-          <a data-admin-nav="admin-assets.html">Assets</a>
-          <a data-admin-nav="admin-tags.html">Tags</a>
-        </div>
-        <div style="margin-top: auto">
-          <a class="button" data-admin-nav="admin-login.html">Logout</a>
-        </div>
-        <div>
-          <div class="sidebar-section-label">頁面說明</div>
-          <p class="meta-text">使用瀏覽器直接讀取安全檢視資料，寫入則走受保護的 admin API。</p>
-        </div>
-      </aside>
-      <div class="main">
-        <header class="topbar">
-          <input class="search" type="search" placeholder="搜尋字詞或標籤" />
-          <div>Admin User</div>
+    <div class="admin-shell">
+      <aside class="admin-sidebar" data-admin-sidebar></aside>
+      <div class="admin-content">
+        <header class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h2 data-i18n="words.header.title">字詞管理</h2>
+            <p data-i18n="words.header.description">搜尋、篩選並管理字詞資料。</p>
+          </div>
+          <div class="admin-topbar-user">
+            <span class="material-symbols-outlined">person</span>
+            <span data-i18n="shell.userLabel">管理員</span>
+          </div>
         </header>
-        <main class="content">
-          <section class="page-header">
+        <main class="admin-main">
+          <section class="admin-page-header">
             <div>
-              <h1>字詞管理</h1>
-              <p>檢視字詞、翻譯、標籤與媒體完整度，並從列表快速進入編輯頁。</p>
+              <h1 data-i18n="words.header.title">字詞管理</h1>
+              <p data-i18n="words.header.description">搜尋、篩選並管理字詞資料。</p>
             </div>
-            <div class="button-row">
-              <a class="button" href="#" aria-disabled="true">匯出 CSV（下一步）</a>
-              <a class="button primary" data-create-word-link href="admin-word-edit.html?mode=create">建立字詞</a>
+            <div class="admin-actions">
+              <button class="admin-button secondary" type="button" disabled data-i18n="words.csvSoon">CSV 功能即將推出</button>
+              <a class="admin-button" data-create-word-link href="admin-word-edit.html?mode=create">
+                <span class="material-symbols-outlined">add</span>
+                <span data-i18n="words.create">建立字詞</span>
+              </a>
             </div>
           </section>
-          <section class="card">
-            <div class="filters">
-              <div class="field">
-                <label for="word-search">關鍵字搜尋</label>
-                <input id="word-search" type="text" placeholder="例如：桌子、meja、food" />
+
+          <section class="admin-card">
+            <div class="admin-filters">
+              <div class="admin-field">
+                <label for="word-search" data-i18n="words.filters.search">搜尋字詞或標籤</label>
+                <input id="word-search" type="text" data-i18n-placeholder="words.filters.searchPlaceholder" placeholder="例如 meja、food、桌子" />
               </div>
-              <div class="field">
-                <label for="tag-filter">標籤</label>
+              <div class="admin-field">
+                <label for="tag-filter" data-i18n="words.filters.tag">標籤</label>
                 <select id="tag-filter">
-                  <option value="">全部標籤</option>
+                  <option value="" data-i18n="words.filters.unset">全部</option>
                 </select>
               </div>
-              <div class="field">
-                <label for="image-filter">圖片</label>
+              <div class="admin-field">
+                <label for="image-filter" data-i18n="words.filters.image">圖片</label>
                 <select id="image-filter">
-                  <option value="">全部</option>
-                  <option value="true">有圖片</option>
-                  <option value="false">無圖片</option>
+                  <option value="" data-i18n="words.filters.unset">全部</option>
+                  <option value="true" data-i18n="words.filters.hasImage">有圖片</option>
+                  <option value="false" data-i18n="words.table.imageMissing">缺少圖片</option>
                 </select>
               </div>
-              <div class="field">
-                <label for="audio-filter">音檔</label>
+              <div class="admin-field">
+                <label for="audio-filter" data-i18n="words.filters.audio">音檔</label>
                 <select id="audio-filter">
-                  <option value="">全部</option>
-                  <option value="true">有音檔</option>
-                  <option value="false">缺少音檔</option>
+                  <option value="" data-i18n="words.filters.unset">全部</option>
+                  <option value="true" data-i18n="words.filters.hasAudio">有音檔</option>
+                  <option value="false" data-i18n="words.table.audioMissing">缺少音檔</option>
                 </select>
               </div>
-              <div class="field">
-                <label for="page-size-filter">每頁筆數</label>
+              <div class="admin-field">
+                <label for="page-size-filter" data-i18n="words.filters.pageSize">每頁筆數</label>
                 <select id="page-size-filter">
                   <option value="10">10</option>
                   <option value="25" selected>25</option>
                   <option value="50">50</option>
                 </select>
               </div>
-              <div class="field">
-                <label>狀態</label>
-                <div class="table-meta" data-words-status>載入中...</div>
-              </div>
+              <div class="admin-status-text" data-words-status data-i18n="words.status.loading">載入字詞中...</div>
             </div>
-            <div class="table-wrap">
-              <table>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>圖片</th>
-                    <th>繁中</th>
-                    <th>印尼文</th>
-                    <th>英文</th>
-                    <th>標籤</th>
-                    <th>媒體</th>
-                    <th>更新時間</th>
-                    <th style="text-align:right">操作</th>
+                    <th data-i18n="words.table.id">ID</th>
+                    <th data-i18n="words.table.image">圖片</th>
+                    <th data-i18n="words.table.wordZhTw">繁中</th>
+                    <th data-i18n="words.table.idText">印尼文</th>
+                    <th data-i18n="words.table.en">英文</th>
+                    <th data-i18n="words.table.tags">標籤</th>
+                    <th data-i18n="words.table.media">媒體</th>
+                    <th data-i18n="words.table.updatedAt">更新時間</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody data-words-table-body>
                   <tr>
-                    <td colspan="9">
-                      <div class="admin-empty-state">載入中...</div>
-                    </td>
+                    <td colspan="9"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <div class="footer">
-              <div class="table-meta" data-words-summary>顯示 0-0 筆，共 0 筆字詞</div>
-              <div class="pagination">
+            <div class="admin-table-footer">
+              <div class="admin-help-text" data-words-summary>--</div>
+              <div class="admin-pagination">
                 <button type="button" data-words-prev>&lt;</button>
-                <span class="active" data-words-page>1 / 1</span>
+                <span data-words-page>1 / 1</span>
                 <button type="button" data-words-next>&gt;</button>
               </div>
             </div>
@@ -287,8 +108,10 @@
         </main>
       </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="public/assets/js/supabase-config.js"></script>
+    <script src="public/assets/js/admin-i18n.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
     <script src="public/assets/js/admin-api.js"></script>

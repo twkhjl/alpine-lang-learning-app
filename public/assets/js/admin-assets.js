@@ -16,7 +16,7 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
+      .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -26,51 +26,54 @@
 
   function renderReferencedWords(words) {
     const items = Array.isArray(words) ? words : [];
-
     if (items.length === 0) {
       return "-";
     }
 
     return items.map(function (word) {
-      return escapeHtml(word.label || `#${word.id}`);
+      return escapeHtml(word.label || "#" + word.id);
     }).join(" / ");
   }
 
-  function renderAssetCards(items) {
+  function renderAssetCards(items, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+
     if (!Array.isArray(items) || items.length === 0) {
-      return '<div class="admin-empty-state">目前沒有符合條件的媒體參考。</div>';
+      return '<div class="admin-empty-state">' + escapeHtml(t("assets.empty")) + "</div>";
     }
 
     return items.map(function (item) {
-      return `
-        <article class="asset-card">
-          <div class="asset-thumb">${escapeHtml(item.path)}</div>
-          <strong>${getAssetFileName(item.path)}</strong>
-          <div class="asset-meta"><span>${renderReferencedWords(item.referenced_by_words)}</span><span>${escapeHtml(item.type)}</span></div>
-          <div class="asset-path">${escapeHtml(item.path)}</div>
-        </article>
-      `.trim();
+      return [
+        '<article class="admin-asset-card">',
+        '<div class="admin-asset-thumb">' + escapeHtml(item.path) + "</div>",
+        "<strong>" + getAssetFileName(item.path) + "</strong>",
+        '<div class="admin-asset-meta"><span>' + renderReferencedWords(item.referenced_by_words) + "</span><span>" + escapeHtml(item.type) + "</span></div>",
+        '<div class="admin-asset-path">' + escapeHtml(item.path) + "</div>",
+        "</article>",
+      ].join("");
     }).join("\n");
   }
 
-  function renderAssetTableRows(items) {
+  function renderAssetTableRows(items, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+
     if (!Array.isArray(items) || items.length === 0) {
-      return `
-        <tr>
-          <td colspan="4"><div class="admin-empty-state">目前沒有符合條件的媒體參考。</div></td>
-        </tr>
-      `.trim();
+      return [
+        "<tr>",
+        '<td colspan="4"><div class="admin-empty-state">' + escapeHtml(t("assets.empty")) + "</div></td>",
+        "</tr>",
+      ].join("");
     }
 
     return items.map(function (item) {
-      return `
-        <tr>
-          <td>${escapeHtml(item.path)}</td>
-          <td>${escapeHtml(item.language_code || "-")}</td>
-          <td>${escapeHtml(item.type)}</td>
-          <td>${renderReferencedWords(item.referenced_by_words)}</td>
-        </tr>
-      `.trim();
+      return [
+        "<tr>",
+        "<td>" + escapeHtml(item.path) + "</td>",
+        "<td>" + escapeHtml(item.language_code || "-") + "</td>",
+        "<td>" + escapeHtml(item.type) + "</td>",
+        "<td>" + renderReferencedWords(item.referenced_by_words) + "</td>",
+        "</tr>",
+      ].join("");
     }).join("\n");
   }
 
@@ -83,18 +86,21 @@
     }
 
     const access = await activeRoot.lexiconAdminAuth.protectAdminPage(activeRoot);
-
     if (!access?.allowed) {
       return;
     }
 
+    const translator = activeRoot.lexiconAdminI18n?.createTranslator?.(activeRoot) || {
+      t: function (key) { return key; },
+    };
+    const t = translator.t;
     const client = access.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
     const cardsNode = activeDocument.querySelector("[data-assets-cards]");
     const tableBody = activeDocument.querySelector("[data-assets-table-body]");
     const statusNode = activeDocument.querySelector("[data-assets-status]");
     const searchInput = activeDocument.getElementById("asset-search");
     const languageFilter = activeDocument.getElementById("lang-filter");
-    const typeTabs = Array.from(activeDocument.querySelectorAll(".tab-row a[data-asset-type]"));
+    const typeTabs = Array.from(activeDocument.querySelectorAll(".admin-tab-row a[data-asset-type]"));
     let allItems = [];
     let activeType = "";
 
@@ -116,20 +122,24 @@
       });
 
       if (cardsNode) {
-        cardsNode.innerHTML = renderAssetCards(imageItems.slice(0, 8));
+        cardsNode.innerHTML = renderAssetCards(imageItems.slice(0, 8), { t: t });
       }
 
       if (tableBody) {
-        tableBody.innerHTML = renderAssetTableRows(audioItems);
+        tableBody.innerHTML = renderAssetTableRows(audioItems, { t: t });
       }
 
       if (statusNode) {
-        statusNode.textContent = `共有 ${filteredItems.length} 筆參考，圖片 ${imageItems.length} 筆，音檔 ${audioItems.length} 筆。`;
+        statusNode.textContent = t("assets.status.loaded", {
+          audios: audioItems.length,
+          images: imageItems.length,
+          total: filteredItems.length,
+        });
       }
     }
 
     if (statusNode) {
-      statusNode.textContent = "載入中...";
+      statusNode.textContent = t("assets.status.loading");
     }
 
     try {
@@ -138,27 +148,23 @@
       renderFilteredItems();
     } catch (error) {
       if (cardsNode) {
-        cardsNode.innerHTML = renderAssetCards([]);
+        cardsNode.innerHTML = renderAssetCards([], { t: t });
       }
       if (tableBody) {
-        tableBody.innerHTML = renderAssetTableRows([]);
+        tableBody.innerHTML = renderAssetTableRows([], { t: t });
       }
       if (statusNode) {
-        statusNode.textContent = error.message || "載入媒體參考失敗。";
+        statusNode.textContent = error.message || t("assets.status.error");
       }
     }
 
     let searchTimer = null;
     searchInput?.addEventListener("input", function () {
       activeRoot.clearTimeout(searchTimer);
-      searchTimer = activeRoot.setTimeout(function () {
-        renderFilteredItems();
-      }, 150);
+      searchTimer = activeRoot.setTimeout(renderFilteredItems, 150);
     });
 
-    languageFilter?.addEventListener("change", function () {
-      renderFilteredItems();
-    });
+    languageFilter?.addEventListener("change", renderFilteredItems);
 
     typeTabs.forEach(function (tab) {
       tab.addEventListener("click", function (event) {
@@ -179,8 +185,8 @@
   }
 
   return {
-    bootstrap,
-    renderAssetCards,
-    renderAssetTableRows,
+    bootstrap: bootstrap,
+    renderAssetCards: renderAssetCards,
+    renderAssetTableRows: renderAssetTableRows,
   };
 });
