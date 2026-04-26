@@ -398,7 +398,14 @@
       return jsonApiError(request, env, 400, "VALIDATION_ERROR", error.message, error.details);
     }
 
-    return jsonApiError(request, env, 500, "SERVER_ERROR", "An unexpected error occurred.");
+    return jsonApiError(
+      request,
+      env,
+      500,
+      "SERVER_ERROR",
+      error?.message || "An unexpected error occurred.",
+      error?.details,
+    );
   }
 
   async function resolveAuthenticatedUser(fetchImpl, config, accessToken) {
