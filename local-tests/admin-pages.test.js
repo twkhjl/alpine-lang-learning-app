@@ -36,6 +36,8 @@ test("admin shell pages rely on the shared sidebar placeholder", () => {
     assert.match(html, /data-admin-sidebar/);
     assert.match(html, /public\/assets\/js\/admin-i18n\.js/);
     assert.doesNotMatch(html, /data-admin-nav="admin-word-edit\.html"/);
+    assert.doesNotMatch(html, />[^<]*\/p>/);
+    assert.doesNotMatch(html, />[^<]*\/span>/);
   }
 });
 
@@ -44,4 +46,11 @@ test("login page loads shared admin i18n without sidebar shell", () => {
 
   assert.match(html, /public\/assets\/js\/admin-i18n\.js/);
   assert.doesNotMatch(html, /data-admin-sidebar/);
+});
+
+test("admin stylesheet preserves hidden elements as non-interactive", () => {
+  const css = fs.readFileSync(path.join(process.cwd(), "public/assets/css/admin.css"), "utf8");
+
+  assert.match(css, /\[hidden\]\s*\{/);
+  assert.match(css, /display:\s*none\s*!important/);
 });
