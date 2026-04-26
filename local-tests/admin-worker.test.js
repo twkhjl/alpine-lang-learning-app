@@ -16,6 +16,58 @@ function createEnv() {
   };
 }
 
+test("worker allows origins configured as an array", async () => {
+  const env = {
+    ...createEnv(),
+    ADMIN_ALLOWED_ORIGIN: [
+      "https://admin.example.com",
+      "https://staging-admin.example.com",
+    ],
+  };
+
+  const optionsResponse = await handleRequest(
+    new Request("https://worker.example.com/api/admin/auth/login", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://staging-admin.example.com",
+      },
+    }),
+    env,
+  );
+
+  assert.equal(optionsResponse.status, 204);
+  assert.equal(
+    optionsResponse.headers.get("access-control-allow-origin"),
+    "https://staging-admin.example.com",
+  );
+
+  const postResponse = await handleRequest(
+    new Request("https://worker.example.com/api/admin/auth/login", {
+      method: "POST",
+      headers: {
+        origin: "https://staging-admin.example.com",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        username: "",
+        password: "",
+      }),
+    }),
+    env,
+    {
+      fetchImpl() {
+        throw new Error("unexpected fetch call");
+      },
+    },
+  );
+
+  assert.equal(postResponse.status, 401);
+  assert.equal(
+    postResponse.headers.get("access-control-allow-origin"),
+    "https://staging-admin.example.com",
+  );
+});
+
 test("worker allows exact configured origin for preflight and post responses", async () => {
   const env = createEnv();
 

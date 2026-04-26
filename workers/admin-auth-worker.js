@@ -23,15 +23,18 @@
   }
 
   function getAllowedOrigin(request, env = {}) {
-    const configuredOrigin = env.ADMIN_ALLOWED_ORIGIN || "*";
+      const configuredOrigins = env.ADMIN_ALLOWED_ORIGIN ?? "*";
 
-    if (configuredOrigin === "*") {
+      if (configuredOrigins === "*") {
       return "*";
     }
 
     const requestOrigin = request.headers.get("origin");
+      const allowedOrigins = Array.isArray(configuredOrigins)
+        ? configuredOrigins
+        : [configuredOrigins];
 
-    if (requestOrigin === configuredOrigin) {
+      if (allowedOrigins.includes(requestOrigin)) {
       return requestOrigin;
     }
 
