@@ -52,7 +52,7 @@ test("renderWordRow renders list row markup from API payload", () => {
 
 test("renderWordRows returns explicit empty state markup when there are no rows", () => {
   const markup = renderWordRows([]);
-  assert.match(markup, /沒有符合條件的單字/);
+  assert.match(markup, /目前沒有符合條件的字詞。/);
   assert.match(markup, /colspan="9"/);
 });
 

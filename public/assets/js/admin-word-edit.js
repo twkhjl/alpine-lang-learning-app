@@ -27,7 +27,7 @@
       return { mode: "edit", wordId: normalizedWordId };
     }
 
-    return { mode: "create", wordId: null };
+    return { mode: "invalid", wordId: null };
   }
 
   function createEmptyWordDetail() {
@@ -114,7 +114,7 @@
     const activeDocument = doc || root.document;
     const payload = detail || createEmptyWordDetail();
 
-    activeDocument.getElementById("word-id").value = payload.id || (mode === "create" ? "新增後產生" : "");
+    activeDocument.getElementById("word-id").value = payload.id || (mode === "create" ? "建立後自動產生" : "");
     activeDocument.getElementById("zh-word").value = payload.translations["zh-TW"].text || "";
     activeDocument.getElementById("id-word").value = payload.translations.id.text || "";
     activeDocument.getElementById("en-word").value = payload.translations.en.text || "";
@@ -137,6 +137,13 @@
 
     node.textContent = message || "";
     node.style.color = isError ? "#fca5a5" : "#94a3b8";
+  }
+
+  function setSaveDisabled(doc, disabled) {
+    const activeDocument = doc || root.document;
+    activeDocument.querySelectorAll("[data-word-save]").forEach(function (button) {
+      button.disabled = Boolean(disabled);
+    });
   }
 
   async function bootstrap(globalObject) {
@@ -169,6 +176,16 @@
         tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], []);
       }
 
+      if (currentMode === "invalid") {
+        applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
+        if (pageTitle) {
+          pageTitle.textContent = "無效的字詞連結";
+        }
+        setWordEditStatus(activeDocument, "無效的字詞 ID，請從字詞列表重新進入。", true);
+        setSaveDisabled(activeDocument, true);
+        return;
+      }
+
       if (currentMode === "edit" && currentWordId) {
         const detailResult = await activeRoot.lexiconAdminApi.loadWordDetail(client, currentWordId);
         applyWordDetail(activeDocument, detailResult.data, currentMode);
@@ -176,16 +193,20 @@
           tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], detailResult.data.tag_ids || []);
         }
         if (pageTitle) {
-          pageTitle.textContent = "編輯單字";
+          pageTitle.textContent = "編輯字詞";
         }
       } else {
         applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
         if (pageTitle) {
-          pageTitle.textContent = "新增單字";
+          pageTitle.textContent = "建立字詞";
         }
       }
+
+      setSaveDisabled(activeDocument, false);
+      setWordEditStatus(activeDocument, "請確認欄位後再儲存。", false);
     } catch (error) {
-      setWordEditStatus(activeDocument, error.message || "載入單字資料失敗。", true);
+      setWordEditStatus(activeDocument, error.message || "載入字詞資料失敗。", true);
+      setSaveDisabled(activeDocument, true);
     }
 
     cancelButton?.addEventListener("click", function () {
@@ -208,11 +229,14 @@
             currentWordId = savedWord.id;
             activeRoot.history?.replaceState?.({}, "", `admin-word-edit.html?id=${savedWord.id}`);
             activeDocument.getElementById("word-id").value = savedWord.id;
+            if (pageTitle) {
+              pageTitle.textContent = "編輯字詞";
+            }
           }
 
-          setWordEditStatus(activeDocument, "儲存成功。", false);
+          setWordEditStatus(activeDocument, "字詞已儲存。", false);
         } catch (error) {
-          setWordEditStatus(activeDocument, error.message || "儲存失敗。", true);
+          setWordEditStatus(activeDocument, error.message || "儲存字詞失敗。", true);
         }
       });
     });
@@ -232,6 +256,7 @@
     createEmptyWordDetail,
     normalizeWordEditorPayload,
     parseWordEditParams,
+    setSaveDisabled,
     setWordEditStatus,
   };
 });

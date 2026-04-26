@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Media Library - LingoCMS</title>
+    <title>媒體參考瀏覽 - LingoCMS</title>
     <link rel="stylesheet" href="public/assets/css/admin.css" />
     <style>
       :root {
@@ -17,7 +17,7 @@
         --sidebar: #0f172a;
       }
       * { box-sizing: border-box; }
-      body { margin: 0; font-family: "Inter", "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); }
+      body { margin: 0; font-family: "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); }
       .layout { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
       .sidebar {
         padding: 24px 18px;
@@ -41,7 +41,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        background: rgba(255,255,255,0.86);
+        background: rgba(255, 255, 255, 0.86);
         border-bottom: 1px solid var(--border);
       }
       .content { padding: 28px; display: grid; gap: 24px; }
@@ -56,6 +56,10 @@
         text-decoration: none;
       }
       .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .button[disabled] {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
       .toolbar, .layout-grid, .tab-row, .filter-row, .asset-grid { display: grid; gap: 16px; }
       .panel {
         background: var(--surface);
@@ -64,7 +68,7 @@
       }
       .toolbar { padding: 18px; }
       .tab-row {
-        grid-template-columns: repeat(2, minmax(0, 140px));
+        grid-template-columns: repeat(3, minmax(0, 140px));
         align-items: center;
       }
       .tab-row a {
@@ -81,7 +85,7 @@
         background: var(--accent);
         border-color: var(--accent);
       }
-      .filter-row { grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(160px, 0.8fr)) auto; align-items: end; }
+      .filter-row { grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.8fr) auto; align-items: end; }
       .field { display: grid; gap: 8px; }
       .field label { color: var(--muted); font-size: 13px; }
       .field input, .field select {
@@ -101,7 +105,7 @@
       }
       .asset-card { padding: 14px; display: grid; gap: 12px; }
       .asset-thumb, .admin-empty-state {
-        min-height: 160px;
+        min-height: 120px;
         display: grid;
         place-items: center;
         text-align: center;
@@ -110,10 +114,16 @@
         background: linear-gradient(135deg, #eff6ff, #f8fbff);
         border: 1px dashed #bfd1f8;
         color: var(--muted);
+        word-break: break-all;
       }
       .asset-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 13px; }
+      .asset-path {
+        color: var(--muted);
+        font-size: 12px;
+        word-break: break-all;
+      }
       table { width: 100%; border-collapse: collapse; overflow: hidden; }
-      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; }
+      th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
       th { background: var(--surface-soft); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
       .drawer { padding: 18px; display: grid; gap: 18px; }
       .drawer h2, .drawer h3 { margin: 0; }
@@ -133,7 +143,7 @@
       <aside class="sidebar">
         <div>
           <strong style="font-size:24px">LingoCMS</strong>
-          <div style="color:#94a3b8; margin-top: 6px">Media Library</div>
+          <div style="color:#94a3b8; margin-top: 6px">Media References</div>
         </div>
         <a data-admin-nav="admin-dashboard.html">Dashboard</a>
         <a data-admin-nav="admin-words.html">Words</a>
@@ -144,16 +154,16 @@
       </aside>
       <div class="main">
         <header class="topbar">
-          <div>媒體頁原型，後續接 R2 與媒體 metadata API</div>
+          <div>僅顯示資料庫中已被字詞引用的圖片與音檔參考，不會主動探測 R2 物件。</div>
           <div>Admin User</div>
         </header>
         <main class="content">
           <section class="hero">
             <div>
-              <h1>圖片與音檔管理</h1>
-              <p>保留 `linguistcms_4` 的 grid + drawer 版型，但移除外部示意圖，改成產品中性 placeholder。</p>
+              <h1>媒體參考瀏覽</h1>
+              <p>這一頁只用來查詢目前資料庫中已存的媒體路徑，顯示時維持原始 stored path，不推論也不改寫。</p>
             </div>
-            <a class="button primary" href="#">上傳資產</a>
+            <button class="button primary" type="button" disabled>此功能即將推出</button>
           </section>
           <section class="panel toolbar">
             <div class="tab-row">
@@ -163,8 +173,8 @@
             </div>
             <div class="filter-row">
               <div class="field">
-                <label for="asset-search">搜尋資產</label>
-                <input id="asset-search" type="search" placeholder="搜尋檔名、語言或關聯單字" />
+                <label for="asset-search">搜尋路徑或檔名</label>
+                <input id="asset-search" type="search" placeholder="例如：audios/id/meja.mp3" />
               </div>
               <div class="field">
                 <label for="lang-filter">語言</label>
@@ -175,17 +185,8 @@
                   <option value="en">en</option>
                 </select>
               </div>
-              <div class="field">
-                <label for="bind-filter">綁定狀態</label>
-                <select id="bind-filter">
-                  <option>全部</option>
-                  <option>已綁定單字</option>
-                  <option>尚未綁定</option>
-                </select>
-              </div>
-              <a class="button" href="#">更多篩選</a>
+              <div style="color: var(--muted)" data-assets-status>載入中...</div>
             </div>
-            <div style="color: var(--muted)" data-assets-status>載入中...</div>
           </section>
           <section class="layout-grid">
             <div class="panel asset-canvas">
@@ -196,10 +197,10 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>檔名</th>
+                      <th>完整路徑</th>
                       <th>語言</th>
                       <th>類型</th>
-                      <th>關聯單字</th>
+                      <th>被哪些字詞引用</th>
                     </tr>
                   </thead>
                   <tbody data-assets-table-body>
@@ -211,21 +212,17 @@
               </div>
             </div>
             <aside class="panel drawer">
-              <h2>資產詳情</h2>
-              <div class="admin-card admin-empty-state">
-                <p>Preview placeholder for connected R2 assets.</p>
+              <h2>頁面規則</h2>
+              <div class="meta-block">
+                <div>圖片與音檔皆直接顯示 stored path。</div>
+                <div>不會自動補全相對路徑，也不會改寫檔名。</div>
+                <div>不會在這一階段列出 R2 bucket 真實物件。</div>
               </div>
               <div class="meta-block">
-                <div>類型：JPEG / MP3</div>
-                <div>尺寸：依檔案 metadata 顯示</div>
-                <div>上傳來源：Cloudflare R2</div>
-                <div>綁定單字：桌子 / meja</div>
-              </div>
-              <div class="meta-block">
-                <h3>操作</h3>
-                <div>複製路徑</div>
-                <div>替換資產</div>
-                <div>移除綁定</div>
+                <h3>後續規劃</h3>
+                <div>受保護的上傳 API</div>
+                <div>媒體替換與刪除流程</div>
+                <div>R2 物件存在性檢查</div>
               </div>
             </aside>
           </section>

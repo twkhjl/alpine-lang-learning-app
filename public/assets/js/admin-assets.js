@@ -38,7 +38,7 @@
 
   function renderAssetCards(items) {
     if (!Array.isArray(items) || items.length === 0) {
-      return '<div class="admin-empty-state">目前沒有符合條件的資產參考。</div>';
+      return '<div class="admin-empty-state">目前沒有符合條件的媒體參考。</div>';
     }
 
     return items.map(function (item) {
@@ -47,6 +47,7 @@
           <div class="asset-thumb">${escapeHtml(item.path)}</div>
           <strong>${getAssetFileName(item.path)}</strong>
           <div class="asset-meta"><span>${renderReferencedWords(item.referenced_by_words)}</span><span>${escapeHtml(item.type)}</span></div>
+          <div class="asset-path">${escapeHtml(item.path)}</div>
         </article>
       `.trim();
     }).join("\n");
@@ -56,7 +57,7 @@
     if (!Array.isArray(items) || items.length === 0) {
       return `
         <tr>
-          <td colspan="4"><div class="admin-empty-state">目前沒有符合條件的資產參考。</div></td>
+          <td colspan="4"><div class="admin-empty-state">目前沒有符合條件的媒體參考。</div></td>
         </tr>
       `.trim();
     }
@@ -64,7 +65,7 @@
     return items.map(function (item) {
       return `
         <tr>
-          <td>${getAssetFileName(item.path)}</td>
+          <td>${escapeHtml(item.path)}</td>
           <td>${escapeHtml(item.language_code || "-")}</td>
           <td>${escapeHtml(item.type)}</td>
           <td>${renderReferencedWords(item.referenced_by_words)}</td>
@@ -123,7 +124,7 @@
       }
 
       if (statusNode) {
-        statusNode.textContent = `符合條件 ${filteredItems.length} 筆，圖片 ${imageItems.length} 筆，音檔 ${audioItems.length} 筆`;
+        statusNode.textContent = `共有 ${filteredItems.length} 筆參考，圖片 ${imageItems.length} 筆，音檔 ${audioItems.length} 筆。`;
       }
     }
 
@@ -143,7 +144,7 @@
         tableBody.innerHTML = renderAssetTableRows([]);
       }
       if (statusNode) {
-        statusNode.textContent = error.message || "載入資產失敗。";
+        statusNode.textContent = error.message || "載入媒體參考失敗。";
       }
     }
 

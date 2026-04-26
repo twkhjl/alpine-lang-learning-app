@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Word Management - LingoCMS</title>
+    <title>字詞管理 - LingoCMS</title>
     <link rel="stylesheet" href="public/assets/css/admin.css" />
     <style>
       :root {
@@ -16,13 +16,12 @@
         --text: #0f172a;
         --muted: #475569;
         --accent: #2563eb;
-        --danger: #dc2626;
       }
 
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: "Inter", "Noto Sans TC", sans-serif;
+        font-family: "Noto Sans TC", sans-serif;
         background: var(--bg);
         color: var(--text);
       }
@@ -47,10 +46,7 @@
         background: rgba(255, 255, 255, 0.03);
       }
       .nav-links a[aria-current="page"] { background: rgba(37, 99, 235, 0.22); }
-      .main {
-        display: grid;
-        grid-template-rows: auto 1fr;
-      }
+      .main { display: grid; grid-template-rows: auto 1fr; }
       .topbar {
         display: flex;
         align-items: center;
@@ -58,7 +54,7 @@
         gap: 18px;
         padding: 20px 28px;
         border-bottom: 1px solid var(--border);
-        background: rgba(255,255,255,0.86);
+        background: rgba(255, 255, 255, 0.86);
         backdrop-filter: blur(10px);
       }
       .topbar .search {
@@ -136,13 +132,6 @@
         font-size: 12px;
       }
       .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
-      .row-actions button {
-        padding: 8px 10px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        background: #fff;
-      }
-      .row-actions .danger { color: var(--danger); }
       .admin-empty-state {
         padding: 18px;
         border-radius: 12px;
@@ -159,7 +148,7 @@
         gap: 12px;
       }
       .pagination { display: flex; gap: 8px; }
-      .pagination span, .pagination a, .pagination button {
+      .pagination span, .pagination button {
         width: 34px;
         height: 34px;
         display: inline-flex;
@@ -167,7 +156,6 @@
         justify-content: center;
         border: 1px solid var(--border);
         border-radius: 10px;
-        text-decoration: none;
         color: var(--muted);
         background: #fff;
         cursor: pointer;
@@ -202,24 +190,24 @@
           <a class="button" data-admin-nav="admin-login.html">Logout</a>
         </div>
         <div>
-          <div class="sidebar-section-label">原型狀態</div>
-          <p class="meta-text">列表與搜尋 UI 已就位，後續再接 Supabase list query 與刪除流程。</p>
+          <div class="sidebar-section-label">頁面說明</div>
+          <p class="meta-text">使用瀏覽器直接讀取安全檢視資料，寫入則走受保護的 admin API。</p>
         </div>
       </aside>
       <div class="main">
         <header class="topbar">
-          <input class="search" type="search" placeholder="搜尋單字、翻譯或標籤" />
+          <input class="search" type="search" placeholder="搜尋字詞或標籤" />
           <div>Admin User</div>
         </header>
         <main class="content">
           <section class="page-header">
             <div>
-              <h1>單字管理</h1>
-              <p>延用 `linguistcms_6` 的高密度表格結構，整理成可接後台資料流的列表頁。</p>
+              <h1>字詞管理</h1>
+              <p>檢視字詞、翻譯、標籤與媒體完整度，並從列表快速進入編輯頁。</p>
             </div>
             <div class="button-row">
-              <a class="button" href="#">匯入 CSV</a>
-              <a class="button primary" data-create-word-link href="admin-word-edit.html?mode=create">新增單字</a>
+              <a class="button" href="#" aria-disabled="true">匯出 CSV（下一步）</a>
+              <a class="button primary" data-create-word-link href="admin-word-edit.html?mode=create">建立字詞</a>
             </div>
           </section>
           <section class="card">
@@ -273,7 +261,7 @@
                     <th>印尼文</th>
                     <th>英文</th>
                     <th>標籤</th>
-                    <th>音檔</th>
+                    <th>媒體</th>
                     <th>更新時間</th>
                     <th style="text-align:right">操作</th>
                   </tr>
@@ -288,7 +276,7 @@
               </table>
             </div>
             <div class="footer">
-              <div class="table-meta" data-words-summary>顯示 0-0 筆，共 0 筆單字</div>
+              <div class="table-meta" data-words-summary>顯示 0-0 筆，共 0 筆字詞</div>
               <div class="pagination">
                 <button type="button" data-words-prev>&lt;</button>
                 <span class="active" data-words-page>1 / 1</span>

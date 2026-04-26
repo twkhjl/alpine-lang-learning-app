@@ -18,6 +18,16 @@ test("parseWordEditParams supports create and edit modes from query params", () 
     mode: "edit",
     wordId: 28,
   });
+
+  assert.deepEqual(parseWordEditParams("?id=abc"), {
+    mode: "invalid",
+    wordId: null,
+  });
+
+  assert.deepEqual(parseWordEditParams("?id=-1"), {
+    mode: "invalid",
+    wordId: null,
+  });
 });
 
 test("createEmptyWordDetail returns the canonical empty editor shape", () => {

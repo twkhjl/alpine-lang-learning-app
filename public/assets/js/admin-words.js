@@ -64,8 +64,8 @@
 
   function renderWordRow(item) {
     const mediaFlags = [
-      item.has_image ? "圖片" : "無圖",
-      item.audio_languages.length > 0 ? item.audio_languages.join(", ") : "缺音檔",
+      item.has_image ? "有圖片" : "無圖片",
+      item.audio_languages.length > 0 ? `音檔：${item.audio_languages.join(", ")}` : "缺少音檔",
     ].join(" / ");
     const tagMarkup = item.tags.length
       ? item.tags.map(function (tagId) {
@@ -97,7 +97,7 @@
       return `
         <tr>
           <td colspan="9">
-            <div class="admin-empty-state">沒有符合條件的單字。</div>
+            <div class="admin-empty-state">目前沒有符合條件的字詞。</div>
           </td>
         </tr>
       `.trim();
@@ -196,7 +196,7 @@
         if (summaryNode) {
           const start = result.data.total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
           const end = Math.min(result.data.total, state.page * state.pageSize);
-          summaryNode.textContent = `顯示 ${start}-${end} 筆，共 ${result.data.total} 筆`;
+          summaryNode.textContent = `顯示 ${start}-${end} 筆，共 ${result.data.total} 筆字詞`;
         }
 
         if (pageNode) {
@@ -212,21 +212,21 @@
         }
 
         if (statusNode) {
-          statusNode.textContent = result.data.total === 0 ? "目前沒有符合條件的資料。" : "";
+          statusNode.textContent = result.data.total === 0 ? "目前沒有符合條件的字詞。" : "";
         }
       } catch (error) {
         if (tableBody) {
           tableBody.innerHTML = `
             <tr>
               <td colspan="9">
-                <div class="admin-empty-state">載入單字失敗。</div>
+                <div class="admin-empty-state">載入字詞失敗。</div>
               </td>
             </tr>
           `;
         }
 
         if (statusNode) {
-          statusNode.textContent = "載入單字失敗。";
+          statusNode.textContent = "載入字詞失敗。";
         }
       }
     }

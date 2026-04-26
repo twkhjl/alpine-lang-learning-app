@@ -22,5 +22,5 @@ test("renderRecentWordsRows renders recent word table markup", () => {
 
 test("renderRecentWordsRows returns explicit empty state", () => {
   const markup = renderRecentWordsRows([]);
-  assert.match(markup, /目前沒有最近更新資料/);
+  assert.match(markup, /目前沒有最近更新的字詞。/);
 });

@@ -24,7 +24,7 @@
     if (!Array.isArray(items) || items.length === 0) {
       return `
         <tr>
-          <td colspan="5"><div class="admin-empty-state">目前沒有最近更新資料。</div></td>
+          <td colspan="5"><div class="admin-empty-state">目前沒有最近更新的字詞。</div></td>
         </tr>
       `.trim();
     }
@@ -35,7 +35,7 @@
           <td><strong>${escapeHtml(item.lang_zh_tw || item.lang_id || item.lang_en)}</strong><div class="admin-table-meta">${escapeHtml(item.lang_id || item.lang_en || "")}</div></td>
           <td>zh-TW / id / en</td>
           <td>${escapeHtml((item.tags || []).join(", ") || "無標籤")}</td>
-          <td>${escapeHtml(item.audio_languages?.length ? "有音檔" : "缺音檔")}</td>
+          <td>${escapeHtml(item.audio_languages?.length ? "有音檔" : "缺少音檔")}</td>
           <td>${escapeHtml(item.updated_at || "-")}</td>
         </tr>
       `.trim();
