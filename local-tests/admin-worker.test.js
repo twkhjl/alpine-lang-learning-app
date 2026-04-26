@@ -68,6 +68,81 @@ test("worker allows origins configured as an array", async () => {
   );
 });
 
+test("worker normalizes configured origins before matching request origin", async () => {
+  const env = {
+    ...createEnv(),
+    ADMIN_ALLOWED_ORIGIN: [
+      " https://admin.example.com/portal ",
+      "https://staging-admin.example.com:443/login?mode=preview#top",
+    ],
+  };
+
+  const optionsResponse = await handleRequest(
+    new Request("https://worker.example.com/api/admin/auth/login", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://staging-admin.example.com",
+      },
+    }),
+    env,
+  );
+
+  assert.equal(optionsResponse.status, 204);
+  assert.equal(
+    optionsResponse.headers.get("access-control-allow-origin"),
+    "https://staging-admin.example.com",
+  );
+
+  const postResponse = await handleRequest(
+    new Request("https://worker.example.com/api/admin/auth/login", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        username: "",
+        password: "",
+      }),
+    }),
+    env,
+    {
+      fetchImpl() {
+        throw new Error("unexpected fetch call");
+      },
+    },
+  );
+
+  assert.equal(postResponse.status, 401);
+  assert.equal(
+    postResponse.headers.get("access-control-allow-origin"),
+    "https://admin.example.com",
+  );
+});
+
+test("worker ignores invalid configured origins instead of matching them loosely", async () => {
+  const env = {
+    ...createEnv(),
+    ADMIN_ALLOWED_ORIGIN: [
+      "not-a-url",
+      "https://admin.example.com/path",
+    ],
+  };
+
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/auth/login", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://evil.example.com",
+      },
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+});
+
 test("worker allows exact configured origin for preflight and post responses", async () => {
   const env = createEnv();
 

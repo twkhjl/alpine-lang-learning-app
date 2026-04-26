@@ -22,19 +22,39 @@
     return deps.fetchImpl || root.fetch;
   }
 
-  function getAllowedOrigin(request, env = {}) {
-      const configuredOrigins = env.ADMIN_ALLOWED_ORIGIN ?? "*";
+  function normalizeOrigin(value) {
+    if (typeof value !== "string") {
+      return null;
+    }
 
-      if (configuredOrigins === "*") {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      return null;
+    }
+
+    try {
+      return new URL(trimmedValue).origin;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function getAllowedOrigin(request, env = {}) {
+    const configuredOrigins = env.ADMIN_ALLOWED_ORIGIN ?? "*";
+
+    if (configuredOrigins === "*") {
       return "*";
     }
 
-    const requestOrigin = request.headers.get("origin");
-      const allowedOrigins = Array.isArray(configuredOrigins)
-        ? configuredOrigins
-        : [configuredOrigins];
+    const requestOrigin = normalizeOrigin(request.headers.get("origin"));
+    const allowedOrigins = (Array.isArray(configuredOrigins)
+      ? configuredOrigins
+      : [configuredOrigins])
+      .map(normalizeOrigin)
+      .filter(Boolean);
 
-      if (allowedOrigins.includes(requestOrigin)) {
+    if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
       return requestOrigin;
     }
 
