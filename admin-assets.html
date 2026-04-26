@@ -157,8 +157,9 @@
           </section>
           <section class="panel toolbar">
             <div class="tab-row">
-              <a class="active" href="#">圖片</a>
-              <a href="#">音檔</a>
+              <a class="active" href="#" data-asset-type="">全部</a>
+              <a href="#" data-asset-type="image">圖片</a>
+              <a href="#" data-asset-type="audio">音檔</a>
             </div>
             <div class="filter-row">
               <div class="field">
@@ -168,10 +169,10 @@
               <div class="field">
                 <label for="lang-filter">語言</label>
                 <select id="lang-filter">
-                  <option>全部語言</option>
-                  <option>zh-TW</option>
-                  <option>id</option>
-                  <option>en</option>
+                  <option value="">全部語言</option>
+                  <option value="zh-TW">zh-TW</option>
+                  <option value="id">id</option>
+                  <option value="en">en</option>
                 </select>
               </div>
               <div class="field">
@@ -184,32 +185,12 @@
               </div>
               <a class="button" href="#">更多篩選</a>
             </div>
+            <div style="color: var(--muted)" data-assets-status>載入中...</div>
           </section>
           <section class="layout-grid">
             <div class="panel asset-canvas">
-              <div class="asset-grid">
-                <article class="asset-card">
-                  <div class="asset-thumb">imgs/202604120952.jpg</div>
-                  <strong>202604120952.jpg</strong>
-                  <div class="asset-meta"><span>1024 x 1024</span><span>2026-04-24</span></div>
-                </article>
-                <article class="asset-card">
-                  <div class="asset-thumb">imgs/202604121015.jpg</div>
-                  <strong>202604121015.jpg</strong>
-                  <div class="asset-meta"><span>800 x 800</span><span>2026-04-24</span></div>
-                </article>
-                <article class="asset-card">
-                  <div class="asset-thumb">imgs/202604121038.jpg</div>
-                  <strong>202604121038.jpg</strong>
-                  <div class="asset-meta"><span>768 x 768</span><span>2026-04-23</span></div>
-                </article>
-                <article class="asset-card">
-                  <div class="admin-card admin-empty-state">
-                    <p>Preview placeholder for connected R2 assets.</p>
-                  </div>
-                  <strong>新增圖片入口</strong>
-                  <div class="asset-meta"><span>拖拉或選擇檔案</span><span>待接上傳</span></div>
-                </article>
+              <div class="asset-grid" data-assets-cards>
+                <div class="admin-empty-state">載入中...</div>
               </div>
               <div class="panel" style="overflow:auto">
                 <table>
@@ -217,28 +198,13 @@
                     <tr>
                       <th>檔名</th>
                       <th>語言</th>
-                      <th>長度</th>
-                      <th>大小</th>
+                      <th>類型</th>
                       <th>關聯單字</th>
-                      <th style="text-align:right">操作</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody data-assets-table-body>
                     <tr>
-                      <td>audios/zh-TW/桌子.mp3</td>
-                      <td>zh-TW</td>
-                      <td>00:02</td>
-                      <td>8.6 KB</td>
-                      <td>桌子</td>
-                      <td style="text-align:right">預覽 / 複製 / 替換</td>
-                    </tr>
-                    <tr>
-                      <td>audios/id/meja.mp3</td>
-                      <td>id</td>
-                      <td>00:02</td>
-                      <td>7.1 KB</td>
-                      <td>meja</td>
-                      <td style="text-align:right">預覽 / 複製 / 替換</td>
+                      <td colspan="4"><div class="admin-empty-state">載入中...</div></td>
                     </tr>
                   </tbody>
                 </table>
@@ -270,10 +236,7 @@
     <script src="public/assets/js/supabase-config.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
-    <script>
-      (function () {
-        window.lexiconAdminAuth.protectAdminPage(window);
-      })();
-    </script>
+    <script src="public/assets/js/admin-api.js"></script>
+    <script src="public/assets/js/admin-assets.js"></script>
   </body>
 </html>

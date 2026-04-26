@@ -40,6 +40,12 @@ values
   (27, '')
 on conflict (id) do update set image_url = excluded.image_url;
 
+select setval(
+  pg_get_serial_sequence('public.words', 'id'),
+  greatest(coalesce((select max(id) from public.words), 1), 1),
+  true
+);
+
 insert into public.tags (id, icon)
 values
   (1, 'sell'),
@@ -47,6 +53,12 @@ values
   (3, 'sell'),
   (4, 'sell')
 on conflict (id) do update set icon = excluded.icon;
+
+select setval(
+  pg_get_serial_sequence('public.tags', 'id'),
+  greatest(coalesce((select max(id) from public.tags), 1), 1),
+  true
+);
 
 insert into public.word_translations (word_id, language_code, text, pronunciation, audio_filename)
 values

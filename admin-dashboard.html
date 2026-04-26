@@ -100,7 +100,7 @@
                 <span class="material-symbols-outlined">format_quote</span>
               </div>
               <div>
-                <p class="admin-stat-value">12,482</p>
+                <p class="admin-stat-value" data-dashboard-total-words>--</p>
                 <div class="admin-stat-trend">
                   <span class="material-symbols-outlined">trending_up</span>
                   <span>本週 +4.2%</span>
@@ -114,7 +114,7 @@
                 <span class="material-symbols-outlined">sell</span>
               </div>
               <div>
-                <p class="admin-stat-value">340</p>
+                <p class="admin-stat-value" data-dashboard-total-tags>--</p>
                 <div class="admin-stat-trend" style="color: var(--admin-text-muted)">
                   <span class="material-symbols-outlined">remove</span>
                   <span>結構穩定</span>
@@ -124,14 +124,14 @@
 
             <article class="admin-card admin-stat-card">
               <div class="admin-stat-head">
-                <span>已上傳圖片</span>
+                <span>缺少圖片</span>
                 <span class="material-symbols-outlined">image</span>
               </div>
               <div>
-                <p class="admin-stat-value">8,910</p>
+                <p class="admin-stat-value" data-dashboard-missing-image>--</p>
                 <div class="admin-stat-trend">
                   <span class="material-symbols-outlined">trending_up</span>
-                  <span>今日 +120</span>
+                  <span>image_url 為空的單字</span>
                 </div>
               </div>
             </article>
@@ -142,10 +142,10 @@
                 <span class="material-symbols-outlined">graphic_eq</span>
               </div>
               <div>
-                <p class="admin-stat-value">11,204</p>
+                <p class="admin-stat-value" data-dashboard-missing-audio>--</p>
                 <div class="admin-stat-trend">
                   <span class="material-symbols-outlined">trending_up</span>
-                  <span>今日 +54</span>
+                  <span>缺少音檔的單字</span>
                 </div>
               </div>
             </article>
@@ -169,84 +169,9 @@
                       <th>更新時間</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody data-dashboard-recent-words>
                     <tr>
-                      <td>
-                        <strong>桌子</strong>
-                        <div class="admin-table-meta">meja</div>
-                      </td>
-                      <td>zh-TW / id</td>
-                      <td>
-                        <div class="admin-pill-list">
-                          <span class="admin-pill">家具</span>
-                          <span class="admin-pill">名詞</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="admin-media-flags">
-                          <span class="material-symbols-outlined">image</span>
-                          <span class="material-symbols-outlined">volume_up</span>
-                        </div>
-                      </td>
-                      <td>2 分鐘前</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>好</strong>
-                        <div class="admin-table-meta">bagus</div>
-                      </td>
-                      <td>zh-TW / id</td>
-                      <td>
-                        <div class="admin-pill-list">
-                          <span class="admin-pill">日常</span>
-                          <span class="admin-pill">形容詞</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="admin-media-flags">
-                          <span class="material-symbols-outlined">image</span>
-                          <span class="material-symbols-outlined">volume_up</span>
-                        </div>
-                      </td>
-                      <td>15 分鐘前</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>困惑</strong>
-                        <div class="admin-table-meta">bingung</div>
-                      </td>
-                      <td>zh-TW / id</td>
-                      <td>
-                        <div class="admin-pill-list">
-                          <span class="admin-pill">情緒</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="admin-media-flags">
-                          <span class="material-symbols-outlined">hide_image</span>
-                          <span class="material-symbols-outlined">volume_up</span>
-                        </div>
-                      </td>
-                      <td>1 小時前</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>累</strong>
-                        <div class="admin-table-meta">capek</div>
-                      </td>
-                      <td>zh-TW / id</td>
-                      <td>
-                        <div class="admin-pill-list">
-                          <span class="admin-pill">身體狀態</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="admin-media-flags">
-                          <span class="material-symbols-outlined">image</span>
-                          <span class="material-symbols-outlined">volume_up</span>
-                        </div>
-                      </td>
-                      <td>3 小時前</td>
+                      <td colspan="5"><div class="admin-empty-state">載入中...</div></td>
                     </tr>
                   </tbody>
                 </table>
@@ -314,7 +239,7 @@
                 </div>
               </section>
 
-              <div class="admin-status-footer">最後檢查時間：剛剛</div>
+              <div class="admin-status-footer" data-dashboard-status>最後檢查時間：載入中...</div>
             </aside>
           </section>
         </main>
@@ -325,10 +250,7 @@
     <script src="public/assets/js/supabase-config.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
-    <script>
-      (function () {
-        window.lexiconAdminAuth.protectAdminPage(window);
-      })();
-    </script>
+    <script src="public/assets/js/admin-api.js"></script>
+    <script src="public/assets/js/admin-dashboard.js"></script>
   </body>
 </html>

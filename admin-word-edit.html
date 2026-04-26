@@ -167,7 +167,7 @@
         <main class="content">
           <section class="hero">
             <div>
-              <h1>編輯單字</h1>
+              <h1 data-word-edit-title>編輯單字</h1>
               <p>以 `linguistcms_2` 的雙欄編輯器為基礎，整理成正式 CMS 骨架。</p>
             </div>
             <div class="status-chip">狀態：草稿</div>
@@ -216,8 +216,8 @@
                     <input id="pron-en" value="tei-buhl" />
                   </div>
                   <div class="field full">
-                    <label for="word-note">補充說明</label>
-                    <textarea id="word-note">常見家具名詞，可用於介紹家中物品與教室場景。</textarea>
+                    <label for="image-url">圖片路徑 / URL</label>
+                    <input id="image-url" value="imgs/202604120952.jpg" />
                   </div>
                 </div>
               </article>
@@ -239,8 +239,8 @@
                         <button class="button">刪除</button>
                       </div>
                     </header>
-                    <div>檔名：桌子.mp3</div>
-                    <div class="r2-path">audios/zh-TW/桌子.mp3</div>
+                    <label for="audio-zh">檔案路徑</label>
+                    <input id="audio-zh" value="audios/zh-TW/桌子.mp3" />
                   </section>
                   <section class="audio-row">
                     <header>
@@ -251,8 +251,8 @@
                         <button class="button">刪除</button>
                       </div>
                     </header>
-                    <div>檔名：meja.mp3</div>
-                    <div class="r2-path">audios/id/meja.mp3</div>
+                    <label for="audio-id">檔案路徑</label>
+                    <input id="audio-id" value="audios/id/meja.mp3" />
                   </section>
                   <section class="audio-row">
                     <header>
@@ -261,8 +261,8 @@
                         <button class="button primary">上傳</button>
                       </div>
                     </header>
-                    <div>目前尚未綁定英文音檔。</div>
-                    <div class="r2-path">audios/en/table.mp3</div>
+                    <label for="audio-en">檔案路徑</label>
+                    <input id="audio-en" value="" placeholder="audios/en/table.mp3" />
                   </section>
                 </div>
               </article>
@@ -283,18 +283,13 @@
                   <span>檔名：202604120952.jpg</span>
                   <span>狀態：已綁定</span>
                 </div>
-                <div class="r2-path" style="margin-top: 12px">imgs/202604120952.jpg</div>
+                <div class="r2-path" style="margin-top: 12px">依資料庫中的 image_url 原樣顯示</div>
               </article>
               <article class="card">
                 <div class="card-header">
                   <h3>標籤與屬性</h3>
                 </div>
-                <div class="chip-row">
-                  <span>家具</span>
-                  <span>初級</span>
-                  <span>教室</span>
-                  <button class="button">新增標籤</button>
-                </div>
+                <div class="chip-row" data-tag-options></div>
                 <div class="field" style="margin-top: 18px">
                   <label for="difficulty">難度</label>
                   <select id="difficulty">
@@ -308,18 +303,18 @@
                 <div class="card-header">
                   <h3>未儲存變更</h3>
                 </div>
-                <p style="margin: 0; color: var(--muted)">
-                  後續將在這裡接入 dirty state、toast 與成功/失敗訊息。
+                <p data-word-edit-status style="margin: 0; color: var(--muted)">
+                  目前尚未儲存。
                 </p>
               </article>
             </div>
           </section>
         </main>
         <footer class="footerbar">
-          <button class="button">取消</button>
+          <button class="button" data-word-cancel>取消</button>
           <div class="actions">
-            <button class="button">儲存草稿</button>
-            <button class="button primary">發布 / 更新</button>
+            <button class="button" data-word-save>儲存草稿</button>
+            <button class="button primary" data-word-save>發布 / 更新</button>
           </div>
         </footer>
       </div>
@@ -328,10 +323,7 @@
     <script src="public/assets/js/supabase-config.js"></script>
     <script src="public/assets/js/admin-shell.js"></script>
     <script src="public/assets/js/admin-auth.js"></script>
-    <script>
-      (function () {
-        window.lexiconAdminAuth.protectAdminPage(window);
-      })();
-    </script>
+    <script src="public/assets/js/admin-api.js"></script>
+    <script src="public/assets/js/admin-word-edit.js"></script>
   </body>
 </html>

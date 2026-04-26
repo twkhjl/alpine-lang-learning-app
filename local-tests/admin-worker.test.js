@@ -16,6 +16,563 @@ function createEnv() {
   };
 }
 
+function createAdminDeps(overrides = {}) {
+  return {
+    fetchImpl(url) {
+      if (url.includes("/auth/v1/user")) {
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({ id: "user-1" });
+          },
+        });
+      }
+
+      if (url.includes("/rest/v1/admin_users")) {
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve([{ user_id: "user-1" }]);
+          },
+        });
+      }
+
+      throw new Error("unexpected fetch call: " + url);
+    },
+    ...overrides,
+  };
+}
+
+test("worker rejects protected admin write without bearer token", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        translations: {
+          "zh-TW": { text: "桌子", pronunciation: "", audio_filename: "" },
+          id: { text: "meja", pronunciation: "", audio_filename: "" },
+          en: { text: "table", pronunciation: "", audio_filename: "" },
+        },
+        tag_ids: [],
+      }),
+    }),
+    createEnv(),
+    createAdminDeps(),
+  );
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "UNAUTHORIZED",
+      message: "A bearer token is required.",
+    },
+  });
+});
+
+test("worker rejects protected admin write for authenticated non-admin users", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        translations: {
+          "zh-TW": { text: "桌子", pronunciation: "", audio_filename: "" },
+          id: { text: "meja", pronunciation: "", audio_filename: "" },
+          en: { text: "table", pronunciation: "", audio_filename: "" },
+        },
+        tag_ids: [],
+      }),
+    }),
+    createEnv(),
+    createAdminDeps({
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-2" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    }),
+  );
+
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "FORBIDDEN",
+      message: "Admin access is required.",
+    },
+  });
+});
+
+test("worker validates protected word payload before reaching write implementation", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        translations: {
+          "zh-TW": { text: "", pronunciation: "", audio_filename: "" },
+          id: { text: "", pronunciation: "", audio_filename: "" },
+          en: { text: "", pronunciation: "", audio_filename: "" },
+        },
+        tag_ids: [1, 1],
+      }),
+    }),
+    createEnv(),
+    createAdminDeps(),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "At least one translation is required.",
+    },
+  });
+});
+
+test("worker creates a word through admin_create_word RPC", async () => {
+  const calls = [];
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        image_url: " image.jpg ",
+        translations: {
+          "zh-TW": { text: " 桌子 ", pronunciation: " zhuo zi ", audio_filename: " zh.mp3 " },
+          id: { text: " meja ", pronunciation: " me-ja ", audio_filename: " id.mp3 " },
+          en: { text: " table ", pronunciation: " tay-buhl ", audio_filename: " en.mp3 " },
+        },
+        tag_ids: [1, 2],
+      }),
+    }),
+    createEnv(),
+    {
+      fetchImpl(url, options = {}) {
+        calls.push({ url, options });
+
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_create_word")) {
+          assert.equal(options.method, "POST");
+          assert.deepEqual(JSON.parse(options.body), {
+            p_image_url: "image.jpg",
+            p_translations: {
+              "zh-TW": { text: "桌子", pronunciation: "zhuo zi", audio_filename: "zh.mp3" },
+              id: { text: "meja", pronunciation: "me-ja", audio_filename: "id.mp3" },
+              en: { text: "table", pronunciation: "tay-buhl", audio_filename: "en.mp3" },
+            },
+            p_tag_ids: [1, 2],
+          });
+
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({
+                id: 28,
+                image_url: "image.jpg",
+                created_at: "2026-04-26T10:00:00.000Z",
+                updated_at: "2026-04-26T10:00:00.000Z",
+              });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      id: 28,
+      image_url: "image.jpg",
+      created_at: "2026-04-26T10:00:00.000Z",
+      updated_at: "2026-04-26T10:00:00.000Z",
+    },
+  });
+  assert.equal(calls.length, 3);
+});
+
+test("worker returns 404 when updating a missing word", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words/999", {
+      method: "PATCH",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        image_url: "image.jpg",
+        translations: {
+          "zh-TW": { text: "桌子", pronunciation: "", audio_filename: "" },
+          id: { text: "meja", pronunciation: "", audio_filename: "" },
+          en: { text: "table", pronunciation: "", audio_filename: "" },
+        },
+        tag_ids: [],
+      }),
+    }),
+    createEnv(),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_update_word")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve(null);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "NOT_FOUND",
+      message: "Word not found.",
+    },
+  });
+});
+
+test("worker creates a tag through admin_create_tag RPC", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/tags", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        icon: " sell ",
+        translations: {
+          "zh-TW": { name: " 家具 " },
+          id: { name: " furnitur " },
+          en: { name: " furniture " },
+        },
+      }),
+    }),
+    createEnv(),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_create_tag")) {
+          assert.deepEqual(JSON.parse(options.body), {
+            p_icon: "sell",
+            p_translations: {
+              "zh-TW": { name: "家具" },
+              id: { name: "furnitur" },
+              en: { name: "furniture" },
+            },
+          });
+
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: 9, icon: "sell" });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      id: 9,
+      icon: "sell",
+    },
+  });
+});
+
+test("worker rejects deleting a tag that is still in use", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/tags/4", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createEnv(),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_delete_tag")) {
+          return Promise.resolve({
+            ok: false,
+            json() {
+              return Promise.resolve({
+                code: "P0001",
+                message: "Tag is still in use.",
+              });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "Tag is still in use.",
+    },
+  });
+});
+
+test("worker returns protected dashboard summary data", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/dashboard", {
+      method: "GET",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createEnv(),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/lexicon_words_api")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                {
+                  id: 28,
+                  "lang_zh-TW": "桌子",
+                  lang_id: "meja",
+                  lang_en: "table",
+                  tags: [1, 3],
+                  audio: { "zh-TW": "zh.mp3", id: "", en: "" },
+                },
+                {
+                  id: 27,
+                  "lang_zh-TW": "椅子",
+                  lang_id: "kursi",
+                  lang_en: "chair",
+                  tags: [2],
+                  audio: { "zh-TW": "", id: "id.mp3", en: "en.mp3" },
+                },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                {
+                  id: 28,
+                  image_url: "imgs/table.jpg",
+                  created_at: "2026-04-12T09:52:00.000Z",
+                  updated_at: "2026-04-26T02:12:00.000Z",
+                },
+                {
+                  id: 27,
+                  image_url: "",
+                  created_at: "2026-04-10T09:52:00.000Z",
+                  updated_at: "2026-04-26T01:12:00.000Z",
+                },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/lexicon_tags_api")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { id: 1 },
+                { id: 2 },
+                { id: 3 },
+              ]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      metrics: {
+        total_words: 2,
+        total_tags: 3,
+        words_missing_image: 1,
+        missing_audio_words: 2,
+      },
+      recent_words: [
+        {
+          id: 28,
+          image_url: "imgs/table.jpg",
+          lang_zh_tw: "桌子",
+          lang_id: "meja",
+          lang_en: "table",
+          tags: [1, 3],
+          audio_languages: ["zh-TW"],
+          updated_at: "2026-04-26T02:12:00.000Z",
+          created_at: "2026-04-12T09:52:00.000Z",
+        },
+        {
+          id: 27,
+          image_url: "",
+          lang_zh_tw: "椅子",
+          lang_id: "kursi",
+          lang_en: "chair",
+          tags: [2],
+          audio_languages: ["id", "en"],
+          updated_at: "2026-04-26T01:12:00.000Z",
+          created_at: "2026-04-10T09:52:00.000Z",
+        },
+      ],
+    },
+  });
+});
+
 test("worker allows origins configured as an array", async () => {
   const env = {
     ...createEnv(),

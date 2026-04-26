@@ -7,6 +7,7 @@
   "compatibility_date": "2026-04-25",
   "vars": {
     "SUPABASE_URL": "https://qbtobhjrpcvcnacsidhk.supabase.co",
+    "ADMIN_API_BASE_PATH": "/api/admin",
     "ADMIN_ALLOWED_ORIGIN": [
       "http://127.0.0.1:5500",
       "https://twkhjl.github.io"
