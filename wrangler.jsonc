@@ -5,9 +5,16 @@
   // This Worker is deployed as a standalone API endpoint.
   // Frontend config must point adminAuthApiUrl at the deployed Worker URL.
   "compatibility_date": "2026-04-25",
+  "r2_buckets": [
+    {
+      "binding": "LEXICON_MEDIA_BUCKET",
+      "bucket_name": "lexicon-media-placeholder"
+    }
+  ],
   "vars": {
     "SUPABASE_URL": "https://qbtobhjrpcvcnacsidhk.supabase.co",
     "ADMIN_API_BASE_PATH": "/api/admin",
+    "LEXICON_MEDIA_PUBLIC_BASE_URL": "https://media.example.com",
     "ADMIN_ALLOWED_ORIGIN": [
       "http://127.0.0.1:5500",
       "https://twkhjl.github.io"

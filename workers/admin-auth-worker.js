@@ -18,6 +18,22 @@
 })(typeof globalThis !== "undefined" ? globalThis : self, function (root) {
   const GENERIC_FAILURE_MESSAGE = "Login failed. Please check your username or password.";
   const SUPPORTED_LANGUAGE_CODES = ["zh-TW", "id", "en"];
+  const IMAGE_OBJECT_PREFIX = "imgs";
+  const AUDIO_OBJECT_PREFIX = "audios";
+  const IMAGE_MIME_TYPE_TO_EXTENSION = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  const AUDIO_MIME_TYPE_TO_EXTENSION = {
+    "audio/mpeg": "mp3",
+    "audio/wav": "wav",
+    "audio/ogg": "ogg",
+  };
+  const IMAGE_EXTENSIONS = new Set(Object.values(IMAGE_MIME_TYPE_TO_EXTENSION));
+  const AUDIO_EXTENSIONS = new Set(Object.values(AUDIO_MIME_TYPE_TO_EXTENSION));
+  const MEDIA_BUCKET_PLACEHOLDERS = new Set(["lexicon-media-placeholder"]);
+  const MEDIA_PUBLIC_BASE_URL_PLACEHOLDERS = new Set(["https://media.example.com"]);
 
   function getFetchImplementation(deps = {}) {
     return deps.fetchImpl || root.fetch;
@@ -127,6 +143,140 @@
       publishableKey,
       path: env.ADMIN_AUTH_PATH || "/api/admin/auth/login",
       adminApiBasePath: env.ADMIN_API_BASE_PATH || "/api/admin",
+    };
+  }
+
+  function getRequiredMediaConfig(env = {}) {
+    const baseConfig = getRequiredConfig(env);
+    const mediaBucket = typeof env.LEXICON_MEDIA_BUCKET === "string"
+      ? env.LEXICON_MEDIA_BUCKET.trim()
+      : env.LEXICON_MEDIA_BUCKET;
+    const mediaPublicBaseUrl = typeof env.LEXICON_MEDIA_PUBLIC_BASE_URL === "string"
+      ? env.LEXICON_MEDIA_PUBLIC_BASE_URL.trim()
+      : "";
+
+    if (!mediaBucket || !mediaPublicBaseUrl) {
+      throw new Error("Missing media storage worker configuration.");
+    }
+
+    let normalizedMediaPublicBaseUrl;
+
+    try {
+      const parsedPublicBaseUrl = new URL(mediaPublicBaseUrl);
+
+      if (!/^https?:$/i.test(parsedPublicBaseUrl.protocol)) {
+        throw new Error("invalid protocol");
+      }
+
+      normalizedMediaPublicBaseUrl = parsedPublicBaseUrl.toString().replace(/\/$/, "");
+    } catch (error) {
+      throw new Error("Invalid media storage worker configuration.");
+    }
+
+    if (MEDIA_PUBLIC_BASE_URL_PLACEHOLDERS.has(normalizedMediaPublicBaseUrl)) {
+      throw new Error("Invalid media storage worker configuration.");
+    }
+
+    if (typeof mediaBucket === "string" && MEDIA_BUCKET_PLACEHOLDERS.has(mediaBucket)) {
+      throw new Error("Invalid media storage worker configuration.");
+    }
+
+    return {
+      ...baseConfig,
+      mediaBucket,
+      mediaPublicBaseUrl: normalizedMediaPublicBaseUrl,
+    };
+  }
+
+  function normalizeMimeType(value) {
+    if (typeof value !== "string") {
+      return "";
+    }
+
+    return value
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+  }
+
+  function getMediaExtensionForMimeType(mimeType, mimeTypeMap) {
+    const normalizedMimeType = normalizeMimeType(mimeType);
+    const extension = mimeTypeMap[normalizedMimeType];
+
+    if (!extension) {
+      throw new Error("Unsupported media MIME type.");
+    }
+
+    return extension;
+  }
+
+  function normalizeWordId(wordId) {
+    const numericWordId = Number(wordId);
+
+    if (!Number.isInteger(numericWordId) || numericWordId <= 0) {
+      throw new Error("Word id must be a positive integer.");
+    }
+
+    return numericWordId;
+  }
+
+  function normalizeLanguageCode(languageCode) {
+    const normalizedLanguageCode = typeof languageCode === "string" ? languageCode.trim() : "";
+
+    if (!SUPPORTED_LANGUAGE_CODES.includes(normalizedLanguageCode)) {
+      throw new Error("Unsupported language code.");
+    }
+
+    return normalizedLanguageCode;
+  }
+
+  function buildWordImageKey(wordId, mimeType) {
+    const normalizedWordId = normalizeWordId(wordId);
+    const extension = getMediaExtensionForMimeType(mimeType, IMAGE_MIME_TYPE_TO_EXTENSION);
+
+    return IMAGE_OBJECT_PREFIX + "/" + normalizedWordId + "." + extension;
+  }
+
+  function buildWordAudioKey(wordId, languageCode, mimeType) {
+    const normalizedWordId = normalizeWordId(wordId);
+    const normalizedLanguageCode = normalizeLanguageCode(languageCode);
+    const extension = getMediaExtensionForMimeType(mimeType, AUDIO_MIME_TYPE_TO_EXTENSION);
+
+    return AUDIO_OBJECT_PREFIX + "/" + normalizedLanguageCode + "/" + normalizedWordId + "." + extension;
+  }
+
+  function parseStorageObjectKey(key) {
+    const normalizedKey = typeof key === "string" ? key.trim() : "";
+    const imageMatch = /^imgs\/(\d+)\.([a-z0-9]+)$/i.exec(normalizedKey);
+
+    if (imageMatch) {
+      if (!IMAGE_EXTENSIONS.has(imageMatch[2].toLowerCase())) {
+        return null;
+      }
+
+      return {
+        mediaType: "image",
+        wordId: Number(imageMatch[1]),
+        languageCode: null,
+        extension: imageMatch[2].toLowerCase(),
+      };
+    }
+
+    const audioMatch = /^audios\/([^/]+)\/(\d+)\.([a-z0-9]+)$/i.exec(normalizedKey);
+
+    if (!audioMatch) {
+      return null;
+    }
+
+    if (!SUPPORTED_LANGUAGE_CODES.includes(audioMatch[1]) || !AUDIO_EXTENSIONS.has(audioMatch[3].toLowerCase())) {
+      return null;
+    }
+
+    return {
+      mediaType: "audio",
+      wordId: Number(audioMatch[2]),
+      languageCode: audioMatch[1],
+      extension: audioMatch[3].toLowerCase(),
     };
   }
 
@@ -898,10 +1048,15 @@
   }
 
   return {
+    AUDIO_MIME_TYPE_TO_EXTENSION,
     GENERIC_FAILURE_MESSAGE,
+    IMAGE_MIME_TYPE_TO_EXTENSION,
     buildGenericFailure,
+    buildWordAudioKey,
+    buildWordImageKey,
     createCorsHeaders,
     getRequiredConfig,
+    getRequiredMediaConfig,
     handleLogin,
     handleAdminApiRequest,
     handleAdminDashboardRead,
@@ -911,6 +1066,7 @@
     handleRequest,
     normalizeTagPayload,
     normalizeWordPayload,
+    parseStorageObjectKey,
     requireAdminApiAccess,
     resolveAuthenticatedUser,
     resolveAdminAccount,

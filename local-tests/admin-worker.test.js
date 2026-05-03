@@ -2,8 +2,13 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  buildWordAudioKey,
+  buildWordImageKey,
   GENERIC_FAILURE_MESSAGE,
+  getRequiredConfig,
+  getRequiredMediaConfig,
   handleRequest,
+  parseStorageObjectKey,
 } = require("../workers/admin-auth-worker");
 
 function createEnv() {
@@ -13,6 +18,8 @@ function createEnv() {
     SUPABASE_PUBLISHABLE_KEY: "publishable-key",
     ADMIN_AUTH_PATH: "/api/admin/auth/login",
     ADMIN_ALLOWED_ORIGIN: "https://admin.example.com",
+    LEXICON_MEDIA_PUBLIC_BASE_URL: "https://media.example.com",
+    LEXICON_MEDIA_BUCKET: {},
   };
 }
 
@@ -42,6 +49,144 @@ function createAdminDeps(overrides = {}) {
     ...overrides,
   };
 }
+
+test("buildWordImageKey maps supported image MIME types to storage keys", () => {
+  assert.equal(buildWordImageKey(28, "image/jpeg"), "imgs/28.jpg");
+  assert.equal(buildWordImageKey(28, "image/png"), "imgs/28.png");
+  assert.equal(buildWordImageKey(28, "image/webp"), "imgs/28.webp");
+  assert.equal(buildWordImageKey(28, "image/jpeg; charset=binary"), "imgs/28.jpg");
+});
+
+test("buildWordAudioKey maps supported audio MIME types to storage keys", () => {
+  assert.equal(buildWordAudioKey(28, "zh-TW", "audio/mpeg"), "audios/zh-TW/28.mp3");
+  assert.equal(buildWordAudioKey(28, "id", "audio/wav"), "audios/id/28.wav");
+  assert.equal(buildWordAudioKey(28, "en", "audio/ogg"), "audios/en/28.ogg");
+  assert.equal(buildWordAudioKey(28, "en", "audio/ogg; codecs=opus"), "audios/en/28.ogg");
+});
+
+test("storage key helpers reject unsupported MIME types", () => {
+  assert.throws(() => buildWordImageKey(28, "image/gif"), /Unsupported media MIME type/);
+  assert.throws(() => buildWordAudioKey(28, "zh-TW", "audio/aac"), /Unsupported media MIME type/);
+});
+
+test("parseStorageObjectKey parses supported image and audio keys", () => {
+  assert.deepEqual(parseStorageObjectKey("imgs/28.jpg"), {
+    mediaType: "image",
+    wordId: 28,
+    languageCode: null,
+    extension: "jpg",
+  });
+
+  assert.deepEqual(parseStorageObjectKey("audios/zh-TW/28.mp3"), {
+    mediaType: "audio",
+    wordId: 28,
+    languageCode: "zh-TW",
+    extension: "mp3",
+  });
+});
+
+test("parseStorageObjectKey returns null for unsupported object keys", () => {
+  assert.equal(parseStorageObjectKey("imgs/not-a-number.jpg"), null);
+  assert.equal(parseStorageObjectKey("audios/fr/28.mp3"), null);
+  assert.equal(parseStorageObjectKey("misc/28.txt"), null);
+});
+
+test("getRequiredConfig does not require media storage config for non-media routes", () => {
+  const config = getRequiredConfig({
+    ...createEnv(),
+    LEXICON_MEDIA_BUCKET: undefined,
+    LEXICON_MEDIA_PUBLIC_BASE_URL: " ",
+  });
+
+  assert.equal(config.url, "https://example.supabase.co");
+  assert.equal(config.path, "/api/admin/auth/login");
+  assert.equal(config.adminApiBasePath, "/api/admin");
+});
+
+test("getRequiredMediaConfig fails when media storage config is missing", () => {
+  assert.throws(
+    () => getRequiredMediaConfig({
+      ...createEnv(),
+      LEXICON_MEDIA_BUCKET: undefined,
+    }),
+    /Missing media storage worker configuration/,
+  );
+
+  assert.throws(
+    () => getRequiredMediaConfig({
+      ...createEnv(),
+      LEXICON_MEDIA_PUBLIC_BASE_URL: " ",
+    }),
+    /Missing media storage worker configuration/,
+  );
+});
+
+test("getRequiredMediaConfig rejects placeholder and invalid media config values", () => {
+  assert.throws(
+    () => getRequiredMediaConfig({
+      ...createEnv(),
+      LEXICON_MEDIA_PUBLIC_BASE_URL: "https://media.example.com",
+    }),
+    /Invalid media storage worker configuration/,
+  );
+
+  assert.throws(
+    () => getRequiredMediaConfig({
+      ...createEnv(),
+      LEXICON_MEDIA_PUBLIC_BASE_URL: "ftp://media.example.com/assets",
+    }),
+    /Invalid media storage worker configuration/,
+  );
+
+  assert.throws(
+    () => getRequiredMediaConfig({
+      ...createEnv(),
+      LEXICON_MEDIA_BUCKET: "lexicon-media-placeholder",
+      LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media",
+    }),
+    /Invalid media storage worker configuration/,
+  );
+});
+
+test("worker login route still works when media storage config is absent", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/auth/login", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        username: "missing-admin",
+        password: "secret",
+      }),
+    }),
+    {
+      ...createEnv(),
+      LEXICON_MEDIA_BUCKET: undefined,
+      LEXICON_MEDIA_PUBLIC_BASE_URL: "",
+    },
+    {
+      fetchImpl(url) {
+        if (url.includes("/rest/v1/admin_accounts")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call");
+      },
+    },
+  );
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    message: GENERIC_FAILURE_MESSAGE,
+  });
+});
 
 test("worker rejects protected admin write without bearer token", async () => {
   const response = await handleRequest(
