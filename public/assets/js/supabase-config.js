@@ -7,3 +7,7 @@ window.LEXICON_SUPABASE_CONFIG = {
     window.LEXICON_ADMIN_AUTH_API_URL ||
     "https://alpine-lang-learning-app-admin-auth.twkhjl.workers.dev/api/admin/auth/login",
 };
+
+window.LEXICON_MEDIA_PUBLIC_BASE_URL =
+  window.LEXICON_MEDIA_PUBLIC_BASE_URL ||
+  "https://pub-0ab02e3e2bda4c4c99e33c093612b10c.r2.dev";
