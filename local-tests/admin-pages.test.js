@@ -54,3 +54,11 @@ test("admin stylesheet preserves hidden elements as non-interactive", () => {
   assert.match(css, /\[hidden\]\s*\{/);
   assert.match(css, /display:\s*none\s*!important/);
 });
+
+test("admin word edit audio cards stay single-column across desktop and mobile", () => {
+  const css = fs.readFileSync(path.join(process.cwd(), "public/assets/css/admin.css"), "utf8");
+
+  assert.match(css, /\.admin-media-audio-grid\s*\{\s*grid-template-columns:\s*1fr\s*;\s*\}/);
+  assert.doesNotMatch(css, /\.admin-media-audio-grid\s*\{\s*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)\s*;\s*\}/);
+  assert.doesNotMatch(css, /@media\s*\(max-width:\s*1180px\)[\s\S]*\.admin-media-audio-grid,\s*\.admin-asset-grid\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*;\s*\}/);
+});
