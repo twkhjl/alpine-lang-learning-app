@@ -36,6 +36,13 @@
     return typeof value === "string" ? value.trim() : "";
   }
 
+  function isFormDataBody(value) {
+    return Boolean(value)
+      && typeof value === "object"
+      && typeof value.append === "function"
+      && typeof value.get === "function";
+  }
+
   function toPositiveInteger(value, fallbackValue) {
     const normalized = Number(value);
 
@@ -381,8 +388,17 @@
     const requestUrl = String(path).startsWith("http")
       ? path
       : `http://localhost${path.startsWith("/") ? path : `/${path}`}`;
+    const body = options.body;
+    let requestBody;
 
-    headers.set("content-type", "application/json");
+    if (typeof body !== "undefined") {
+      if (isFormDataBody(body)) {
+        requestBody = body;
+      } else {
+        headers.set("content-type", "application/json");
+        requestBody = JSON.stringify(body);
+      }
+    }
 
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
@@ -391,7 +407,7 @@
     return new Request(requestUrl, {
       method,
       headers,
-      body: typeof options.body === "undefined" ? undefined : JSON.stringify(options.body),
+      body: requestBody,
     });
   }
 
@@ -442,6 +458,136 @@
       ...options,
       method: "PATCH",
       body: normalizeWordPayload(payload),
+    });
+  }
+
+  async function listStorageObjects(client, filters = {}, options = {}) {
+    const query = new URLSearchParams();
+    const prefix = normalizeTextValue(filters.prefix);
+    const cursor = normalizeTextValue(filters.cursor);
+
+    if (prefix) {
+      query.set("prefix", prefix);
+    }
+
+    if (cursor) {
+      query.set("cursor", cursor);
+    }
+
+    const path = "/assets/objects" + (query.toString() ? "?" + query.toString() : "");
+    return callProtectedEndpoint(client, path, {
+      ...options,
+      method: "GET",
+    });
+  }
+
+  async function deleteStorageObject(client, key, options = {}) {
+    const normalizedKey = normalizeTextValue(key);
+
+    if (!normalizedKey) {
+      throw createValidationError("A storage object key is required.");
+    }
+
+    return callProtectedEndpoint(client, "/assets/object", {
+      ...options,
+      method: "DELETE",
+      body: {
+        key: normalizedKey,
+      },
+    });
+  }
+
+  async function purgeStorageObjects(client, confirmText, options = {}) {
+    const normalizedConfirmText = normalizeTextValue(confirmText);
+
+    if (!normalizedConfirmText) {
+      throw createValidationError("Confirmation text is required.");
+    }
+
+    return callProtectedEndpoint(client, "/assets/purge", {
+      ...options,
+      method: "POST",
+      body: {
+        confirmText: normalizedConfirmText,
+      },
+    });
+  }
+
+  async function uploadWordImage(client, wordId, file, options = {}) {
+    const normalizedWordId = Number(wordId);
+
+    if (!Number.isInteger(normalizedWordId) || normalizedWordId <= 0) {
+      throw createValidationError("A valid word id is required.");
+    }
+
+    if (!file || typeof file !== "object") {
+      throw createValidationError("An image file is required.");
+    }
+
+    const formData = new FormData();
+    formData.set("file", file);
+
+    return callProtectedEndpoint(client, `/assets/word-image/${normalizedWordId}`, {
+      ...options,
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  async function deleteWordImage(client, wordId, options = {}) {
+    const normalizedWordId = Number(wordId);
+
+    if (!Number.isInteger(normalizedWordId) || normalizedWordId <= 0) {
+      throw createValidationError("A valid word id is required.");
+    }
+
+    return callProtectedEndpoint(client, `/assets/word-image/${normalizedWordId}`, {
+      ...options,
+      method: "DELETE",
+    });
+  }
+
+  async function uploadWordAudio(client, wordId, languageCode, file, options = {}) {
+    const normalizedWordId = Number(wordId);
+    const normalizedLanguageCode = normalizeTextValue(languageCode);
+
+    if (!Number.isInteger(normalizedWordId) || normalizedWordId <= 0) {
+      throw createValidationError("A valid word id is required.");
+    }
+
+    if (!SUPPORTED_LANGUAGE_CODES.includes(normalizedLanguageCode)) {
+      throw createValidationError("A supported language code is required.");
+    }
+
+    if (!file || typeof file !== "object") {
+      throw createValidationError("An audio file is required.");
+    }
+
+    const formData = new FormData();
+    formData.set("file", file);
+
+    return callProtectedEndpoint(client, `/assets/word-audio/${normalizedWordId}/${normalizedLanguageCode}`, {
+      ...options,
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  async function deleteWordAudio(client, wordId, languageCode, options = {}) {
+    const normalizedWordId = Number(wordId);
+    const normalizedLanguageCode = normalizeTextValue(languageCode);
+
+    if (!Number.isInteger(normalizedWordId) || normalizedWordId <= 0) {
+      throw createValidationError("A valid word id is required.");
+    }
+
+    if (!SUPPORTED_LANGUAGE_CODES.includes(normalizedLanguageCode)) {
+      throw createValidationError("A supported language code is required.");
+    }
+
+    return callProtectedEndpoint(client, `/assets/word-audio/${normalizedWordId}/${normalizedLanguageCode}`, {
+      ...options,
+      method: "DELETE",
     });
   }
 
@@ -722,7 +868,10 @@
     createNotFoundError,
     createValidationError,
     createWord,
+    deleteStorageObject,
     deleteTag,
+    deleteWordAudio,
+    deleteWordImage,
     getAdminSupabaseClient,
     getAdminDataApiBaseUrl,
     getProtectedAccessToken,
@@ -731,6 +880,7 @@
     loadTagList,
     loadWordDetail,
     loadWordList,
+    listStorageObjects,
     filterAssetReferences,
     normalizeWordListFilters,
     normalizeWordListItem,
@@ -738,7 +888,10 @@
     normalizeTagPayload,
     normalizeTagListItem,
     normalizeWordPayload,
+    purgeStorageObjects,
     selectAll,
+    uploadWordAudio,
+    uploadWordImage,
     updateTag,
     updateWord,
   };

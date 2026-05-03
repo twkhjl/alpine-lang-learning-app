@@ -87,6 +87,11 @@
     }).join("\n");
   }
 
+  function hasPersistentWordId(wordId) {
+    const normalizedWordId = Number(wordId);
+    return Number.isInteger(normalizedWordId) && normalizedWordId > 0;
+  }
+
   function collectFormValues(doc) {
     const activeDocument = doc || root.document;
     return {
@@ -152,27 +157,141 @@
   function setPageCopy(doc, mode, translator) {
     const activeDocument = doc || root.document;
     const t = typeof translator === "function" ? translator : function (key) { return key; };
-    const titleNode = activeDocument.querySelector("[data-word-edit-title]");
-    const descriptionNode = activeDocument.querySelector("[data-word-edit-description]");
-
-    if (!titleNode || !descriptionNode) {
-      return;
-    }
+    const titleNode = activeDocument.querySelectorAll("[data-word-edit-title]");
+    const descriptionNodes = activeDocument.querySelectorAll("[data-word-edit-description]");
+    let title = t("wordEdit.header.editTitle");
+    let description = t("wordEdit.header.editDescription");
 
     if (mode === "create") {
-      titleNode.textContent = t("wordEdit.header.createTitle");
-      descriptionNode.textContent = t("wordEdit.header.createDescription");
+      title = t("wordEdit.header.createTitle");
+      description = t("wordEdit.header.createDescription");
+    } else if (mode === "invalid") {
+      title = t("wordEdit.invalid.title");
+      description = t("wordEdit.invalid.description");
+    }
+
+    titleNode.forEach(function (node) {
+      node.textContent = title;
+    });
+    descriptionNodes.forEach(function (node) {
+      node.textContent = description;
+    });
+  }
+
+  function getMediaPublicBaseUrl(activeRoot) {
+    return String(
+      activeRoot.LEXICON_MEDIA_PUBLIC_BASE_URL
+      || activeRoot.LEXICON_ADMIN_MEDIA_PUBLIC_BASE_URL
+      || "",
+    ).replace(/\/$/, "");
+  }
+
+  function buildMediaUrl(activeRoot, key) {
+    const normalizedKey = typeof key === "string" ? key.trim() : "";
+    const baseUrl = getMediaPublicBaseUrl(activeRoot);
+
+    if (!normalizedKey || !baseUrl) {
+      return "";
+    }
+
+    return baseUrl + "/" + normalizedKey.replace(/^\//, "");
+  }
+
+  function buildAudioObjectKey(languageCode, audioFilename) {
+    const normalizedLanguageCode = typeof languageCode === "string" ? languageCode.trim() : "";
+    const normalizedFilename = typeof audioFilename === "string" ? audioFilename.trim() : "";
+
+    if (!normalizedLanguageCode || !normalizedFilename) {
+      return "";
+    }
+
+    return "audios/" + normalizedLanguageCode + "/" + normalizedFilename;
+  }
+
+  function renderImagePreview(activeDocument, activeRoot, detail) {
+    const previewNode = activeDocument.querySelector("[data-image-preview]");
+
+    if (!previewNode) {
       return;
     }
 
-    if (mode === "invalid") {
-      titleNode.textContent = t("wordEdit.invalid.title");
-      descriptionNode.textContent = t("wordEdit.invalid.description");
+    const imageKey = detail?.image_url || "";
+    const previewUrl = buildMediaUrl(activeRoot, imageKey);
+
+    if (!imageKey) {
+      previewNode.innerHTML = '<div class="admin-empty-state">尚未上傳圖片</div>';
       return;
     }
 
-    titleNode.textContent = t("wordEdit.header.editTitle");
-    descriptionNode.textContent = t("wordEdit.header.editDescription");
+    if (previewUrl) {
+      previewNode.innerHTML = '<img class="admin-asset-image" src="' + previewUrl + '" alt="word image" />';
+      return;
+    }
+
+    previewNode.innerHTML = '<div class="admin-empty-state">' + imageKey + "</div>";
+  }
+
+  function renderAudioPreviews(activeDocument, activeRoot, detail) {
+    SUPPORTED_LANGUAGE_CODES.forEach(function (languageCode) {
+      const audioFilename = detail?.translations?.[languageCode]?.audio_filename || "";
+      const audioKey = buildAudioObjectKey(languageCode, audioFilename);
+      const audioUrl = buildMediaUrl(activeRoot, audioKey);
+      const filenameNode = activeDocument.querySelector('[data-audio-filename="' + languageCode + '"]');
+      const audioPlayer = activeDocument.querySelector('[data-audio-player="' + languageCode + '"]');
+
+      if (filenameNode) {
+        filenameNode.textContent = audioFilename || "未設定";
+      }
+
+      if (audioPlayer) {
+        if (audioFilename && audioUrl) {
+          audioPlayer.src = audioUrl;
+          audioPlayer.hidden = false;
+        } else {
+          audioPlayer.removeAttribute("src");
+          audioPlayer.hidden = true;
+        }
+      }
+    });
+  }
+
+  function syncMediaFields(activeDocument, detail) {
+    activeDocument.getElementById("image-url").value = detail.image_url || "";
+    activeDocument.getElementById("audio-zh").value = detail.translations["zh-TW"].audio_filename || "";
+    activeDocument.getElementById("audio-id").value = detail.translations.id.audio_filename || "";
+    activeDocument.getElementById("audio-en").value = detail.translations.en.audio_filename || "";
+  }
+
+  function setMediaControlsDisabled(activeDocument, disabled) {
+    activeDocument.querySelectorAll("[data-image-upload], [data-image-delete], [data-audio-upload], [data-audio-delete]").forEach(function (button) {
+      button.disabled = Boolean(disabled);
+    });
+
+    activeDocument.querySelectorAll("#image-file, [data-audio-file]").forEach(function (input) {
+      input.disabled = Boolean(disabled);
+    });
+  }
+
+  function setImageStatus(activeDocument, message, isError) {
+    const node = activeDocument.querySelector("[data-image-status]");
+
+    if (!node) {
+      return;
+    }
+
+    node.textContent = message || "";
+    node.classList.toggle("error", Boolean(isError));
+  }
+
+  function setAudioStatus(activeDocument, message, isError) {
+    const node = activeDocument.querySelector("[data-audio-status]");
+
+    if (!node) {
+      return;
+    }
+
+    node.textContent = message || "";
+    node.classList.toggle("error", Boolean(isError));
   }
 
   async function bootstrap(globalObject) {
@@ -197,12 +316,31 @@
     const tagContainer = activeDocument.querySelector("[data-tag-options]");
     const saveButtons = activeDocument.querySelectorAll("[data-word-save]");
     const cancelButton = activeDocument.querySelector("[data-word-cancel]");
+    const imageUploadButton = activeDocument.querySelector("[data-image-upload]");
+    const imageDeleteButton = activeDocument.querySelector("[data-image-delete]");
+    const imageFileInput = activeDocument.getElementById("image-file");
     let currentWordId = params.wordId;
     let currentMode = params.mode;
+    let currentDetail = createEmptyWordDetail();
 
-    setPageCopy(activeDocument, currentMode, t);
+    function updateMediaUi() {
+      renderImagePreview(activeDocument, activeRoot, currentDetail);
+      renderAudioPreviews(activeDocument, activeRoot, currentDetail);
+      syncMediaFields(activeDocument, currentDetail);
 
-    try {
+      const hasSavedWord = hasPersistentWordId(currentWordId);
+      setMediaControlsDisabled(activeDocument, !hasSavedWord);
+
+      if (!hasSavedWord) {
+        setImageStatus(activeDocument, "請先儲存單字後再上傳圖片。", false);
+        setAudioStatus(activeDocument, "請先儲存單字後再上傳音檔。", false);
+      } else {
+        setImageStatus(activeDocument, currentDetail.image_url ? "可直接替換或刪除圖片。" : "尚未上傳圖片。", false);
+        setAudioStatus(activeDocument, "可直接上傳、替換或刪除各語言音檔。", false);
+      }
+    }
+
+    async function loadInitialData() {
       const tagResult = await activeRoot.lexiconAdminApi.loadTagList(client);
       if (tagContainer) {
         tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], [], { t: t });
@@ -212,26 +350,36 @@
         applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
         setWordEditStatus(activeDocument, t("wordEdit.status.invalidId"), true);
         setSaveDisabled(activeDocument, true);
+        updateMediaUi();
         return;
       }
 
       if (currentMode === "edit" && currentWordId) {
         setWordEditStatus(activeDocument, t("wordEdit.status.loading"), false);
         const detailResult = await activeRoot.lexiconAdminApi.loadWordDetail(client, currentWordId);
-        applyWordDetail(activeDocument, detailResult.data, currentMode);
+        currentDetail = detailResult.data;
+        applyWordDetail(activeDocument, currentDetail, currentMode);
         if (tagContainer) {
-          tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], detailResult.data.tag_ids || [], { t: t });
+          tagContainer.innerHTML = buildTagOptionMarkup(tagResult.data || [], currentDetail.tag_ids || [], { t: t });
         }
       } else {
-        applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
+        currentDetail = createEmptyWordDetail();
+        applyWordDetail(activeDocument, currentDetail, "create");
       }
 
       setPageCopy(activeDocument, currentMode, t);
       setSaveDisabled(activeDocument, false);
       setWordEditStatus(activeDocument, t("wordEdit.status.ready"), false);
+      updateMediaUi();
+    }
+
+    try {
+      await loadInitialData();
     } catch (error) {
       setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
       setSaveDisabled(activeDocument, true);
+      setMediaControlsDisabled(activeDocument, true);
+      return;
     }
 
     cancelButton?.addEventListener("click", function () {
@@ -242,6 +390,7 @@
       button.addEventListener("click", async function () {
         const formPayload = normalizeWordEditorPayload(collectFormValues(activeDocument));
         setWordEditStatus(activeDocument, t("common.loading"), false);
+        setSaveDisabled(activeDocument, true);
 
         try {
           let savedWord;
@@ -252,13 +401,155 @@
             currentMode = "edit";
             currentWordId = savedWord.id;
             activeRoot.history?.replaceState?.({}, "", "admin-word-edit.html?id=" + savedWord.id);
-            activeDocument.getElementById("word-id").value = savedWord.id;
           }
 
+          currentWordId = savedWord.id;
+          currentDetail = {
+            ...formPayload,
+            id: currentWordId,
+            created_at: currentDetail.created_at,
+            updated_at: currentDetail.updated_at,
+          };
+          activeDocument.getElementById("word-id").value = currentWordId;
           setPageCopy(activeDocument, "edit", t);
           setWordEditStatus(activeDocument, t("wordEdit.status.saved"), false);
+          updateMediaUi();
         } catch (error) {
           setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
+        } finally {
+          setSaveDisabled(activeDocument, false);
+        }
+      });
+    });
+
+    imageUploadButton?.addEventListener("click", async function () {
+      if (!hasPersistentWordId(currentWordId)) {
+        setImageStatus(activeDocument, "請先儲存單字後再上傳圖片。", true);
+        return;
+      }
+
+      const file = imageFileInput?.files?.[0];
+
+      if (!file) {
+        setImageStatus(activeDocument, "請先選擇圖片檔。", true);
+        return;
+      }
+
+      setMediaControlsDisabled(activeDocument, true);
+      setImageStatus(activeDocument, "正在上傳圖片...", false);
+
+      try {
+        const result = await activeRoot.lexiconAdminApi.uploadWordImage(client, currentWordId, file);
+        currentDetail.image_url = result.imageUrl || "";
+        syncMediaFields(activeDocument, currentDetail);
+        renderImagePreview(activeDocument, activeRoot, currentDetail);
+        if (imageFileInput) {
+          imageFileInput.value = "";
+        }
+        setImageStatus(activeDocument, "圖片已更新。", false);
+      } catch (error) {
+        setImageStatus(activeDocument, error.message || "圖片上傳失敗。", true);
+      } finally {
+        updateMediaUi();
+      }
+    });
+
+    imageDeleteButton?.addEventListener("click", async function () {
+      if (!hasPersistentWordId(currentWordId)) {
+        setImageStatus(activeDocument, "請先儲存單字後再刪除圖片。", true);
+        return;
+      }
+
+      if (!currentDetail.image_url) {
+        setImageStatus(activeDocument, "目前沒有圖片可刪除。", true);
+        return;
+      }
+
+      if (!activeRoot.confirm || !activeRoot.confirm("確定要刪除這張圖片嗎？")) {
+        return;
+      }
+
+      setMediaControlsDisabled(activeDocument, true);
+      setImageStatus(activeDocument, "正在刪除圖片...", false);
+
+      try {
+        await activeRoot.lexiconAdminApi.deleteWordImage(client, currentWordId);
+        currentDetail.image_url = "";
+        syncMediaFields(activeDocument, currentDetail);
+        renderImagePreview(activeDocument, activeRoot, currentDetail);
+        setImageStatus(activeDocument, "圖片已刪除。", false);
+      } catch (error) {
+        setImageStatus(activeDocument, error.message || "圖片刪除失敗。", true);
+      } finally {
+        updateMediaUi();
+      }
+    });
+
+    SUPPORTED_LANGUAGE_CODES.forEach(function (languageCode) {
+      const uploadButton = activeDocument.querySelector('[data-audio-upload="' + languageCode + '"]');
+      const deleteButton = activeDocument.querySelector('[data-audio-delete="' + languageCode + '"]');
+      const fileInput = activeDocument.querySelector('[data-audio-file="' + languageCode + '"]');
+
+      uploadButton?.addEventListener("click", async function () {
+        if (!hasPersistentWordId(currentWordId)) {
+          setAudioStatus(activeDocument, "請先儲存單字後再上傳音檔。", true);
+          return;
+        }
+
+        const file = fileInput?.files?.[0];
+
+        if (!file) {
+          setAudioStatus(activeDocument, "請先選擇音檔。", true);
+          return;
+        }
+
+        setMediaControlsDisabled(activeDocument, true);
+        setAudioStatus(activeDocument, "正在上傳 " + languageCode + " 音檔...", false);
+
+        try {
+          const result = await activeRoot.lexiconAdminApi.uploadWordAudio(client, currentWordId, languageCode, file);
+          currentDetail.translations[languageCode].audio_filename = result.audioFilename || "";
+          syncMediaFields(activeDocument, currentDetail);
+          renderAudioPreviews(activeDocument, activeRoot, currentDetail);
+          if (fileInput) {
+            fileInput.value = "";
+          }
+          setAudioStatus(activeDocument, languageCode + " 音檔已更新。", false);
+        } catch (error) {
+          setAudioStatus(activeDocument, error.message || "音檔上傳失敗。", true);
+        } finally {
+          updateMediaUi();
+        }
+      });
+
+      deleteButton?.addEventListener("click", async function () {
+        if (!hasPersistentWordId(currentWordId)) {
+          setAudioStatus(activeDocument, "請先儲存單字後再刪除音檔。", true);
+          return;
+        }
+
+        if (!currentDetail.translations[languageCode].audio_filename) {
+          setAudioStatus(activeDocument, languageCode + " 目前沒有音檔可刪除。", true);
+          return;
+        }
+
+        if (!activeRoot.confirm || !activeRoot.confirm("確定要刪除 " + languageCode + " 音檔嗎？")) {
+          return;
+        }
+
+        setMediaControlsDisabled(activeDocument, true);
+        setAudioStatus(activeDocument, "正在刪除 " + languageCode + " 音檔...", false);
+
+        try {
+          await activeRoot.lexiconAdminApi.deleteWordAudio(client, currentWordId, languageCode);
+          currentDetail.translations[languageCode].audio_filename = "";
+          syncMediaFields(activeDocument, currentDetail);
+          renderAudioPreviews(activeDocument, activeRoot, currentDetail);
+          setAudioStatus(activeDocument, languageCode + " 音檔已刪除。", false);
+        } catch (error) {
+          setAudioStatus(activeDocument, error.message || "音檔刪除失敗。", true);
+        } finally {
+          updateMediaUi();
         }
       });
     });
@@ -271,14 +562,17 @@
   }
 
   return {
-    applyWordDetail: applyWordDetail,
-    bootstrap: bootstrap,
-    buildTagOptionMarkup: buildTagOptionMarkup,
-    collectFormValues: collectFormValues,
-    createEmptyWordDetail: createEmptyWordDetail,
-    normalizeWordEditorPayload: normalizeWordEditorPayload,
-    parseWordEditParams: parseWordEditParams,
-    setSaveDisabled: setSaveDisabled,
-    setWordEditStatus: setWordEditStatus,
+    applyWordDetail,
+    bootstrap,
+    buildAudioObjectKey,
+    buildMediaUrl,
+    buildTagOptionMarkup,
+    collectFormValues,
+    createEmptyWordDetail,
+    hasPersistentWordId,
+    normalizeWordEditorPayload,
+    parseWordEditParams,
+    setSaveDisabled,
+    setWordEditStatus,
   };
 });

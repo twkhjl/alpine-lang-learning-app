@@ -23,6 +23,25 @@ function createEnv() {
   };
 }
 
+function createMediaEnv(bucketOverrides = {}) {
+  return {
+    ...createEnv(),
+    LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media",
+    LEXICON_MEDIA_BUCKET: {
+      list() {
+        return Promise.resolve({ objects: [], truncated: false, cursor: undefined });
+      },
+      delete() {
+        return Promise.resolve();
+      },
+      put() {
+        return Promise.resolve();
+      },
+      ...bucketOverrides,
+    },
+  };
+}
+
 function createAdminDeps(overrides = {}) {
   return {
     fetchImpl(url) {
@@ -1105,5 +1124,1161 @@ test("worker returns generic failure for invalid username or password", async ()
   assert.deepEqual(await response.json(), {
     ok: false,
     message: GENERIC_FAILURE_MESSAGE,
+  });
+});
+
+test("worker lists storage objects with db reference summary", async () => {
+  const listCalls = [];
+  const fetchUrls = [];
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/objects?prefix=imgs/&cursor=cursor-1", {
+      method: "GET",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list(options) {
+        listCalls.push(options);
+        return Promise.resolve({
+          objects: [
+            {
+              key: "imgs/28.jpg",
+              size: 1234,
+              uploaded: new Date("2026-05-01T10:00:00.000Z"),
+            },
+            {
+              key: "audios/zh-TW/28.mp3",
+              size: 4567,
+              uploaded: new Date("2026-05-01T11:00:00.000Z"),
+            },
+          ],
+          truncated: true,
+          cursor: "cursor-2",
+        });
+      },
+    }),
+    {
+      fetchImpl(url) {
+        fetchUrls.push(url);
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { id: 28, image_url: "imgs/28.jpg" },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { word_id: 28, language_code: "zh-TW", audio_filename: "audios/zh-TW/28.mp3" },
+              ]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(listCalls, [{ prefix: "imgs/", cursor: "cursor-1" }]);
+  const decodedFetchUrls = fetchUrls.map((url) => decodeURIComponent(url));
+  assert.ok(decodedFetchUrls.some((url) => url.includes("/rest/v1/words") && url.includes("id=in.(28)")));
+  assert.ok(decodedFetchUrls.some((url) => url.includes("/rest/v1/word_translations") && url.includes("word_id=in.(28)")));
+  assert.ok(decodedFetchUrls.every((url) => !url.includes("id=in.(999)")));
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      items: [
+        {
+          key: "imgs/28.jpg",
+          type: "image",
+          languageCode: null,
+          wordId: 28,
+          size: 1234,
+          uploadedAt: "2026-05-01T10:00:00.000Z",
+          dbReferenced: true,
+          previewUrl: "https://cdn.example.com/media/imgs/28.jpg",
+        },
+        {
+          key: "audios/zh-TW/28.mp3",
+          type: "audio",
+          languageCode: "zh-TW",
+          wordId: 28,
+          size: 4567,
+          uploadedAt: "2026-05-01T11:00:00.000Z",
+          dbReferenced: true,
+          previewUrl: "https://cdn.example.com/media/audios/zh-TW/28.mp3",
+        },
+      ],
+      summary: {
+        objectCount: 2,
+        imageCount: 1,
+        audioCount: 1,
+        referencedCount: 2,
+        orphanedCount: 0,
+      },
+      cursor: "cursor-2",
+      truncated: true,
+    },
+  });
+});
+
+test("worker deletes a single image object and clears words.image_url through RPC", async () => {
+  const deletedKeys = [];
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/object", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ key: "imgs/28.jpg" }),
+    }),
+    createMediaEnv({
+      delete(key) {
+        deletedKeys.push(key);
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ id: 28, image_url: "imgs/28.jpg" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_clear_word_image")) {
+          assert.deepEqual(JSON.parse(options.body), {
+            p_word_id: 28,
+          });
+
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ word_id: 28, image_url: "" });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(deletedKeys, ["imgs/28.jpg"]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deletedKey: "imgs/28.jpg",
+      affectedWordId: 28,
+      affectedLanguageCode: null,
+      dbCleared: true,
+    },
+  });
+});
+
+test("worker deletes a single audio object and clears audio_filename through RPC", async () => {
+  const deletedKeys = [];
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/object", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ key: "audios/id/31.ogg" }),
+    }),
+    createMediaEnv({
+      delete(key) {
+        deletedKeys.push(key);
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ word_id: 31, language_code: "id", audio_filename: "audios/id/31.ogg" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_clear_word_audio")) {
+          assert.deepEqual(JSON.parse(options.body), {
+            p_word_id: 31,
+            p_language_code: "id",
+          });
+
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ word_id: 31, language_code: "id", audio_filename: "" });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(deletedKeys, ["audios/id/31.ogg"]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deletedKey: "audios/id/31.ogg",
+      affectedWordId: 31,
+      affectedLanguageCode: "id",
+      dbCleared: true,
+    },
+  });
+});
+
+test("worker deletes stale image object without clearing words.image_url", async () => {
+  const deletedKeys = [];
+  let rpcCalled = false;
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/object", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ key: "imgs/28.jpg" }),
+    }),
+    createMediaEnv({
+      delete(key) {
+        deletedKeys.push(key);
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ id: 28, image_url: "imgs/999.jpg" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/")) {
+          rpcCalled = true;
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(rpcCalled, false);
+  assert.deepEqual(deletedKeys, ["imgs/28.jpg"]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deletedKey: "imgs/28.jpg",
+      affectedWordId: 28,
+      affectedLanguageCode: null,
+      dbCleared: false,
+    },
+  });
+});
+
+test("worker deletes stale audio object without clearing audio_filename", async () => {
+  const deletedKeys = [];
+  let rpcCalled = false;
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/object", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ key: "audios/id/31.ogg" }),
+    }),
+    createMediaEnv({
+      delete(key) {
+        deletedKeys.push(key);
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ word_id: 31, language_code: "id", audio_filename: "31.mp3" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/")) {
+          rpcCalled = true;
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(rpcCalled, false);
+  assert.deepEqual(deletedKeys, ["audios/id/31.ogg"]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deletedKey: "audios/id/31.ogg",
+      affectedWordId: 31,
+      affectedLanguageCode: "id",
+      dbCleared: false,
+    },
+  });
+});
+
+test("worker rejects purge when confirmText is incorrect", async () => {
+  let rpcCalled = false;
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/purge", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ confirmText: "delete all r2 objects" }),
+    }),
+    createMediaEnv({
+      list() {
+        throw new Error("list should not be called");
+      },
+      delete() {
+        throw new Error("delete should not be called");
+      },
+    }),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/")) {
+          rpcCalled = true;
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(rpcCalled, false);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "Confirmation text does not match.",
+    },
+  });
+});
+
+test("worker purges all storage objects and clears database references through RPC", async () => {
+  const deletedKeys = [];
+  const listCalls = [];
+  let inFlightDeletes = 0;
+  let maxInFlightDeletes = 0;
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/purge", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ confirmText: "DELETE ALL R2 OBJECTS" }),
+    }),
+    createMediaEnv({
+      list(options = {}) {
+        listCalls.push(options);
+
+        if (!options.cursor) {
+          return Promise.resolve({
+            objects: Array.from({ length: 20 }, function (_, index) {
+              return { key: "imgs/" + (index + 1) + ".jpg" };
+            }),
+            truncated: true,
+            cursor: "page-2",
+          });
+        }
+
+        assert.equal(options.cursor, "page-2");
+        return Promise.resolve({
+          objects: Array.from({ length: 17 }, function (_, index) {
+            return { key: "audios/en/" + (index + 21) + ".mp3" };
+          }),
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+      delete(key) {
+        inFlightDeletes += 1;
+        maxInFlightDeletes = Math.max(maxInFlightDeletes, inFlightDeletes);
+
+        return new Promise((resolve) => {
+          setTimeout(function () {
+            deletedKeys.push(key);
+            inFlightDeletes -= 1;
+            resolve();
+          }, 5);
+        });
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_purge_media_references")) {
+          assert.deepEqual(JSON.parse(options.body), {});
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({
+                cleared_image_count: 1,
+                cleared_audio_count: 1,
+              });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(listCalls, [
+    {},
+    { cursor: "page-2" },
+  ]);
+  assert.equal(deletedKeys.length, 37);
+  assert.ok(maxInFlightDeletes <= 25);
+  assert.ok(maxInFlightDeletes > 1);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deletedObjectCount: 37,
+      clearedImageCount: 1,
+      clearedAudioCount: 1,
+    },
+  });
+});
+
+test("worker rejects protected assets routes without bearer token", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/objects", {
+      method: "GET",
+      headers: {
+        origin: "https://admin.example.com",
+      },
+    }),
+    createMediaEnv(),
+    createAdminDeps(),
+  );
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "UNAUTHORIZED",
+      message: "A bearer token is required.",
+    },
+  });
+});
+
+test("worker uploads a word image to R2 and syncs image_url through RPC", async () => {
+  const putCalls = [];
+  const formData = new FormData();
+  formData.set("file", new File(["image-binary"], "word.webp", { type: "image/webp" }));
+
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/word-image/28", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+      body: formData,
+    }),
+    createMediaEnv({
+      put(key, value, options) {
+        putCalls.push({
+          key,
+          type: value.type,
+          httpMetadata: options.httpMetadata,
+        });
+        return Promise.resolve();
+      },
+      list() {
+        return Promise.resolve({ objects: [], truncated: false, cursor: undefined });
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_set_word_image")) {
+          assert.deepEqual(JSON.parse(options.body), {
+            p_word_id: 28,
+            p_image_url: "imgs/28.webp",
+          });
+
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ word_id: 28, image_url: "imgs/28.webp" });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(putCalls, [
+    {
+      key: "imgs/28.webp",
+      type: "image/webp",
+      httpMetadata: {
+        contentType: "image/webp",
+      },
+    },
+  ]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      wordId: 28,
+      imageUrl: "imgs/28.webp",
+      previewUrl: "https://cdn.example.com/media/imgs/28.webp",
+    },
+  });
+});
+
+test("worker uploads word audio to R2 and syncs audio_filename through RPC", async () => {
+  const putCalls = [];
+  const formData = new FormData();
+  formData.set("file", new File(["audio-binary"], "word.mp3", { type: "audio/mpeg" }));
+
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/word-audio/28/en", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+      body: formData,
+    }),
+    createMediaEnv({
+      put(key, value, options) {
+        putCalls.push({
+          key,
+          type: value.type,
+          httpMetadata: options.httpMetadata,
+        });
+        return Promise.resolve();
+      },
+      list() {
+        return Promise.resolve({ objects: [], truncated: false, cursor: undefined });
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_set_word_audio")) {
+          assert.deepEqual(JSON.parse(options.body), {
+            p_word_id: 28,
+            p_language_code: "en",
+            p_audio_filename: "28.mp3",
+          });
+
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({
+                word_id: 28,
+                language_code: "en",
+                audio_filename: "28.mp3",
+              });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(putCalls, [
+    {
+      key: "audios/en/28.mp3",
+      type: "audio/mpeg",
+      httpMetadata: {
+        contentType: "audio/mpeg",
+      },
+    },
+  ]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      wordId: 28,
+      languageCode: "en",
+      audioFilename: "28.mp3",
+      previewUrl: "https://cdn.example.com/media/audios/en/28.mp3",
+    },
+  });
+});
+
+test("worker marks image delete as inconsistent when storage delete fails after db clear", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/word-image/28", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list() {
+        return Promise.resolve({
+          objects: [{ key: "imgs/28.jpg" }],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+      delete() {
+        return Promise.reject(new Error("bucket delete failed"));
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_clear_word_image")) {
+          assert.deepEqual(JSON.parse(options.body), { p_word_id: 28 });
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ word_id: 28, image_url: "" });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "INCONSISTENT_STATE",
+      message: "Database references were cleared, but image storage deletion did not complete.",
+      details: {
+        wordId: 28,
+      },
+    },
+  });
+});
+
+test("worker marks audio delete as inconsistent when storage delete fails after db clear", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/word-audio/28/en", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list() {
+        return Promise.resolve({
+          objects: [{ key: "audios/en/28.mp3" }],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+      delete() {
+        return Promise.reject(new Error("bucket delete failed"));
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_clear_word_audio")) {
+          assert.deepEqual(JSON.parse(options.body), {
+            p_word_id: 28,
+            p_language_code: "en",
+          });
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ word_id: 28, language_code: "en", audio_filename: "" });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "INCONSISTENT_STATE",
+      message: "Database references were cleared, but audio storage deletion did not complete.",
+      details: {
+        wordId: 28,
+        languageCode: "en",
+      },
+    },
+  });
+});
+
+test("worker lists storage objects with legacy reference formats, language-safe audio matching, and unknown objects counted in summary", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/objects", {
+      method: "GET",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list() {
+        return Promise.resolve({
+          objects: [
+            {
+              key: "imgs/28.jpg",
+              size: 111,
+              uploaded: new Date("2026-05-01T10:00:00.000Z"),
+            },
+            {
+              key: "audios/en/28.mp3",
+              size: 222,
+              uploaded: new Date("2026-05-01T11:00:00.000Z"),
+            },
+            {
+              key: "audios/id/28.mp3",
+              size: 223,
+              uploaded: new Date("2026-05-01T11:30:00.000Z"),
+            },
+            {
+              key: "misc/unknown.bin",
+              size: 333,
+              uploaded: new Date("2026-05-01T12:00:00.000Z"),
+            },
+          ],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+    }),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { id: 28, image_url: "https://cdn.example.com/media/imgs/28.jpg" },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { word_id: 28, language_code: "en", audio_filename: "28.mp3" },
+                { word_id: 28, language_code: "id", audio_filename: "28.wav" },
+              ]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      items: [
+        {
+          key: "imgs/28.jpg",
+          type: "image",
+          languageCode: null,
+          wordId: 28,
+          size: 111,
+          uploadedAt: "2026-05-01T10:00:00.000Z",
+          dbReferenced: true,
+          previewUrl: "https://cdn.example.com/media/imgs/28.jpg",
+        },
+        {
+          key: "audios/en/28.mp3",
+          type: "audio",
+          languageCode: "en",
+          wordId: 28,
+          size: 222,
+          uploadedAt: "2026-05-01T11:00:00.000Z",
+          dbReferenced: true,
+          previewUrl: "https://cdn.example.com/media/audios/en/28.mp3",
+        },
+        {
+          key: "audios/id/28.mp3",
+          type: "audio",
+          languageCode: "id",
+          wordId: 28,
+          size: 223,
+          uploadedAt: "2026-05-01T11:30:00.000Z",
+          dbReferenced: false,
+          previewUrl: "https://cdn.example.com/media/audios/id/28.mp3",
+        },
+      ],
+      summary: {
+        objectCount: 4,
+        imageCount: 1,
+        audioCount: 2,
+        referencedCount: 2,
+        orphanedCount: 2,
+      },
+      cursor: null,
+      truncated: false,
+    },
+  });
+});
+
+test("worker rolls back uploaded image object when RPC sync fails", async () => {
+  const bucketEvents = [];
+  const formData = new FormData();
+  formData.set("file", new File(["image-binary"], "word.webp", { type: "image/webp" }));
+
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/word-image/28", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+      body: formData,
+    }),
+    createMediaEnv({
+      list(options = {}) {
+        bucketEvents.push({ type: "list", options });
+        return Promise.resolve({
+          objects: [{ key: "imgs/28.jpg" }],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+      put(key) {
+        bucketEvents.push({ type: "put", key });
+        return Promise.resolve();
+      },
+      delete(key) {
+        bucketEvents.push({ type: "delete", key });
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_set_word_image")) {
+          return Promise.resolve({
+            ok: false,
+            json() {
+              return Promise.resolve({
+                code: "P0001",
+                message: "sync failed",
+              });
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 502);
+  assert.deepEqual(bucketEvents, [
+    { type: "list", options: { prefix: "imgs/28." } },
+    { type: "put", key: "imgs/28.webp" },
+    { type: "delete", key: "imgs/28.webp" },
+  ]);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "MEDIA_SYNC_FAILED",
+      message: "Database synchronization failed after upload. The new object was rolled back.",
+      details: {
+        objectKey: "imgs/28.webp",
+        rollbackSucceeded: true,
+      },
+    },
   });
 });

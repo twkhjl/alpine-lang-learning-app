@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>素材參考 - LingoCMS</title>
+    <title>媒體資產 - LingoCMS</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="public/assets/css/admin.css" />
   </head>
@@ -13,44 +13,46 @@
       <div class="admin-content">
         <header class="admin-topbar">
           <div class="admin-topbar-title">
-            <h2 data-i18n="assets.header.title">素材參考</h2>
-            <p data-i18n="assets.header.description">瀏覽圖片與音檔引用關係，並確認資料庫中的 stored path。</p>
+            <h2>媒體資產</h2>
+            <p>直接查看 Cloudflare R2 物件、刪除單一資產，或清空整個 bucket。</p>
           </div>
           <div class="admin-topbar-user">
             <span class="material-symbols-outlined">perm_media</span>
-            <span data-i18n="shell.userLabel">管理員</span>
+            <span data-i18n="shell.userLabel">Admin</span>
           </div>
         </header>
         <main class="admin-main">
           <section class="admin-page-header">
             <div>
-              <h1 data-i18n="assets.header.title">素材參考</h1>
-              <p data-i18n="assets.header.description">瀏覽圖片與音檔引用關係，並確認資料庫中的 stored path。</p>
+              <h1>媒體資產</h1>
+              <p>這裡顯示的是 R2 內實際存在的檔案，不只是資料庫中的 reference。</p>
             </div>
-            <button class="admin-button secondary" type="button" disabled data-i18n="assets.uploadSoon">上傳功能即將推出</button>
+            <div class="admin-actions">
+              <button class="admin-button secondary" type="button" data-assets-reload>重新整理 R2</button>
+            </div>
           </section>
 
           <section class="admin-card" style="padding: 18px; display: grid; gap: 18px;">
             <div class="admin-tab-row">
-              <a class="active" href="#" data-asset-type="" data-i18n="assets.tabs.all">全部</a>
-              <a href="#" data-asset-type="image" data-i18n="assets.tabs.image">圖片</a>
-              <a href="#" data-asset-type="audio" data-i18n="assets.tabs.audio">音檔</a>
+              <a class="active" href="#" data-asset-type="">全部</a>
+              <a href="#" data-asset-type="image">圖片</a>
+              <a href="#" data-asset-type="audio">音檔</a>
             </div>
             <div class="admin-filters" style="padding: 0; grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.8fr) auto;">
               <div class="admin-field">
-                <label for="asset-search" data-i18n="assets.search.label">搜尋 stored path</label>
-                <input id="asset-search" type="search" data-i18n-placeholder="assets.search.placeholder" placeholder="例如 audios/id/meja.mp3" />
+                <label for="asset-search">搜尋物件 key</label>
+                <input id="asset-search" type="search" placeholder="例如 audios/id/28.mp3" />
               </div>
               <div class="admin-field">
-                <label for="lang-filter" data-i18n="assets.language.label">語言</label>
+                <label for="lang-filter">語言</label>
                 <select id="lang-filter">
-                  <option value="" data-i18n="assets.language.all">全部語言</option>
+                  <option value="">全部語言</option>
                   <option value="zh-TW">zh-TW</option>
                   <option value="id">id</option>
                   <option value="en">en</option>
                 </select>
               </div>
-              <div class="admin-status-text" data-assets-status data-i18n="assets.status.loading">載入素材參考中...</div>
+              <div class="admin-status-text" data-assets-status>正在讀取 R2 物件...</div>
             </div>
           </section>
 
@@ -58,7 +60,7 @@
             <div class="admin-stack">
               <section class="admin-card" style="padding: 18px;">
                 <div class="admin-asset-grid" data-assets-cards>
-                  <div class="admin-empty-state" data-i18n="common.loading">載入中...</div>
+                  <div class="admin-empty-state">正在讀取圖片...</div>
                 </div>
               </section>
               <section class="admin-card">
@@ -66,15 +68,18 @@
                   <table class="admin-table">
                     <thead>
                       <tr>
-                        <th data-i18n="assets.table.path">Stored Path</th>
-                        <th data-i18n="assets.table.language">語言</th>
-                        <th data-i18n="assets.table.type">類型</th>
-                        <th data-i18n="assets.table.references">引用字詞</th>
+                        <th>Object Key</th>
+                        <th>類型</th>
+                        <th>語言</th>
+                        <th>大小</th>
+                        <th>上傳時間</th>
+                        <th>資料庫</th>
+                        <th>操作</th>
                       </tr>
                     </thead>
                     <tbody data-assets-table-body>
                       <tr>
-                        <td colspan="4"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
+                        <td colspan="7"><div class="admin-empty-state">正在讀取物件...</div></td>
                       </tr>
                     </tbody>
                   </table>
@@ -83,10 +88,16 @@
             </div>
 
             <aside class="admin-card admin-drawer">
-              <h2 data-i18n="assets.drawer.title">使用說明</h2>
-              <p data-i18n="assets.drawer.body1">目前顯示的是資料庫中的 stored path。</p>
-              <p data-i18n="assets.drawer.body2">你可以確認哪些字詞正在引用這個素材。</p>
-              <p data-i18n="assets.drawer.body3">這個頁面暫時不提供 R2 實體檔案管理。</p>
+              <h2>危險操作</h2>
+              <p>清空整個 bucket 會刪除所有舊圖片與音檔，並同步清空單字的 `image_url` 與 `audio_filename`。</p>
+              <p>請先在下方輸入確認字串，再執行 purge。</p>
+              <div class="admin-form-grid" style="grid-template-columns: 1fr; margin-top: 8px;">
+                <div class="admin-field">
+                  <label for="assets-purge-confirm">確認字串</label>
+                  <input id="assets-purge-confirm" placeholder="DELETE ALL R2 OBJECTS" />
+                </div>
+                <button class="admin-button danger" type="button" data-assets-purge>清空整個 R2 Bucket</button>
+              </div>
             </aside>
           </section>
         </main>

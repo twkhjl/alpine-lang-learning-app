@@ -254,6 +254,11 @@ textarea {
   border-color: var(--admin-border);
 }
 
+.admin-button.danger {
+  background: var(--admin-danger);
+  color: #ffffff;
+}
+
 .admin-button[disabled] {
   cursor: not-allowed;
   opacity: 0.65;
@@ -497,6 +502,49 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.admin-media-panel,
+.admin-media-audio-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-media-preview {
+  min-height: 200px;
+  padding: 16px;
+  border: 1px dashed var(--admin-border);
+  border-radius: 14px;
+  background: var(--admin-surface-muted);
+  display: grid;
+  place-items: center;
+}
+
+.admin-media-audio-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-media-audio-card {
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  background: var(--admin-surface-muted);
+}
+
+.admin-media-audio-card h4,
+.admin-media-filename {
+  margin: 0;
+}
+
+.admin-media-filename {
+  color: var(--admin-text-muted);
+  word-break: break-all;
+}
+
+.admin-media-audio-card audio[hidden] {
+  display: none;
+}
+
 .admin-chip-row {
   display: flex;
   gap: 10px;
@@ -603,6 +651,13 @@ textarea {
   gap: 12px;
 }
 
+.admin-asset-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .admin-asset-thumb {
   min-height: 120px;
   display: grid;
@@ -614,6 +669,43 @@ textarea {
   border: 1px dashed #bfd1f8;
   color: var(--admin-text-muted);
   word-break: break-all;
+}
+
+.admin-asset-image {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.admin-asset-audio,
+.admin-asset-generic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-badge.success {
+  background: rgba(23, 114, 69, 0.12);
+  color: var(--admin-success);
+}
+
+.admin-badge.muted {
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-muted);
 }
 
 .admin-asset-meta,
@@ -743,6 +835,7 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .admin-media-audio-grid,
   .admin-asset-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -776,6 +869,7 @@ textarea {
     align-items: flex-start;
   }
 
+  .admin-media-audio-grid,
   .admin-asset-grid {
     grid-template-columns: 1fr;
   }

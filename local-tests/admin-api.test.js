@@ -5,13 +5,20 @@ const {
   buildProtectedRequest,
   callProtectedEndpoint,
   createWord,
+  deleteStorageObject,
+  deleteWordAudio,
+  deleteWordImage,
   filterAssetReferences,
   getProtectedAccessToken,
   loadAssetReferences,
   loadDashboardSummary,
   loadWordDetail,
   loadWordList,
+  listStorageObjects,
   normalizeWordPayload,
+  purgeStorageObjects,
+  uploadWordAudio,
+  uploadWordImage,
 } = require("../public/assets/js/admin-api");
 
 function createQueryResult(rows) {
@@ -53,6 +60,21 @@ test("buildProtectedRequest omits authorization header when no token", () => {
     body: { foo: "bar" },
   });
   assert.equal(req.headers.get("authorization"), null);
+});
+
+test("buildProtectedRequest preserves FormData bodies without forcing json content-type", async () => {
+  const formData = new FormData();
+  formData.set("file", new File(["audio"], "sample.mp3", { type: "audio/mpeg" }));
+  const req = buildProtectedRequest("/api/admin/assets/word-audio/28/en", "tok-123", {
+    method: "POST",
+    body: formData,
+  });
+
+  assert.equal(req.headers.get("authorization"), "Bearer tok-123");
+  assert.match(req.headers.get("content-type") || "", /^multipart\/form-data;\s*boundary=/);
+  assert.equal(req.method, "POST");
+  const parsedFormData = await req.formData();
+  assert.equal(parsedFormData.get("file").name, "sample.mp3");
 });
 
 test("getProtectedAccessToken rejects when admin session token is missing", async () => {
@@ -209,6 +231,171 @@ test("createWord propagates bearer token to protected worker calls", async () =>
   assert.deepEqual(result, { id: 28 });
   assert.equal(capturedRequest.headers.get("authorization"), "Bearer access-token");
   assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/words");
+});
+
+test("listStorageObjects forwards prefix and cursor to the protected assets endpoint", async () => {
+  let capturedRequest = null;
+
+  const result = await listStorageObjects(
+    {},
+    {
+      prefix: "imgs/",
+      cursor: "cursor-2",
+    },
+    {
+      globalObject: {
+        lexiconAdminAuth: {
+          getAdminSession() {
+            return Promise.resolve({ access_token: "access-token" });
+          },
+        },
+      },
+      apiBaseUrl: "https://worker.example.com/api/admin",
+      fetch(request) {
+        capturedRequest = request;
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({ ok: true, data: { items: [], cursor: null, truncated: false } });
+          },
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result, { items: [], cursor: null, truncated: false });
+  assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/assets/objects?prefix=imgs%2F&cursor=cursor-2");
+  assert.equal(capturedRequest.method, "GET");
+});
+
+test("deleteStorageObject posts a delete request with the target key", async () => {
+  let capturedRequest = null;
+
+  const result = await deleteStorageObject(
+    {},
+    "imgs/28.webp",
+    {
+      globalObject: {
+        lexiconAdminAuth: {
+          getAdminSession() {
+            return Promise.resolve({ access_token: "access-token" });
+          },
+        },
+      },
+      apiBaseUrl: "https://worker.example.com/api/admin",
+      fetch(request) {
+        capturedRequest = request;
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({ ok: true, data: { deletedKey: "imgs/28.webp" } });
+          },
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result, { deletedKey: "imgs/28.webp" });
+  assert.equal(capturedRequest.method, "DELETE");
+});
+
+test("purgeStorageObjects validates and sends confirm text", async () => {
+  await assert.rejects(
+    purgeStorageObjects({}, "   ", {}),
+    function (error) {
+      assert.equal(error.code, "VALIDATION_ERROR");
+      return true;
+    },
+  );
+
+  let capturedRequest = null;
+  const result = await purgeStorageObjects(
+    {},
+    "DELETE ALL R2 OBJECTS",
+    {
+      globalObject: {
+        lexiconAdminAuth: {
+          getAdminSession() {
+            return Promise.resolve({ access_token: "access-token" });
+          },
+        },
+      },
+      apiBaseUrl: "https://worker.example.com/api/admin",
+      fetch(request) {
+        capturedRequest = request;
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({ ok: true, data: { deletedObjectCount: 4 } });
+          },
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result, { deletedObjectCount: 4 });
+  assert.equal(capturedRequest.method, "POST");
+});
+
+test("uploadWordImage sends multipart form data to the protected endpoint", async () => {
+  let capturedRequest = null;
+
+  const result = await uploadWordImage(
+    {},
+    28,
+    new File(["img"], "cover.webp", { type: "image/webp" }),
+    {
+      globalObject: {
+        lexiconAdminAuth: {
+          getAdminSession() {
+            return Promise.resolve({ access_token: "access-token" });
+          },
+        },
+      },
+      apiBaseUrl: "https://worker.example.com/api/admin",
+      fetch(request) {
+        capturedRequest = request;
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({ ok: true, data: { imageUrl: "imgs/28.webp" } });
+          },
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result, { imageUrl: "imgs/28.webp" });
+  assert.equal(capturedRequest.method, "POST");
+  assert.match(capturedRequest.headers.get("content-type") || "", /^multipart\/form-data;\s*boundary=/);
+  const parsedFormData = await capturedRequest.formData();
+  assert.equal(parsedFormData.get("file").name, "cover.webp");
+});
+
+test("uploadWordAudio and deleteWordMedia validate ids and languages", async () => {
+  await assert.rejects(
+    uploadWordAudio({}, 0, "en", new File(["audio"], "voice.mp3", { type: "audio/mpeg" }), {}),
+    function (error) {
+      assert.equal(error.code, "VALIDATION_ERROR");
+      return true;
+    },
+  );
+
+  await assert.rejects(
+    deleteWordAudio({}, 28, "jp", {}),
+    function (error) {
+      assert.equal(error.code, "VALIDATION_ERROR");
+      return true;
+    },
+  );
+
+  await assert.rejects(
+    deleteWordImage({}, "abc", {}),
+    function (error) {
+      assert.equal(error.code, "VALIDATION_ERROR");
+      return true;
+    },
+  );
 });
 
 test("loadWordList filters, sorts, and paginates browser-direct word reads", async () => {

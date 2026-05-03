@@ -2,8 +2,11 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  buildAudioObjectKey,
+  buildMediaUrl,
   buildTagOptionMarkup,
   createEmptyWordDetail,
+  hasPersistentWordId,
   normalizeWordEditorPayload,
   parseWordEditParams,
 } = require("../public/assets/js/admin-word-edit");
@@ -73,4 +76,16 @@ test("buildTagOptionMarkup marks selected tags", () => {
   assert.match(markup, /家具/);
   assert.match(markup, /daily/);
   assert.match(markup, /value="2" checked/);
+});
+
+test("media helper utilities derive persistent ids and media paths", () => {
+  assert.equal(hasPersistentWordId(28), true);
+  assert.equal(hasPersistentWordId("28"), true);
+  assert.equal(hasPersistentWordId("abc"), false);
+  assert.equal(buildAudioObjectKey("id", "28.mp3"), "audios/id/28.mp3");
+  assert.equal(buildAudioObjectKey("id", ""), "");
+  assert.equal(
+    buildMediaUrl({ LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media/" }, "imgs/28.webp"),
+    "https://cdn.example.com/media/imgs/28.webp",
+  );
 });
