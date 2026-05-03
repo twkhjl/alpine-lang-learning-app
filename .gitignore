@@ -10,3 +10,4 @@ spec/*
 AGENTS.md
 supabase/.temp/
 local/*
+.worktrees/
