@@ -84,6 +84,33 @@
     };
   }
 
+  function getMediaPublicBaseUrl(activeRoot) {
+    return String(
+      activeRoot?.LEXICON_MEDIA_PUBLIC_BASE_URL
+      || activeRoot?.LEXICON_ADMIN_MEDIA_PUBLIC_BASE_URL
+      || "",
+    ).replace(/\/$/, "");
+  }
+
+  function buildWordImagePreviewUrl(activeRoot, imageUrl) {
+    const normalizedImageUrl = typeof imageUrl === "string" ? imageUrl.trim() : "";
+    const baseUrl = getMediaPublicBaseUrl(activeRoot);
+
+    if (!normalizedImageUrl) {
+      return "";
+    }
+
+    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(normalizedImageUrl)) {
+      return normalizedImageUrl;
+    }
+
+    if (!baseUrl) {
+      return normalizedImageUrl;
+    }
+
+    return baseUrl + "/" + normalizedImageUrl.replace(/^\//, "");
+  }
+
   function renderWordRow(item, options = {}) {
     const t = typeof options.t === "function" ? options.t : function (key) { return key; };
     const locale = options.locale || "zh-TW";
@@ -97,8 +124,9 @@
           return "<span>" + escapeHtml(tagLabel) + "</span>";
         }).join("")
       : "<span>" + escapeHtml(t("words.table.tagFallback")) + "</span>";
-    const imageMarkup = item.has_image && item.image_url
-      ? '<span class="admin-thumb"><img src="' + escapeHtml(item.image_url) + '" alt="' + escapeHtml(item.lang_zh_tw || item.lang_id || item.lang_en || "") + '"></span>'
+    const previewImageUrl = options.imagePreviewUrl || buildWordImagePreviewUrl(options.root, item.image_url);
+    const imageMarkup = item.has_image && previewImageUrl
+      ? '<span class="admin-thumb"><img src="' + escapeHtml(previewImageUrl) + '" alt="' + escapeHtml(item.lang_zh_tw || item.lang_id || item.lang_en || "") + '"></span>'
       : '<span class="admin-thumb admin-thumb-empty">-</span>';
 
     return [
@@ -232,6 +260,7 @@
             locale: translator.locale,
             page: state.page,
             pageSize: state.pageSize,
+            root: activeRoot,
             tagNameResolver: tagNameResolver,
             t: t,
           });
@@ -326,6 +355,7 @@
     bootstrap: bootstrap,
     buildCreateWordUrl: buildCreateWordUrl,
     buildEditWordUrl: buildEditWordUrl,
+    buildWordImagePreviewUrl: buildWordImagePreviewUrl,
     createTagNameResolver: createTagNameResolver,
     normalizeWordsPageState: normalizeWordsPageState,
     renderPagination: renderPagination,

@@ -4,6 +4,7 @@ const test = require("node:test");
 const {
   buildCreateWordUrl,
   buildEditWordUrl,
+  buildWordImagePreviewUrl,
   normalizeWordsPageState,
   renderWordRow,
   renderWordRows,
@@ -78,6 +79,7 @@ test("renderWordRow renders serial number, thumbnail, and tag names", () => {
     {
       t: enTranslator,
       locale: "en",
+      imagePreviewUrl: "https://cdn.example.com/media/imgs/202604120952.jpg",
       serialNumber: 26,
       tagNameResolver: function (tagId) {
         return {
@@ -89,7 +91,7 @@ test("renderWordRow renders serial number, thumbnail, and tag names", () => {
   );
 
   assert.match(markup, />26</);
-  assert.match(markup, /<img[^>]+src="imgs\/202604120952\.jpg"/);
+  assert.match(markup, /<img[^>]+src="https:\/\/cdn\.example\.com\/media\/imgs\/202604120952\.jpg"/);
   assert.match(markup, /Furniture/);
   assert.match(markup, /Home/);
   assert.doesNotMatch(markup, /Tag #1/);
@@ -144,6 +146,24 @@ test("renderWordRows calculates cross-page serial numbers", () => {
 
   assert.match(markup, />26</);
   assert.match(markup, />27</);
+});
+
+test("buildWordImagePreviewUrl resolves storage key against media base url", () => {
+  assert.equal(
+    buildWordImagePreviewUrl(
+      { LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media/" },
+      "imgs/28.webp",
+    ),
+    "https://cdn.example.com/media/imgs/28.webp",
+  );
+
+  assert.equal(
+    buildWordImagePreviewUrl(
+      { LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media/" },
+      "https://assets.example.com/words/28.webp",
+    ),
+    "https://assets.example.com/words/28.webp",
+  );
 });
 
 test("word page URL helpers generate edit and create links", () => {
