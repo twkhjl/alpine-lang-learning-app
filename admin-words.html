@@ -14,7 +14,7 @@
         <header class="admin-topbar">
           <div class="admin-topbar-title">
             <h2 data-i18n="words.header.title">字詞管理</h2>
-            <p data-i18n="words.header.description">搜尋、篩選並管理字詞資料。</p>
+            <p data-i18n="words.header.description">搜尋、篩選與維護字詞資料。</p>
           </div>
           <div class="admin-topbar-user">
             <span class="material-symbols-outlined">person</span>
@@ -25,10 +25,10 @@
           <section class="admin-page-header">
             <div>
               <h1 data-i18n="words.header.title">字詞管理</h1>
-              <p data-i18n="words.header.description">搜尋、篩選並管理字詞資料。</p>
+              <p data-i18n="words.header.description">搜尋、篩選與維護字詞資料。</p>
             </div>
             <div class="admin-actions">
-              <button class="admin-button secondary" type="button" disabled data-i18n="words.csvSoon">CSV 功能即將推出</button>
+              <button class="admin-button secondary" type="button" disabled data-i18n="words.csvSoon">CSV 工具即將推出</button>
               <a class="admin-button" data-create-word-link href="admin-word-edit.html?mode=create">
                 <span class="material-symbols-outlined">add</span>
                 <span data-i18n="words.create">建立字詞</span>
@@ -40,7 +40,7 @@
             <div class="admin-filters">
               <div class="admin-field">
                 <label for="word-search" data-i18n="words.filters.search">搜尋字詞或標籤</label>
-                <input id="word-search" type="text" data-i18n-placeholder="words.filters.searchPlaceholder" placeholder="例如 meja、food、桌子" />
+                <input id="word-search" type="text" data-i18n-placeholder="words.filters.searchPlaceholder" placeholder="例如：meja、food、table" />
               </div>
               <div class="admin-field">
                 <label for="tag-filter" data-i18n="words.filters.tag">標籤</label>
@@ -78,20 +78,19 @@
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th data-i18n="words.table.id">ID</th>
+                    <th data-i18n="words.table.id">流水號</th>
                     <th data-i18n="words.table.image">圖片</th>
                     <th data-i18n="words.table.wordZhTw">繁中</th>
                     <th data-i18n="words.table.idText">印尼文</th>
                     <th data-i18n="words.table.en">英文</th>
                     <th data-i18n="words.table.tags">標籤</th>
-                    <th data-i18n="words.table.media">媒體</th>
                     <th data-i18n="words.table.updatedAt">更新時間</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody data-words-table-body>
                   <tr>
-                    <td colspan="9"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
+                    <td colspan="8"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
                   </tr>
                 </tbody>
               </table>

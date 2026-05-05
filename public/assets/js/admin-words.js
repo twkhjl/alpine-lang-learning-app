@@ -62,32 +62,55 @@
     });
   }
 
+  function resolveTagLabel(tag, locale) {
+    const normalizedLocale = locale === "en" ? "en" : locale === "id" ? "id" : "zh-TW";
+
+    return tag?.translations?.[normalizedLocale]?.name
+      || tag?.translations?.["zh-TW"]?.name
+      || tag?.translations?.id?.name
+      || tag?.translations?.en?.name
+      || (tag?.id ? "Tag #" + tag.id : "");
+  }
+
+  function createTagNameResolver(tags, locale) {
+    const tagLabelMap = new Map(
+      (Array.isArray(tags) ? tags : []).map(function (tag) {
+        return [Number(tag.id), resolveTagLabel(tag, locale)];
+      }),
+    );
+
+    return function (tagId) {
+      return tagLabelMap.get(Number(tagId)) || "";
+    };
+  }
+
   function renderWordRow(item, options = {}) {
     const t = typeof options.t === "function" ? options.t : function (key) { return key; };
     const locale = options.locale || "zh-TW";
-    const mediaFlags = [
-      item.has_image ? t("words.table.imageReady") : t("words.table.imageMissing"),
-      item.audio_languages.length > 0
-        ? t("words.table.audioReady", { languages: item.audio_languages.join(", ") })
-        : t("words.table.audioMissing"),
-    ].join(" / ");
+    const serialNumber = Number.isInteger(options.serialNumber) ? options.serialNumber : Number(item.id);
+    const resolveTagName = typeof options.tagNameResolver === "function"
+      ? options.tagNameResolver
+      : function () { return ""; };
     const tagMarkup = item.tags.length
       ? item.tags.map(function (tagId) {
-          return "<span>Tag #" + escapeHtml(tagId) + "</span>";
+          const tagLabel = resolveTagName(tagId) || "Tag #" + tagId;
+          return "<span>" + escapeHtml(tagLabel) + "</span>";
         }).join("")
       : "<span>" + escapeHtml(t("words.table.tagFallback")) + "</span>";
+    const imageMarkup = item.has_image && item.image_url
+      ? '<span class="admin-thumb"><img src="' + escapeHtml(item.image_url) + '" alt="' + escapeHtml(item.lang_zh_tw || item.lang_id || item.lang_en || "") + '"></span>'
+      : '<span class="admin-thumb admin-thumb-empty">-</span>';
 
     return [
       "<tr>",
-      "<td>" + escapeHtml(item.id) + "</td>",
-      '<td><span class="admin-thumb">' + (item.has_image ? "IMG" : "-") + "</span></td>",
+      "<td>" + escapeHtml(serialNumber) + "</td>",
+      "<td>" + imageMarkup + "</td>",
       "<td>" + escapeHtml(item.lang_zh_tw) + "</td>",
       "<td>" + escapeHtml(item.lang_id) + "</td>",
       "<td>" + escapeHtml(item.lang_en) + "</td>",
-      '<td><div class="admin-tags">' + tagMarkup + "</div></td>",
-      "<td>" + escapeHtml(mediaFlags) + "</td>",
+      "<td><div class=\"admin-tags\">" + tagMarkup + "</div></td>",
       "<td>" + escapeHtml(formatUpdatedAt(item.updated_at, locale)) + "</td>",
-      '<td><div class="admin-row-actions"><a class="admin-button secondary" href="' + escapeHtml(buildEditWordUrl(item.id)) + '">' + escapeHtml(t("words.table.edit")) + "</a></div></td>",
+      "<td><div class=\"admin-row-actions\"><a class=\"admin-button secondary\" href=\"" + escapeHtml(buildEditWordUrl(item.id)) + "\">" + escapeHtml(t("words.table.edit")) + "</a></div></td>",
       "</tr>",
     ].join("");
   }
@@ -98,13 +121,18 @@
     if (!Array.isArray(items) || items.length === 0) {
       return [
         "<tr>",
-        '<td colspan="9"><div class="admin-empty-state">' + escapeHtml(t("words.table.empty")) + "</div></td>",
+        "<td colspan=\"8\"><div class=\"admin-empty-state\">" + escapeHtml(t("words.table.empty")) + "</div></td>",
         "</tr>",
       ].join("");
     }
 
-    return items.map(function (item) {
-      return renderWordRow(item, options);
+    const page = Number.isInteger(options.page) && options.page > 0 ? options.page : 1;
+    const pageSize = Number.isInteger(options.pageSize) && options.pageSize > 0 ? options.pageSize : items.length;
+
+    return items.map(function (item, index) {
+      return renderWordRow(item, Object.assign({}, options, {
+        serialNumber: (page - 1) * pageSize + index + 1,
+      }));
     }).join("\n");
   }
 
@@ -129,7 +157,7 @@
     const options = [
       '<option value="">' + escapeHtml(t("words.filters.unset")) + "</option>",
       ...tags.map(function (tag) {
-        const label = tag.translations?.["zh-TW"]?.name || tag.translations?.en?.name || "Tag #" + tag.id;
+        const label = resolveTagLabel(tag, "zh-TW");
         return '<option value="' + escapeHtml(tag.id) + '">' + escapeHtml(label) + "</option>";
       }),
     ];
@@ -171,6 +199,9 @@
     const pageNode = activeDocument.querySelector("[data-words-page]");
     const createLink = activeDocument.querySelector("[data-create-word-link]");
     const state = normalizeWordsPageState({ page: 1, pageSize: 25 });
+    let tagNameResolver = function () {
+      return "";
+    };
 
     if (createLink) {
       createLink.setAttribute("href", buildCreateWordUrl());
@@ -178,7 +209,9 @@
 
     try {
       const tagResult = await activeRoot.lexiconAdminApi.loadTagList(client);
-      syncTagFilterOptions(tagFilter, tagResult.data || [], t);
+      const tags = tagResult.data || [];
+      syncTagFilterOptions(tagFilter, tags, t);
+      tagNameResolver = createTagNameResolver(tags, translator.locale);
     } catch (error) {
       if (statusNode) {
         statusNode.textContent = error.message || t("words.status.error");
@@ -197,6 +230,9 @@
         if (tableBody) {
           tableBody.innerHTML = renderWordRows(result.data.items, {
             locale: translator.locale,
+            page: state.page,
+            pageSize: state.pageSize,
+            tagNameResolver: tagNameResolver,
             t: t,
           });
         }
@@ -290,6 +326,7 @@
     bootstrap: bootstrap,
     buildCreateWordUrl: buildCreateWordUrl,
     buildEditWordUrl: buildEditWordUrl,
+    createTagNameResolver: createTagNameResolver,
     normalizeWordsPageState: normalizeWordsPageState,
     renderPagination: renderPagination,
     renderWordRow: renderWordRow,

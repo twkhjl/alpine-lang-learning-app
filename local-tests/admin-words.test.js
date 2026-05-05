@@ -44,7 +44,7 @@ const enTranslator = function (key, replacements = {}) {
 test("normalizeWordsPageState normalizes filters and pagination", () => {
   assert.deepEqual(
     normalizeWordsPageState({
-      q: " 桌子 ",
+      q: " meja ",
       tagId: "4",
       hasImage: true,
       hasAudio: false,
@@ -52,7 +52,7 @@ test("normalizeWordsPageState normalizes filters and pagination", () => {
       pageSize: "50",
     }),
     {
-      q: "桌子",
+      q: "meja",
       tagId: 4,
       hasImage: true,
       hasAudio: false,
@@ -62,7 +62,7 @@ test("normalizeWordsPageState normalizes filters and pagination", () => {
   );
 });
 
-test("renderWordRow renders localized list row markup", () => {
+test("renderWordRow renders serial number, thumbnail, and tag names", () => {
   const markup = renderWordRow(
     {
       id: 28,
@@ -75,13 +75,25 @@ test("renderWordRow renders localized list row markup", () => {
       audio_languages: ["zh-TW", "id"],
       updated_at: "2026-04-26T02:12:00.000Z",
     },
-    { t: enTranslator, locale: "en" },
+    {
+      t: enTranslator,
+      locale: "en",
+      serialNumber: 26,
+      tagNameResolver: function (tagId) {
+        return {
+          1: "Furniture",
+          3: "Home",
+        }[tagId] || "";
+      },
+    },
   );
 
-  assert.match(markup, /桌子/);
-  assert.match(markup, /meja/);
-  assert.match(markup, /table/);
-  assert.match(markup, /Audio: zh-TW, id/);
+  assert.match(markup, />26</);
+  assert.match(markup, /<img[^>]+src="imgs\/202604120952\.jpg"/);
+  assert.match(markup, /Furniture/);
+  assert.match(markup, /Home/);
+  assert.doesNotMatch(markup, /Tag #1/);
+  assert.doesNotMatch(markup, /Audio:/);
   assert.match(markup, />Edit</);
   assert.match(markup, /admin-word-edit\.html\?id=28/);
 });
@@ -90,7 +102,48 @@ test("renderWordRows returns explicit localized empty state markup", () => {
   const markup = renderWordRows([], { t: zhTranslator });
 
   assert.match(markup, /目前沒有符合條件的字詞。/);
-  assert.match(markup, /colspan="9"/);
+  assert.match(markup, /colspan="8"/);
+});
+
+test("renderWordRows calculates cross-page serial numbers", () => {
+  const markup = renderWordRows(
+    [
+      {
+        id: 28,
+        image_url: "",
+        lang_zh_tw: "桌子",
+        lang_id: "meja",
+        lang_en: "table",
+        tags: [],
+        has_image: false,
+        audio_languages: [],
+        updated_at: "2026-04-26T02:12:00.000Z",
+      },
+      {
+        id: 27,
+        image_url: "",
+        lang_zh_tw: "椅子",
+        lang_id: "kursi",
+        lang_en: "chair",
+        tags: [],
+        has_image: false,
+        audio_languages: [],
+        updated_at: "2026-04-26T02:10:00.000Z",
+      },
+    ],
+    {
+      t: enTranslator,
+      locale: "en",
+      page: 2,
+      pageSize: 25,
+      tagNameResolver: function () {
+        return "";
+      },
+    },
+  );
+
+  assert.match(markup, />26</);
+  assert.match(markup, />27</);
 });
 
 test("word page URL helpers generate edit and create links", () => {
