@@ -778,6 +778,71 @@ textarea {
   gap: 16px;
 }
 
+.admin-feedback-message {
+  margin: 0;
+  color: var(--admin-text);
+}
+
+.admin-feedback-backdrop {
+  z-index: 1200;
+}
+
+.admin-feedback-backdrop.danger .admin-modal {
+  border-color: rgba(192, 38, 38, 0.28);
+}
+
+.admin-toast-viewport {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1300;
+  width: min(100vw - 32px, 360px);
+  display: grid;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.admin-toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 42px rgba(12, 24, 42, 0.16);
+  color: var(--admin-text);
+  pointer-events: auto;
+}
+
+.admin-toast-success {
+  border-color: rgba(23, 114, 69, 0.24);
+}
+
+.admin-toast-error {
+  border-color: rgba(192, 38, 38, 0.24);
+}
+
+.admin-toast-info {
+  border-color: rgba(25, 103, 210, 0.22);
+}
+
+.admin-toast-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+}
+
+.admin-toast-dismiss {
+  border: 0;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .admin-login-page {
   background:
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.24), transparent 30%),
@@ -856,6 +921,13 @@ textarea {
   .admin-shell,
   .admin-login-layout {
     grid-template-columns: 1fr;
+  }
+
+  .admin-toast-viewport {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+    width: auto;
   }
 
   .admin-filters,

@@ -41,6 +41,28 @@ test("admin shell pages rely on the shared sidebar placeholder", () => {
   }
 });
 
+test("admin write pages load the shared feedback runtime", () => {
+  for (const file of [
+    "admin-word-edit.html",
+    "admin-assets.html",
+    "admin-tags.html",
+  ]) {
+    const html = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+    assert.match(html, /public\/assets\/js\/admin-feedback\.js/);
+  }
+});
+
+test("admin write page modules do not directly call native confirm", () => {
+  for (const file of [
+    "public/assets/js/admin-word-edit.js",
+    "public/assets/js/admin-assets.js",
+    "public/assets/js/admin-tags.js",
+  ]) {
+    const source = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+    assert.doesNotMatch(source, /window\.confirm\(/);
+  }
+});
+
 test("login page loads shared admin i18n without sidebar shell", () => {
   const html = fs.readFileSync(path.join(process.cwd(), "admin-login.html"), "utf8");
 

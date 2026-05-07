@@ -197,6 +197,7 @@
     };
     const t = translator.t;
     const client = access.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
+    const feedback = activeRoot.lexiconAdminFeedback;
     const cardsNode = activeDocument.querySelector("[data-assets-cards]");
     const tableBody = activeDocument.querySelector("[data-assets-table-body]");
     const statusNode = activeDocument.querySelector("[data-assets-status]");
@@ -208,6 +209,22 @@
     const purgeInput = activeDocument.getElementById("assets-purge-confirm");
     let allItems = [];
     let activeType = "";
+
+    async function requestConfirmation(options) {
+      if (feedback?.showConfirmDialog) {
+        return feedback.showConfirmDialog(options, activeRoot);
+      }
+
+      return activeRoot.confirm ? activeRoot.confirm(options?.message || options?.title || "") : true;
+    }
+
+    function showSuccessToast(message) {
+      feedback?.showSuccessToast?.(message, {}, activeRoot);
+    }
+
+    function showErrorToast(message) {
+      feedback?.showErrorToast?.(message, {}, activeRoot);
+    }
 
     function setStatus(message, isError) {
       if (!statusNode) {
@@ -296,26 +313,40 @@
       const confirmText = String(purgeInput?.value || "").trim();
 
       if (confirmText !== "DELETE ALL R2 OBJECTS") {
-        setStatus("請先輸入 DELETE ALL R2 OBJECTS 才能清空整個 bucket。", true);
+        const mismatchMessage = "???? DELETE ALL R2 OBJECTS ??????? bucket?";
+        setStatus(mismatchMessage, true);
+        showErrorToast(mismatchMessage);
         return;
       }
 
-      if (!activeRoot.confirm || !activeRoot.confirm("這會刪除整個 R2 bucket 並同步清空資料庫媒體欄位，確定繼續？")) {
+      const confirmedPurge = await requestConfirmation({
+        title: t("feedback.confirm.purgeTitle"),
+        message: t("feedback.confirm.purgeMessage"),
+        confirmText: t("common.confirm"),
+        cancelText: t("common.cancel"),
+        tone: "danger",
+      });
+
+      if (!confirmedPurge) {
         return;
       }
 
       setBusy(true);
-      setStatus("正在清空整個 R2 bucket...", false);
+      setStatus("???? R2 bucket...", false);
 
       try {
         const result = await activeRoot.lexiconAdminApi.purgeStorageObjects(client, confirmText);
         if (purgeInput) {
           purgeInput.value = "";
         }
-        setStatus(`已刪除 ${result.deletedObjectCount || 0} 個物件，並清空 ${result.clearedImageCount || 0} 筆圖片、${result.clearedAudioCount || 0} 筆音檔欄位。`, false);
+        const purgeSuccessMessage = `??? ${result.deletedObjectCount || 0} ?????????? ${result.clearedImageCount || 0} ?????? ${result.clearedAudioCount || 0} ??`;
+        setStatus(purgeSuccessMessage, false);
+        showSuccessToast(purgeSuccessMessage);
         await refreshItems();
       } catch (error) {
-        setStatus(error.message || "清空 R2 bucket 失敗。", true);
+        const purgeErrorMessage = error.message || "?? R2 bucket ???";
+        setStatus(purgeErrorMessage, true);
+        showErrorToast(purgeErrorMessage);
       } finally {
         setBusy(false);
       }
@@ -334,19 +365,31 @@
         return;
       }
 
-      if (!activeRoot.confirm || !activeRoot.confirm(`確定要刪除 ${key} 嗎？`)) {
+      const confirmedDelete = await requestConfirmation({
+        title: t("feedback.confirm.deleteTitle"),
+        message: t("feedback.confirm.assetDeleteMessage", { key: key }),
+        confirmText: t("common.confirm"),
+        cancelText: t("common.cancel"),
+        tone: "danger",
+      });
+
+      if (!confirmedDelete) {
         return;
       }
 
       setBusy(true);
-      setStatus(`正在刪除 ${key}...`, false);
+      setStatus(`???? ${key}...`, false);
 
       try {
         const result = await activeRoot.lexiconAdminApi.deleteStorageObject(client, key);
-        setStatus(`已刪除 ${result.deletedKey || key}。`, false);
+        const deleteSuccessMessage = `??? ${result.deletedKey || key}?`;
+        setStatus(deleteSuccessMessage, false);
+        showSuccessToast(deleteSuccessMessage);
         await refreshItems();
       } catch (error) {
-        setStatus(error.message || "刪除物件失敗。", true);
+        const deleteErrorMessage = error.message || "???????";
+        setStatus(deleteErrorMessage, true);
+        showErrorToast(deleteErrorMessage);
       } finally {
         setBusy(false);
       }

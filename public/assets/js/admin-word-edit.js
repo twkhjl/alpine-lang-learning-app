@@ -312,6 +312,7 @@
     };
     const t = translator.t;
     const client = access.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
+    const feedback = activeRoot.lexiconAdminFeedback;
     const params = parseWordEditParams(activeRoot.location?.search || "");
     const tagContainer = activeDocument.querySelector("[data-tag-options]");
     const saveButtons = activeDocument.querySelectorAll("[data-word-save]");
@@ -322,6 +323,22 @@
     let currentWordId = params.wordId;
     let currentMode = params.mode;
     let currentDetail = createEmptyWordDetail();
+
+    async function requestConfirmation(options) {
+      if (feedback?.showConfirmDialog) {
+        return feedback.showConfirmDialog(options, activeRoot);
+      }
+
+      return activeRoot.confirm ? activeRoot.confirm(options?.message || options?.title || "") : true;
+    }
+
+    function showSuccessToast(message) {
+      feedback?.showSuccessToast?.(message, {}, activeRoot);
+    }
+
+    function showErrorToast(message) {
+      feedback?.showErrorToast?.(message, {}, activeRoot);
+    }
 
     function updateMediaUi() {
       renderImagePreview(activeDocument, activeRoot, currentDetail);
@@ -413,9 +430,11 @@
           activeDocument.getElementById("word-id").value = currentWordId;
           setPageCopy(activeDocument, "edit", t);
           setWordEditStatus(activeDocument, t("wordEdit.status.saved"), false);
+          showSuccessToast(t("wordEdit.status.saved"));
           updateMediaUi();
         } catch (error) {
           setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
+          showErrorToast(t("wordEdit.status.error"));
         } finally {
           setSaveDisabled(activeDocument, false);
         }
@@ -424,19 +443,19 @@
 
     imageUploadButton?.addEventListener("click", async function () {
       if (!hasPersistentWordId(currentWordId)) {
-        setImageStatus(activeDocument, "請先儲存單字後再上傳圖片。", true);
+        setImageStatus(activeDocument, "?????????????", true);
         return;
       }
 
       const file = imageFileInput?.files?.[0];
 
       if (!file) {
-        setImageStatus(activeDocument, "請先選擇圖片檔。", true);
+        setImageStatus(activeDocument, "?????????", true);
         return;
       }
 
       setMediaControlsDisabled(activeDocument, true);
-      setImageStatus(activeDocument, "正在上傳圖片...", false);
+      setImageStatus(activeDocument, "??????...", false);
 
       try {
         const result = await activeRoot.lexiconAdminApi.uploadWordImage(client, currentWordId, file);
@@ -446,9 +465,11 @@
         if (imageFileInput) {
           imageFileInput.value = "";
         }
-        setImageStatus(activeDocument, "圖片已更新。", false);
+        setImageStatus(activeDocument, "??????", false);
+        showSuccessToast(t("wordEdit.toast.imageUploadSuccess"));
       } catch (error) {
-        setImageStatus(activeDocument, error.message || "圖片上傳失敗。", true);
+        setImageStatus(activeDocument, error.message || "???????", true);
+        showErrorToast(t("wordEdit.toast.imageUploadError"));
       } finally {
         updateMediaUi();
       }
@@ -456,30 +477,40 @@
 
     imageDeleteButton?.addEventListener("click", async function () {
       if (!hasPersistentWordId(currentWordId)) {
-        setImageStatus(activeDocument, "請先儲存單字後再刪除圖片。", true);
+        setImageStatus(activeDocument, "?????????????", true);
         return;
       }
 
       if (!currentDetail.image_url) {
-        setImageStatus(activeDocument, "目前沒有圖片可刪除。", true);
+        setImageStatus(activeDocument, "??????????", true);
         return;
       }
 
-      if (!activeRoot.confirm || !activeRoot.confirm("確定要刪除這張圖片嗎？")) {
+      const confirmedImageDelete = await requestConfirmation({
+        title: t("feedback.confirm.deleteTitle"),
+        message: t("feedback.confirm.wordImageDeleteMessage"),
+        confirmText: t("common.confirm"),
+        cancelText: t("common.cancel"),
+        tone: "danger",
+      });
+
+      if (!confirmedImageDelete) {
         return;
       }
 
       setMediaControlsDisabled(activeDocument, true);
-      setImageStatus(activeDocument, "正在刪除圖片...", false);
+      setImageStatus(activeDocument, "??????...", false);
 
       try {
         await activeRoot.lexiconAdminApi.deleteWordImage(client, currentWordId);
         currentDetail.image_url = "";
         syncMediaFields(activeDocument, currentDetail);
         renderImagePreview(activeDocument, activeRoot, currentDetail);
-        setImageStatus(activeDocument, "圖片已刪除。", false);
+        setImageStatus(activeDocument, "??????", false);
+        showSuccessToast(t("wordEdit.toast.imageDeleteSuccess"));
       } catch (error) {
-        setImageStatus(activeDocument, error.message || "圖片刪除失敗。", true);
+        setImageStatus(activeDocument, error.message || "???????", true);
+        showErrorToast(t("wordEdit.toast.imageDeleteError"));
       } finally {
         updateMediaUi();
       }
@@ -492,19 +523,19 @@
 
       uploadButton?.addEventListener("click", async function () {
         if (!hasPersistentWordId(currentWordId)) {
-          setAudioStatus(activeDocument, "請先儲存單字後再上傳音檔。", true);
+          setAudioStatus(activeDocument, "?????????????", true);
           return;
         }
 
         const file = fileInput?.files?.[0];
 
         if (!file) {
-          setAudioStatus(activeDocument, "請先選擇音檔。", true);
+          setAudioStatus(activeDocument, "???????", true);
           return;
         }
 
         setMediaControlsDisabled(activeDocument, true);
-        setAudioStatus(activeDocument, "正在上傳 " + languageCode + " 音檔...", false);
+        setAudioStatus(activeDocument, "???? " + languageCode + " ??...", false);
 
         try {
           const result = await activeRoot.lexiconAdminApi.uploadWordAudio(client, currentWordId, languageCode, file);
@@ -514,9 +545,11 @@
           if (fileInput) {
             fileInput.value = "";
           }
-          setAudioStatus(activeDocument, languageCode + " 音檔已更新。", false);
+          setAudioStatus(activeDocument, languageCode + " ??????", false);
+          showSuccessToast(t("wordEdit.toast.audioUploadSuccess", { languageCode: languageCode }));
         } catch (error) {
-          setAudioStatus(activeDocument, error.message || "音檔上傳失敗。", true);
+          setAudioStatus(activeDocument, error.message || "???????", true);
+          showErrorToast(t("wordEdit.toast.audioUploadError", { languageCode: languageCode }));
         } finally {
           updateMediaUi();
         }
@@ -524,30 +557,40 @@
 
       deleteButton?.addEventListener("click", async function () {
         if (!hasPersistentWordId(currentWordId)) {
-          setAudioStatus(activeDocument, "請先儲存單字後再刪除音檔。", true);
+          setAudioStatus(activeDocument, "?????????????", true);
           return;
         }
 
         if (!currentDetail.translations[languageCode].audio_filename) {
-          setAudioStatus(activeDocument, languageCode + " 目前沒有音檔可刪除。", true);
+          setAudioStatus(activeDocument, languageCode + " ??????????", true);
           return;
         }
 
-        if (!activeRoot.confirm || !activeRoot.confirm("確定要刪除 " + languageCode + " 音檔嗎？")) {
+        const confirmedAudioDelete = await requestConfirmation({
+          title: t("feedback.confirm.deleteTitle"),
+          message: t("feedback.confirm.wordAudioDeleteMessage", { languageCode: languageCode }),
+          confirmText: t("common.confirm"),
+          cancelText: t("common.cancel"),
+          tone: "danger",
+        });
+
+        if (!confirmedAudioDelete) {
           return;
         }
 
         setMediaControlsDisabled(activeDocument, true);
-        setAudioStatus(activeDocument, "正在刪除 " + languageCode + " 音檔...", false);
+        setAudioStatus(activeDocument, "???? " + languageCode + " ??...", false);
 
         try {
           await activeRoot.lexiconAdminApi.deleteWordAudio(client, currentWordId, languageCode);
           currentDetail.translations[languageCode].audio_filename = "";
           syncMediaFields(activeDocument, currentDetail);
           renderAudioPreviews(activeDocument, activeRoot, currentDetail);
-          setAudioStatus(activeDocument, languageCode + " 音檔已刪除。", false);
+          setAudioStatus(activeDocument, languageCode + " ??????", false);
+          showSuccessToast(t("wordEdit.toast.audioDeleteSuccess", { languageCode: languageCode }));
         } catch (error) {
-          setAudioStatus(activeDocument, error.message || "音檔刪除失敗。", true);
+          setAudioStatus(activeDocument, error.message || "???????", true);
+          showErrorToast(t("wordEdit.toast.audioDeleteError", { languageCode: languageCode }));
         } finally {
           updateMediaUi();
         }

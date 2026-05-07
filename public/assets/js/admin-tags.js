@@ -124,6 +124,7 @@
     };
     const t = translator.t;
     const client = access.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
+    const feedback = activeRoot.lexiconAdminFeedback;
     const tableBody = activeDocument.querySelector("[data-tags-table-body]");
     const summaryNode = activeDocument.querySelector("[data-tags-summary]");
     const backdrop = activeDocument.querySelector(".admin-modal-backdrop");
@@ -133,6 +134,22 @@
     const modalTitle = activeDocument.querySelector("[data-tag-modal-title]");
     let activeTags = [];
     let editingTagId = null;
+
+    async function requestConfirmation(options) {
+      if (feedback?.showConfirmDialog) {
+        return feedback.showConfirmDialog(options, activeRoot);
+      }
+
+      return activeRoot.confirm ? activeRoot.confirm(options?.message || options?.title || "") : true;
+    }
+
+    function showSuccessToast(message) {
+      feedback?.showSuccessToast?.(message, {}, activeRoot);
+    }
+
+    function showErrorToast(message) {
+      feedback?.showErrorToast?.(message, {}, activeRoot);
+    }
 
     function openModal(tag) {
       editingTagId = tag?.id || null;
@@ -189,14 +206,17 @@
         if (editingTagId) {
           await activeRoot.lexiconAdminApi.updateTag(client, editingTagId, payload);
           setTagStatus(activeDocument, t("tags.status.saveSuccess"), false);
+          showSuccessToast(t("tags.status.saveSuccess"));
         } else {
           await activeRoot.lexiconAdminApi.createTag(client, payload);
           setTagStatus(activeDocument, t("tags.status.createSuccess"), false);
+          showSuccessToast(t("tags.status.createSuccess"));
         }
         closeModal();
         await loadTags();
       } catch (error) {
         setTagStatus(activeDocument, error.message || t("tags.status.error"), true);
+        showErrorToast(t("tags.status.error"));
       }
     });
 
@@ -213,12 +233,26 @@
 
       if (deleteButton && !deleteButton.disabled) {
         const tagId = Number(deleteButton.getAttribute("data-tag-delete"));
+        const confirmedTagDelete = await requestConfirmation({
+          title: t("feedback.confirm.deleteTitle"),
+          message: t("feedback.confirm.tagDeleteMessage"),
+          confirmText: t("common.confirm"),
+          cancelText: t("common.cancel"),
+          tone: "danger",
+        });
+
+        if (!confirmedTagDelete) {
+          return;
+        }
+
         try {
           await activeRoot.lexiconAdminApi.deleteTag(client, tagId);
           await loadTags();
           setTagStatus(activeDocument, t("tags.status.deleteSuccess"), false);
+          showSuccessToast(t("tags.status.deleteSuccess"));
         } catch (error) {
           setTagStatus(activeDocument, error.message || t("tags.status.deleteBlocked"), true);
+          showErrorToast(t("tags.status.deleteBlocked"));
         }
       }
     });
