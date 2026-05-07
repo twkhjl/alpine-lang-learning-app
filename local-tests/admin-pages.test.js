@@ -52,6 +52,16 @@ test("admin write pages load the shared feedback runtime", () => {
   }
 });
 
+test("admin word edit hides read-only id and media path inputs", () => {
+  const html = fs.readFileSync(path.join(process.cwd(), "admin-word-edit.html"), "utf8");
+
+  assert.match(html, /<div class="admin-field" hidden>\s*<input id="word-id" type="hidden" readonly \/>/);
+  assert.match(html, /<div class="admin-field" hidden>\s*<input id="image-url" type="hidden" readonly \/>/);
+  assert.match(html, /<div class="admin-field" hidden>\s*<input id="audio-zh" type="hidden" readonly \/>/);
+  assert.match(html, /<div class="admin-field" hidden>\s*<input id="audio-id" type="hidden" readonly \/>/);
+  assert.match(html, /<div class="admin-field" hidden>\s*<input id="audio-en" type="hidden" readonly \/>/);
+});
+
 test("admin write page modules do not directly call native confirm", () => {
   for (const file of [
     "public/assets/js/admin-word-edit.js",

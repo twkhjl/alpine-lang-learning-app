@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  collectFormValues,
   buildAudioObjectKey,
   buildMediaUrl,
   buildTagOptionMarkup,
@@ -88,4 +89,37 @@ test("media helper utilities derive persistent ids and media paths", () => {
     buildMediaUrl({ LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media/" }, "imgs/28.webp"),
     "https://cdn.example.com/media/imgs/28.webp",
   );
+});
+
+test("collectFormValues preserves existing media values when read-only inputs are removed", () => {
+  const fields = {
+    "zh-word": { value: "桌子" },
+    "pron-zh": { value: "zhuo zi" },
+    "id-word": { value: "meja" },
+    "pron-id": { value: "me-ja" },
+    "en-word": { value: "table" },
+    "pron-en": { value: "tay-buhl" },
+  };
+  const doc = {
+    getElementById(id) {
+      return fields[id] || null;
+    },
+    querySelectorAll() {
+      return [];
+    },
+  };
+
+  const formValues = collectFormValues(doc, {
+    image_url: "imgs/28.webp",
+    translations: {
+      "zh-TW": { audio_filename: "28-zh.mp3" },
+      id: { audio_filename: "28-id.mp3" },
+      en: { audio_filename: "28-en.mp3" },
+    },
+  });
+
+  assert.equal(formValues.image_url, "imgs/28.webp");
+  assert.equal(formValues.translations["zh-TW"].audio_filename, "28-zh.mp3");
+  assert.equal(formValues.translations.id.audio_filename, "28-id.mp3");
+  assert.equal(formValues.translations.en.audio_filename, "28-en.mp3");
 });

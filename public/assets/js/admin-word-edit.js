@@ -92,25 +92,26 @@
     return Number.isInteger(normalizedWordId) && normalizedWordId > 0;
   }
 
-  function collectFormValues(doc) {
+  function collectFormValues(doc, detail = null) {
     const activeDocument = doc || root.document;
+    const currentDetail = detail || createEmptyWordDetail();
     return {
-      image_url: activeDocument.getElementById("image-url")?.value || "",
+      image_url: activeDocument.getElementById("image-url")?.value || currentDetail.image_url || "",
       translations: {
         "zh-TW": {
           text: activeDocument.getElementById("zh-word")?.value || "",
           pronunciation: activeDocument.getElementById("pron-zh")?.value || "",
-          audio_filename: activeDocument.getElementById("audio-zh")?.value || "",
+          audio_filename: activeDocument.getElementById("audio-zh")?.value || currentDetail.translations?.["zh-TW"]?.audio_filename || "",
         },
         id: {
           text: activeDocument.getElementById("id-word")?.value || "",
           pronunciation: activeDocument.getElementById("pron-id")?.value || "",
-          audio_filename: activeDocument.getElementById("audio-id")?.value || "",
+          audio_filename: activeDocument.getElementById("audio-id")?.value || currentDetail.translations?.id?.audio_filename || "",
         },
         en: {
           text: activeDocument.getElementById("en-word")?.value || "",
           pronunciation: activeDocument.getElementById("pron-en")?.value || "",
-          audio_filename: activeDocument.getElementById("audio-en")?.value || "",
+          audio_filename: activeDocument.getElementById("audio-en")?.value || currentDetail.translations?.en?.audio_filename || "",
         },
       },
       tag_ids: Array.from(activeDocument.querySelectorAll("[data-tag-option]:checked")).map(function (node) {
@@ -405,7 +406,7 @@
 
     saveButtons.forEach(function (button) {
       button.addEventListener("click", async function () {
-        const formPayload = normalizeWordEditorPayload(collectFormValues(activeDocument));
+        const formPayload = normalizeWordEditorPayload(collectFormValues(activeDocument, currentDetail));
         setWordEditStatus(activeDocument, t("common.loading"), false);
         setSaveDisabled(activeDocument, true);
 
