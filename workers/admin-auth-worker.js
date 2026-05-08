@@ -1524,6 +1524,68 @@
     }
   }
 
+  async function handleAdminWordDelete(request, env, deps = {}) {
+    const access = await requireAdminMediaAccess(request, env, deps);
+
+    if (!access.ok) {
+      return access.response;
+    }
+
+    const requestUrl = new URL(request.url);
+    const deleteWordMatch = new RegExp("^" + access.config.adminApiBasePath.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "/words/(\\d+)$").exec(requestUrl.pathname);
+    const wordId = Number(deleteWordMatch?.[1]);
+
+    if (!Number.isInteger(wordId) || wordId <= 0) {
+      return jsonApiError(request, env, 404, "NOT_FOUND", "Word not found.");
+    }
+
+    try {
+      const deleted = await callAdminRpc(access.fetchImpl, access.config, "admin_delete_word", {
+        p_word_id: wordId,
+      });
+
+      if (!deleted) {
+        return jsonApiError(request, env, 404, "NOT_FOUND", "Word not found.");
+      }
+
+      const storageKeys = [];
+      const imageKeys = await listStorageKeysByPrefix(access.mediaBucket, IMAGE_OBJECT_PREFIX + "/" + wordId + ".");
+      storageKeys.push(...imageKeys);
+
+      for (const languageCode of SUPPORTED_LANGUAGE_CODES) {
+        const audioKeys = await listStorageKeysByPrefix(access.mediaBucket, AUDIO_OBJECT_PREFIX + "/" + languageCode + "/" + wordId + ".");
+        storageKeys.push(...audioKeys);
+      }
+
+      try {
+        await deleteStorageObjects(access.mediaBucket, storageKeys);
+      } catch (storageError) {
+        throw createInconsistentStateError(
+          "Word was deleted, but media storage deletion did not complete.",
+          {
+            wordId,
+            deletedObjectCount: Array.from(new Set(storageKeys)).length,
+          },
+        );
+      }
+
+      return jsonResponse(request, env, {
+        ok: true,
+        data: {
+          id: wordId,
+          deleted: true,
+          deletedObjectCount: Array.from(new Set(storageKeys)).length,
+        },
+      }, 200, "GET, POST, PATCH, DELETE, OPTIONS");
+    } catch (error) {
+      if (error?.code === "INCONSISTENT_STATE") {
+        return mapMediaMutationErrorToResponse(request, env, error);
+      }
+
+      return mapWriteErrorToResponse(request, env, error);
+    }
+  }
+
   async function handleAdminTagCreate(request, env, deps = {}) {
     const access = await requireAdminApiAccess(request, env, deps);
 
@@ -1691,6 +1753,10 @@
 
     if (request.method === "PATCH" && updateWordMatch) {
       return handleAdminWordUpdate(request, env, deps);
+    }
+
+    if (request.method === "DELETE" && updateWordMatch) {
+      return handleAdminWordDelete(request, env, deps);
     }
 
     if (request.method === "POST" && requestUrl.pathname === config.adminApiBasePath + "/tags") {

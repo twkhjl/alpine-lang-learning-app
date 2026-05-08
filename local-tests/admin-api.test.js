@@ -5,6 +5,7 @@ const {
   buildProtectedRequest,
   callProtectedEndpoint,
   createWord,
+  deleteWord,
   deleteStorageObject,
   deleteWordAudio,
   deleteWordImage,
@@ -231,6 +232,50 @@ test("createWord propagates bearer token to protected worker calls", async () =>
   assert.deepEqual(result, { id: 28 });
   assert.equal(capturedRequest.headers.get("authorization"), "Bearer access-token");
   assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/words");
+});
+
+test("deleteWord sends a protected delete request to the worker", async () => {
+  let capturedRequest = null;
+
+  const result = await deleteWord(
+    {},
+    28,
+    {
+      globalObject: {
+        lexiconAdminAuth: {
+          getAdminSession() {
+            return Promise.resolve({ access_token: "access-token" });
+          },
+        },
+      },
+      apiBaseUrl: "https://worker.example.com/api/admin",
+      fetch(request) {
+        capturedRequest = request;
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({
+              ok: true,
+              data: {
+                id: 28,
+                deleted: true,
+                deletedObjectCount: 3,
+              },
+            });
+          },
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result, {
+    id: 28,
+    deleted: true,
+    deletedObjectCount: 3,
+  });
+  assert.equal(capturedRequest.method, "DELETE");
+  assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/words/28");
+  assert.equal(capturedRequest.headers.get("authorization"), "Bearer access-token");
 });
 
 test("listStorageObjects forwards prefix and cursor to the protected assets endpoint", async () => {

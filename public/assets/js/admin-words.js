@@ -138,7 +138,7 @@
       "<td>" + escapeHtml(item.lang_en) + "</td>",
       "<td><div class=\"admin-tags\">" + tagMarkup + "</div></td>",
       "<td>" + escapeHtml(formatUpdatedAt(item.updated_at, locale)) + "</td>",
-      "<td><div class=\"admin-row-actions\"><a class=\"admin-button secondary\" href=\"" + escapeHtml(buildEditWordUrl(item.id)) + "\">" + escapeHtml(t("words.table.edit")) + "</a></div></td>",
+      "<td><div class=\"admin-row-actions\"><a class=\"admin-button secondary\" href=\"" + escapeHtml(buildEditWordUrl(item.id)) + "\">" + escapeHtml(t("words.table.edit")) + "</a><button class=\"admin-button danger\" type=\"button\" data-word-delete-id=\"" + escapeHtml(item.id) + "\">刪除</button></div></td>",
       "</tr>",
     ].join("");
   }
@@ -214,6 +214,7 @@
     };
     const t = translator.t;
     const client = pageGuard.client || activeRoot.lexiconAdminApi.getAdminSupabaseClient(activeRoot);
+    const feedback = activeRoot.lexiconAdminFeedback;
     const searchInput = activeDocument.getElementById("word-search");
     const tagFilter = activeDocument.getElementById("tag-filter");
     const imageFilter = activeDocument.getElementById("image-filter");
@@ -230,6 +231,22 @@
     let tagNameResolver = function () {
       return "";
     };
+
+    async function requestConfirmation(options) {
+      if (feedback?.showConfirmDialog) {
+        return feedback.showConfirmDialog(options, activeRoot);
+      }
+
+      return activeRoot.confirm ? activeRoot.confirm(options?.message || options?.title || "") : true;
+    }
+
+    function showSuccessToast(message) {
+      feedback?.showSuccessToast?.(message, {}, activeRoot);
+    }
+
+    function showErrorToast(message) {
+      feedback?.showErrorToast?.(message, {}, activeRoot);
+    }
 
     if (createLink) {
       createLink.setAttribute("href", buildCreateWordUrl());
@@ -340,6 +357,52 @@
     nextButton?.addEventListener("click", function () {
       state.page += 1;
       loadWords();
+    });
+
+    tableBody?.addEventListener("click", async function (event) {
+      const deleteButton = event.target.closest("[data-word-delete-id]");
+
+      if (!deleteButton) {
+        return;
+      }
+
+      const wordId = Number(deleteButton.getAttribute("data-word-delete-id"));
+
+      if (!Number.isInteger(wordId) || wordId <= 0) {
+        return;
+      }
+
+      const confirmed = await requestConfirmation({
+        title: "確認刪除",
+        message: "刪除這個單字後，圖片與音檔也會一併刪除。確定要繼續嗎？",
+        confirmText: "確認",
+        cancelText: "取消",
+        tone: "danger",
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
+      if (statusNode) {
+        statusNode.textContent = "刪除單字中...";
+      }
+
+      try {
+        await activeRoot.lexiconAdminApi.deleteWord(client, wordId);
+        showSuccessToast("單字已刪除。");
+
+        if (state.page > 1 && tableBody.querySelectorAll("tr").length <= 1) {
+          state.page -= 1;
+        }
+
+        await loadWords();
+      } catch (error) {
+        if (statusNode) {
+          statusNode.textContent = error.message || "刪除單字失敗。";
+        }
+        showErrorToast("刪除單字失敗。");
+      }
     });
 
     loadWords();

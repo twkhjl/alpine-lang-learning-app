@@ -461,6 +461,17 @@
     });
   }
 
+  async function deleteWord(client, wordId, options = {}) {
+    if (!Number.isInteger(Number(wordId)) || Number(wordId) <= 0) {
+      throw createValidationError("A valid word id is required.");
+    }
+
+    return callProtectedEndpoint(client, `/words/${Number(wordId)}`, {
+      ...options,
+      method: "DELETE",
+    });
+  }
+
   async function listStorageObjects(client, filters = {}, options = {}) {
     const query = new URLSearchParams();
     const prefix = normalizeTextValue(filters.prefix);
@@ -868,6 +879,7 @@
     createNotFoundError,
     createValidationError,
     createWord,
+    deleteWord,
     deleteStorageObject,
     deleteTag,
     deleteWordAudio,

@@ -43,6 +43,7 @@ test("admin shell pages rely on the shared sidebar placeholder", () => {
 
 test("admin write pages load the shared feedback runtime", () => {
   for (const file of [
+    "admin-words.html",
     "admin-word-edit.html",
     "admin-assets.html",
     "admin-tags.html",
@@ -60,6 +61,14 @@ test("admin word edit hides read-only id and media path inputs", () => {
   assert.match(html, /<div class="admin-field" hidden>\s*<input id="audio-zh" type="hidden" readonly \/>/);
   assert.match(html, /<div class="admin-field" hidden>\s*<input id="audio-id" type="hidden" readonly \/>/);
   assert.match(html, /<div class="admin-field" hidden>\s*<input id="audio-en" type="hidden" readonly \/>/);
+});
+
+test("word delete actions exist in list and edit pages", () => {
+  const wordsHtml = fs.readFileSync(path.join(process.cwd(), "admin-words.html"), "utf8");
+  const wordEditHtml = fs.readFileSync(path.join(process.cwd(), "admin-word-edit.html"), "utf8");
+
+  assert.match(wordsHtml, /public\/assets\/js\/admin-feedback\.js/);
+  assert.match(wordEditHtml, /data-word-delete/);
 });
 
 test("admin write page modules do not directly call native confirm", () => {

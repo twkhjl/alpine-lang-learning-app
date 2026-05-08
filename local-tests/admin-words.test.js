@@ -97,7 +97,9 @@ test("renderWordRow renders serial number, thumbnail, and tag names", () => {
   assert.doesNotMatch(markup, /Tag #1/);
   assert.doesNotMatch(markup, /Audio:/);
   assert.match(markup, />Edit</);
+  assert.match(markup, />刪除</);
   assert.match(markup, /admin-word-edit\.html\?id=28/);
+  assert.match(markup, /data-word-delete-id="28"/);
 });
 
 test("renderWordRows returns explicit localized empty state markup", () => {

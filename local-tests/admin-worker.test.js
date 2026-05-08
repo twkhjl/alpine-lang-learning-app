@@ -474,6 +474,133 @@ test("worker returns 404 when updating a missing word", async () => {
   });
 });
 
+test("worker deletes a word and cleans linked media from R2", async () => {
+  const deletedKeys = [];
+
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words/28", {
+      method: "DELETE",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list(options = {}) {
+        if (options.prefix === "imgs/28.") {
+          return Promise.resolve({
+            objects: [{ key: "imgs/28.webp" }],
+            truncated: false,
+            cursor: undefined,
+          });
+        }
+
+        if (options.prefix === "audios/zh-TW/28.") {
+          return Promise.resolve({
+            objects: [{ key: "audios/zh-TW/28.mp3" }],
+            truncated: false,
+            cursor: undefined,
+          });
+        }
+
+        if (options.prefix === "audios/id/28.") {
+          return Promise.resolve({
+            objects: [{ key: "audios/id/28.ogg" }],
+            truncated: false,
+            cursor: undefined,
+          });
+        }
+
+        if (options.prefix === "audios/en/28.") {
+          return Promise.resolve({
+            objects: [],
+            truncated: false,
+            cursor: undefined,
+          });
+        }
+
+        throw new Error("unexpected list prefix: " + options.prefix);
+      },
+      delete(key) {
+        deletedKeys.push(key);
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words?")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { id: 28, image_url: "imgs/28.webp" },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations?")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { word_id: 28, language_code: "zh-TW", audio_filename: "28.mp3" },
+                { word_id: 28, language_code: "id", audio_filename: "28.ogg" },
+                { word_id: 28, language_code: "en", audio_filename: "" },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_delete_word")) {
+          assert.deepEqual(JSON.parse(options.body), { p_word_id: 28 });
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve(true);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(deletedKeys, [
+    "imgs/28.webp",
+    "audios/zh-TW/28.mp3",
+    "audios/id/28.ogg",
+  ]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      id: 28,
+      deleted: true,
+      deletedObjectCount: 3,
+    },
+  });
+});
+
 test("worker creates a tag through admin_create_tag RPC", async () => {
   const response = await handleRequest(
     new Request("https://worker.example.com/api/admin/tags", {

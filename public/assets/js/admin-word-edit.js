@@ -155,6 +155,13 @@
     });
   }
 
+  function setDeleteDisabled(doc, disabled) {
+    const activeDocument = doc || root.document;
+    activeDocument.querySelectorAll("[data-word-delete]").forEach(function (button) {
+      button.disabled = Boolean(disabled);
+    });
+  }
+
   function setPageCopy(doc, mode, translator) {
     const activeDocument = doc || root.document;
     const t = typeof translator === "function" ? translator : function (key) { return key; };
@@ -390,6 +397,7 @@
     const params = parseWordEditParams(activeRoot.location?.search || "");
     const tagContainer = activeDocument.querySelector("[data-tag-options]");
     const saveButtons = activeDocument.querySelectorAll("[data-word-save]");
+    const deleteButtons = activeDocument.querySelectorAll("[data-word-delete]");
     const cancelButton = activeDocument.querySelector("[data-word-cancel]");
     const imageUploadButton = activeDocument.querySelector("[data-image-upload]");
     const imageDeleteButton = activeDocument.querySelector("[data-image-delete]");
@@ -442,6 +450,7 @@
         applyWordDetail(activeDocument, createEmptyWordDetail(), "create");
         setWordEditStatus(activeDocument, t("wordEdit.status.invalidId"), true);
         setSaveDisabled(activeDocument, true);
+        setDeleteDisabled(activeDocument, true);
         updateMediaUi();
         return;
       }
@@ -461,6 +470,7 @@
 
       setPageCopy(activeDocument, currentMode, t);
       setSaveDisabled(activeDocument, false);
+      setDeleteDisabled(activeDocument, !hasPersistentWordId(currentWordId));
       setWordEditStatus(activeDocument, t("wordEdit.status.ready"), false);
       updateMediaUi();
     }
@@ -470,6 +480,7 @@
     } catch (error) {
       setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
       setSaveDisabled(activeDocument, true);
+      setDeleteDisabled(activeDocument, true);
       setMediaControlsDisabled(activeDocument, true);
       return;
     }
@@ -483,6 +494,7 @@
         const formPayload = normalizeWordEditorPayload(collectFormValues(activeDocument, currentDetail));
         setWordEditStatus(activeDocument, t("common.loading"), false);
         setSaveDisabled(activeDocument, true);
+        setDeleteDisabled(activeDocument, true);
 
         try {
           let savedWord;
@@ -512,6 +524,45 @@
           showErrorToast(t("wordEdit.status.error"));
         } finally {
           setSaveDisabled(activeDocument, false);
+          setDeleteDisabled(activeDocument, !hasPersistentWordId(currentWordId));
+        }
+      });
+    });
+
+    deleteButtons.forEach(function (button) {
+      button.addEventListener("click", async function () {
+        if (!hasPersistentWordId(currentWordId)) {
+          setWordEditStatus(activeDocument, "請先儲存單字後再刪除。", true);
+          return;
+        }
+
+        const confirmedWordDelete = await requestConfirmation({
+          title: t("feedback.confirm.deleteTitle"),
+          message: "刪除這個單字後，圖片與音檔也會一併刪除。確定要繼續嗎？",
+          confirmText: t("common.confirm"),
+          cancelText: t("common.cancel"),
+          tone: "danger",
+        });
+
+        if (!confirmedWordDelete) {
+          return;
+        }
+
+        setWordEditStatus(activeDocument, "刪除單字中...", false);
+        setSaveDisabled(activeDocument, true);
+        setDeleteDisabled(activeDocument, true);
+        setMediaControlsDisabled(activeDocument, true);
+
+        try {
+          await activeRoot.lexiconAdminApi.deleteWord(client, currentWordId);
+          showSuccessToast("單字已刪除。");
+          activeRoot.location.href = "admin-words.html";
+        } catch (error) {
+          setWordEditStatus(activeDocument, error.message || "刪除單字失敗。", true);
+          setSaveDisabled(activeDocument, false);
+          setDeleteDisabled(activeDocument, false);
+          setMediaControlsDisabled(activeDocument, false);
+          showErrorToast("刪除單字失敗。");
         }
       });
     });
@@ -696,6 +747,7 @@
     hasPersistentWordId,
     normalizeWordEditorPayload,
     parseWordEditParams,
+    setDeleteDisabled,
     setSaveDisabled,
     setWordEditStatus,
   };
