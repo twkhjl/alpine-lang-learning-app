@@ -267,6 +267,22 @@
     return normalizedLanguageCode;
   }
 
+  function normalizeWordIdList(wordIds) {
+    const normalizedWordIds = Array.isArray(wordIds)
+      ? Array.from(new Set(wordIds.map(function (value) {
+          return Number(value);
+        }).filter(function (value) {
+          return Number.isInteger(value) && value > 0;
+        })))
+      : [];
+
+    if (normalizedWordIds.length === 0) {
+      throw new Error("At least one valid word id is required.");
+    }
+
+    return normalizedWordIds;
+  }
+
   function buildWordImageKey(wordId, mimeType) {
     const normalizedWordId = normalizeWordId(wordId);
     const extension = getMediaExtensionForMimeType(mimeType, IMAGE_MIME_TYPE_TO_EXTENSION);
@@ -898,6 +914,7 @@
 
   function mapWriteErrorToResponse(request, env, error) {
     if (error?.message === "At least one translation is required."
+      || error?.message === "At least one valid word id is required."
       || error?.message === "Tag ids must be positive integers."
       || error?.message === "Duplicate tag ids are not allowed."
       || error?.message === "One or more tags do not exist."
@@ -1586,6 +1603,92 @@
     }
   }
 
+  async function handleAdminWordsBatchDelete(request, env, deps = {}) {
+    const access = await requireAdminMediaAccess(request, env, deps);
+
+    if (!access.ok) {
+      return access.response;
+    }
+
+    const body = await readJsonBody(request);
+    let wordIds;
+
+    try {
+      wordIds = normalizeWordIdList(body?.word_ids);
+    } catch (error) {
+      return jsonApiError(request, env, 400, "VALIDATION_ERROR", error.message);
+    }
+
+    try {
+      const existingWordRows = await fetchServiceRows(access.fetchImpl, access.config, "words", {
+        select: "id",
+        filters: {
+          id: "in.(" + wordIds.join(",") + ")",
+        },
+      });
+      const existingWordIds = new Set(existingWordRows.map(function (row) {
+        return Number(row.id);
+      }));
+      const missingWordIds = wordIds.filter(function (wordId) {
+        return !existingWordIds.has(wordId);
+      });
+
+      if (missingWordIds.length > 0) {
+        return jsonApiError(request, env, 404, "NOT_FOUND", "Some words were not found.", {
+          missingWordIds,
+        });
+      }
+
+      const storageKeys = [];
+
+      for (const wordId of wordIds) {
+        const imageKeys = await listStorageKeysByPrefix(access.mediaBucket, IMAGE_OBJECT_PREFIX + "/" + wordId + ".");
+        storageKeys.push(...imageKeys);
+
+        for (const languageCode of SUPPORTED_LANGUAGE_CODES) {
+          const audioKeys = await listStorageKeysByPrefix(access.mediaBucket, AUDIO_OBJECT_PREFIX + "/" + languageCode + "/" + wordId + ".");
+          storageKeys.push(...audioKeys);
+        }
+      }
+
+      for (const wordId of wordIds) {
+        const deleted = await callAdminRpc(access.fetchImpl, access.config, "admin_delete_word", {
+          p_word_id: wordId,
+        });
+
+        if (!deleted) {
+          return jsonApiError(request, env, 404, "NOT_FOUND", "Word not found.");
+        }
+      }
+
+      try {
+        await deleteStorageObjects(access.mediaBucket, storageKeys);
+      } catch (storageError) {
+        throw createInconsistentStateError(
+          "Words were deleted, but media storage deletion did not complete.",
+          {
+            deletedWordIds: wordIds,
+            deletedObjectCount: Array.from(new Set(storageKeys)).length,
+          },
+        );
+      }
+
+      return jsonResponse(request, env, {
+        ok: true,
+        data: {
+          deletedWordIds: wordIds,
+          deletedObjectCount: Array.from(new Set(storageKeys)).length,
+        },
+      }, 200, "GET, POST, PATCH, DELETE, OPTIONS");
+    } catch (error) {
+      if (error?.code === "INCONSISTENT_STATE") {
+        return mapMediaMutationErrorToResponse(request, env, error);
+      }
+
+      return mapWriteErrorToResponse(request, env, error);
+    }
+  }
+
   async function handleAdminTagCreate(request, env, deps = {}) {
     const access = await requireAdminApiAccess(request, env, deps);
 
@@ -1747,6 +1850,10 @@
 
     if (request.method === "POST" && requestUrl.pathname === config.adminApiBasePath + "/words") {
       return handleAdminWordCreate(request, env, deps);
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === config.adminApiBasePath + "/words/batch-delete") {
+      return handleAdminWordsBatchDelete(request, env, deps);
     }
 
     const updateWordMatch = new RegExp("^" + escapedAdminBasePath + "/words/(\\d+)$").exec(requestUrl.pathname);

@@ -601,6 +601,108 @@ test("worker deletes a word and cleans linked media from R2", async () => {
   });
 });
 
+test("worker batch deletes words and cleans linked media from R2", async () => {
+  const deletedKeys = [];
+
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/words/batch-delete", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        word_ids: [28, 31],
+      }),
+    }),
+    createMediaEnv({
+      list(options = {}) {
+        const keyMap = {
+          "imgs/28.": [{ key: "imgs/28.webp" }],
+          "imgs/31.": [],
+          "audios/zh-TW/28.": [{ key: "audios/zh-TW/28.mp3" }],
+          "audios/id/28.": [],
+          "audios/en/28.": [],
+          "audios/zh-TW/31.": [],
+          "audios/id/31.": [{ key: "audios/id/31.ogg" }],
+          "audios/en/31.": [{ key: "audios/en/31.mp3" }],
+        };
+        return Promise.resolve({
+          objects: keyMap[options.prefix] || [],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+      delete(key) {
+        deletedKeys.push(key);
+        return Promise.resolve();
+      },
+    }),
+    {
+      fetchImpl(url, options = {}) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words?")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { id: 28, image_url: "imgs/28.webp" },
+                { id: 31, image_url: "" },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/rpc/admin_delete_word")) {
+          const payload = JSON.parse(options.body);
+          assert.ok([28, 31].includes(payload.p_word_id));
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve(true);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(deletedKeys, [
+    "imgs/28.webp",
+    "audios/zh-TW/28.mp3",
+    "audios/id/31.ogg",
+    "audios/en/31.mp3",
+  ]);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      deletedWordIds: [28, 31],
+      deletedObjectCount: 4,
+    },
+  });
+});
+
 test("worker creates a tag through admin_create_tag RPC", async () => {
   const response = await handleRequest(
     new Request("https://worker.example.com/api/admin/tags", {

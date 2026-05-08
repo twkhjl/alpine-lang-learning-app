@@ -28,6 +28,7 @@
               <p data-i18n="words.header.description">搜尋、篩選與維護字詞資料。</p>
             </div>
             <div class="admin-actions">
+              <button class="admin-button danger" type="button" data-words-delete-selected disabled>刪除已選取</button>
               <button class="admin-button secondary" type="button" disabled data-i18n="words.csvSoon">CSV 工具即將推出</button>
               <a class="admin-button" data-create-word-link href="admin-word-edit.html?mode=create">
                 <span class="material-symbols-outlined">add</span>
@@ -78,6 +79,7 @@
               <table class="admin-table">
                 <thead>
                   <tr>
+                    <th><input type="checkbox" data-words-select-all aria-label="全選單字" /></th>
                     <th data-i18n="words.table.id">流水號</th>
                     <th data-i18n="words.table.image">圖片</th>
                     <th data-i18n="words.table.wordZhTw">繁中</th>
@@ -88,9 +90,9 @@
                     <th>Action</th>
                   </tr>
                 </thead>
-                <tbody data-words-table-body>
+<tbody data-words-table-body>
                   <tr>
-                    <td colspan="8"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
+                    <td colspan="9"><div class="admin-empty-state" data-i18n="common.loading">載入中...</div></td>
                   </tr>
                 </tbody>
               </table>

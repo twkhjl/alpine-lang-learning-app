@@ -33,6 +33,22 @@
     return "admin-word-edit.html?mode=create";
   }
 
+  function buildBatchDeleteConfirmationMessage(items) {
+    const normalizedItems = Array.isArray(items) ? items : [];
+    const labels = normalizedItems
+      .slice(0, 3)
+      .map(function (item) {
+        return String(item?.label || item?.lang_zh_tw || item?.lang_id || item?.lang_en || "#" + Number(item?.id)).trim();
+      })
+      .filter(Boolean);
+
+    return [
+      "確定刪除 " + normalizedItems.length + " 筆單字？",
+      labels.length ? "包含：" + labels.join("、") : "",
+      "圖片與音檔也會一併刪除。",
+    ].filter(Boolean).join("\n");
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -131,6 +147,7 @@
 
     return [
       "<tr>",
+      "<td><input type=\"checkbox\" data-word-select-id=\"" + escapeHtml(item.id) + "\" aria-label=\"選取單字 " + escapeHtml(item.lang_zh_tw || item.lang_id || item.lang_en || item.id) + "\" /></td>",
       "<td>" + escapeHtml(serialNumber) + "</td>",
       "<td>" + imageMarkup + "</td>",
       "<td>" + escapeHtml(item.lang_zh_tw) + "</td>",
@@ -149,7 +166,7 @@
     if (!Array.isArray(items) || items.length === 0) {
       return [
         "<tr>",
-        "<td colspan=\"8\"><div class=\"admin-empty-state\">" + escapeHtml(t("words.table.empty")) + "</div></td>",
+        "<td colspan=\"9\"><div class=\"admin-empty-state\">" + escapeHtml(t("words.table.empty")) + "</div></td>",
         "</tr>",
       ].join("");
     }
@@ -227,7 +244,11 @@
     const nextButton = activeDocument.querySelector("[data-words-next]");
     const pageNode = activeDocument.querySelector("[data-words-page]");
     const createLink = activeDocument.querySelector("[data-create-word-link]");
+    const selectAllCheckbox = activeDocument.querySelector("[data-words-select-all]");
+    const deleteSelectedButton = activeDocument.querySelector("[data-words-delete-selected]");
     const state = normalizeWordsPageState({ page: 1, pageSize: 25 });
+    const selectedWordIds = new Set();
+    const currentPageItems = new Map();
     let tagNameResolver = function () {
       return "";
     };
@@ -246,6 +267,21 @@
 
     function showErrorToast(message) {
       feedback?.showErrorToast?.(message, {}, activeRoot);
+    }
+
+    function syncBatchDeleteUi() {
+      if (deleteSelectedButton) {
+        deleteSelectedButton.disabled = selectedWordIds.size === 0;
+      }
+
+      if (selectAllCheckbox) {
+        const visibleCheckboxes = Array.from(activeDocument.querySelectorAll("[data-word-select-id]"));
+        const checkedCount = visibleCheckboxes.filter(function (node) {
+          return node.checked;
+        }).length;
+        selectAllCheckbox.checked = visibleCheckboxes.length > 0 && checkedCount === visibleCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < visibleCheckboxes.length;
+      }
     }
 
     if (createLink) {
@@ -271,6 +307,15 @@
       try {
         const result = await activeRoot.lexiconAdminApi.loadWordList(client, state);
         const pagination = renderPagination(state, result.data.total);
+        currentPageItems.clear();
+        result.data.items.forEach(function (item) {
+          currentPageItems.set(Number(item.id), item);
+        });
+        Array.from(selectedWordIds).forEach(function (wordId) {
+          if (!currentPageItems.has(wordId)) {
+            selectedWordIds.delete(wordId);
+          }
+        });
 
         if (tableBody) {
           tableBody.innerHTML = renderWordRows(result.data.items, {
@@ -280,6 +325,10 @@
             root: activeRoot,
             tagNameResolver: tagNameResolver,
             t: t,
+          });
+          tableBody.querySelectorAll("[data-word-select-id]").forEach(function (checkbox) {
+            const wordId = Number(checkbox.getAttribute("data-word-select-id"));
+            checkbox.checked = selectedWordIds.has(wordId);
           });
         }
 
@@ -311,6 +360,7 @@
         if (statusNode) {
           statusNode.textContent = result.data.total === 0 ? t("words.empty") : "";
         }
+        syncBatchDeleteUi();
       } catch (error) {
         if (tableBody) {
           tableBody.innerHTML = renderWordRows([], { t: t });
@@ -319,6 +369,7 @@
         if (statusNode) {
           statusNode.textContent = error.message || t("words.status.error");
         }
+        syncBatchDeleteUi();
       }
     }
 
@@ -357,6 +408,19 @@
     nextButton?.addEventListener("click", function () {
       state.page += 1;
       loadWords();
+    });
+
+    selectAllCheckbox?.addEventListener("change", function () {
+      activeDocument.querySelectorAll("[data-word-select-id]").forEach(function (checkbox) {
+        const wordId = Number(checkbox.getAttribute("data-word-select-id"));
+        checkbox.checked = selectAllCheckbox.checked;
+        if (selectAllCheckbox.checked) {
+          selectedWordIds.add(wordId);
+        } else {
+          selectedWordIds.delete(wordId);
+        }
+      });
+      syncBatchDeleteUi();
     });
 
     tableBody?.addEventListener("click", async function (event) {
@@ -405,6 +469,75 @@
       }
     });
 
+    tableBody?.addEventListener("change", function (event) {
+      const checkbox = event.target.closest("[data-word-select-id]");
+
+      if (!checkbox) {
+        return;
+      }
+
+      const wordId = Number(checkbox.getAttribute("data-word-select-id"));
+      if (!Number.isInteger(wordId) || wordId <= 0) {
+        return;
+      }
+
+      if (checkbox.checked) {
+        selectedWordIds.add(wordId);
+      } else {
+        selectedWordIds.delete(wordId);
+      }
+
+      syncBatchDeleteUi();
+    });
+
+    deleteSelectedButton?.addEventListener("click", async function () {
+      const itemsToDelete = Array.from(selectedWordIds).map(function (wordId) {
+        return {
+          id: wordId,
+          label: currentPageItems.get(wordId)?.lang_zh_tw
+            || currentPageItems.get(wordId)?.lang_id
+            || currentPageItems.get(wordId)?.lang_en
+            || "#" + wordId,
+        };
+      });
+
+      if (itemsToDelete.length === 0) {
+        syncBatchDeleteUi();
+        return;
+      }
+
+      const confirmed = await requestConfirmation({
+        title: "確認刪除",
+        message: buildBatchDeleteConfirmationMessage(itemsToDelete),
+        confirmText: "確認",
+        cancelText: "取消",
+        tone: "danger",
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
+      if (statusNode) {
+        statusNode.textContent = "批次刪除單字中...";
+      }
+
+      try {
+        const result = await activeRoot.lexiconAdminApi.deleteWords(client, itemsToDelete.map(function (item) {
+          return item.id;
+        }));
+        selectedWordIds.clear();
+        showSuccessToast("已刪除 " + (result.deletedWordIds?.length || itemsToDelete.length) + " 筆單字。");
+        await loadWords();
+      } catch (error) {
+        if (statusNode) {
+          statusNode.textContent = error.message || "批次刪除單字失敗。";
+        }
+        showErrorToast("批次刪除單字失敗。");
+        syncBatchDeleteUi();
+      }
+    });
+
     loadWords();
   }
 
@@ -416,6 +549,7 @@
 
   return {
     bootstrap: bootstrap,
+    buildBatchDeleteConfirmationMessage: buildBatchDeleteConfirmationMessage,
     buildCreateWordUrl: buildCreateWordUrl,
     buildEditWordUrl: buildEditWordUrl,
     buildWordImagePreviewUrl: buildWordImagePreviewUrl,

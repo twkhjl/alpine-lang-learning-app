@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  buildBatchDeleteConfirmationMessage,
   buildCreateWordUrl,
   buildEditWordUrl,
   buildWordImagePreviewUrl,
@@ -91,6 +92,7 @@ test("renderWordRow renders serial number, thumbnail, and tag names", () => {
   );
 
   assert.match(markup, />26</);
+  assert.match(markup, /data-word-select-id="28"/);
   assert.match(markup, /<img[^>]+src="https:\/\/cdn\.example\.com\/media\/imgs\/202604120952\.jpg"/);
   assert.match(markup, /Furniture/);
   assert.match(markup, /Home/);
@@ -102,11 +104,23 @@ test("renderWordRow renders serial number, thumbnail, and tag names", () => {
   assert.match(markup, /data-word-delete-id="28"/);
 });
 
+test("buildBatchDeleteConfirmationMessage includes count and first three labels", () => {
+  assert.equal(
+    buildBatchDeleteConfirmationMessage([
+      { id: 28, label: "桌子" },
+      { id: 31, label: "椅子" },
+      { id: 35, label: "書本" },
+      { id: 40, label: "鉛筆" },
+    ]),
+    "確定刪除 4 筆單字？\n包含：桌子、椅子、書本\n圖片與音檔也會一併刪除。",
+  );
+});
+
 test("renderWordRows returns explicit localized empty state markup", () => {
   const markup = renderWordRows([], { t: zhTranslator });
 
   assert.match(markup, /目前沒有符合條件的字詞。/);
-  assert.match(markup, /colspan="8"/);
+  assert.match(markup, /colspan="9"/);
 });
 
 test("renderWordRows calculates cross-page serial numbers", () => {

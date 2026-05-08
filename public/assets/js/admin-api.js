@@ -472,6 +472,28 @@
     });
   }
 
+  async function deleteWords(client, wordIds, options = {}) {
+    const normalizedWordIds = Array.isArray(wordIds)
+      ? Array.from(new Set(wordIds.map(function (value) {
+          return Number(value);
+        }).filter(function (value) {
+          return Number.isInteger(value) && value > 0;
+        })))
+      : [];
+
+    if (normalizedWordIds.length === 0) {
+      throw createValidationError("At least one valid word id is required.");
+    }
+
+    return callProtectedEndpoint(client, "/words/batch-delete", {
+      ...options,
+      method: "POST",
+      body: {
+        word_ids: normalizedWordIds,
+      },
+    });
+  }
+
   async function listStorageObjects(client, filters = {}, options = {}) {
     const query = new URLSearchParams();
     const prefix = normalizeTextValue(filters.prefix);
@@ -880,6 +902,7 @@
     createValidationError,
     createWord,
     deleteWord,
+    deleteWords,
     deleteStorageObject,
     deleteTag,
     deleteWordAudio,

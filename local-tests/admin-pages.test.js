@@ -68,6 +68,8 @@ test("word delete actions exist in list and edit pages", () => {
   const wordEditHtml = fs.readFileSync(path.join(process.cwd(), "admin-word-edit.html"), "utf8");
 
   assert.match(wordsHtml, /public\/assets\/js\/admin-feedback\.js/);
+  assert.match(wordsHtml, /data-words-delete-selected/);
+  assert.match(wordsHtml, /data-words-select-all/);
   assert.match(wordEditHtml, /data-word-delete/);
 });
 

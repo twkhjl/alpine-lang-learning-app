@@ -6,6 +6,7 @@ const {
   callProtectedEndpoint,
   createWord,
   deleteWord,
+  deleteWords,
   deleteStorageObject,
   deleteWordAudio,
   deleteWordImage,
@@ -276,6 +277,47 @@ test("deleteWord sends a protected delete request to the worker", async () => {
   assert.equal(capturedRequest.method, "DELETE");
   assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/words/28");
   assert.equal(capturedRequest.headers.get("authorization"), "Bearer access-token");
+});
+
+test("deleteWords sends selected ids to the batch delete endpoint", async () => {
+  let capturedRequest = null;
+
+  const result = await deleteWords(
+    {},
+    [28, 31, "35"],
+    {
+      globalObject: {
+        lexiconAdminAuth: {
+          getAdminSession() {
+            return Promise.resolve({ access_token: "access-token" });
+          },
+        },
+      },
+      apiBaseUrl: "https://worker.example.com/api/admin",
+      fetch(request) {
+        capturedRequest = request;
+        return Promise.resolve({
+          ok: true,
+          json() {
+            return Promise.resolve({
+              ok: true,
+              data: {
+                deletedWordIds: [28, 31, 35],
+                deletedObjectCount: 7,
+              },
+            });
+          },
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result, {
+    deletedWordIds: [28, 31, 35],
+    deletedObjectCount: 7,
+  });
+  assert.equal(capturedRequest.method, "POST");
+  assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/words/batch-delete");
 });
 
 test("listStorageObjects forwards prefix and cursor to the protected assets endpoint", async () => {
