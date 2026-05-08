@@ -187,6 +187,28 @@
     ).replace(/\/$/, "");
   }
 
+  function getAdminMediaCacheBustToken(activeRoot) {
+    const token = activeRoot?.__LEXICON_ADMIN_MEDIA_CACHE_BUST__;
+    return typeof token === "string" || typeof token === "number" ? String(token).trim() : "";
+  }
+
+  function appendCacheBustToken(url, token) {
+    const normalizedUrl = typeof url === "string" ? url.trim() : "";
+    const normalizedToken = typeof token === "string" ? token.trim() : "";
+
+    if (!normalizedUrl || !normalizedToken) {
+      return normalizedUrl;
+    }
+
+    return normalizedUrl + (normalizedUrl.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(normalizedToken);
+  }
+
+  function refreshAdminMediaCacheBustToken(activeRoot) {
+    const token = String(Date.now());
+    activeRoot.__LEXICON_ADMIN_MEDIA_CACHE_BUST__ = token;
+    return token;
+  }
+
   function buildMediaUrl(activeRoot, key) {
     const normalizedKey = typeof key === "string" ? key.trim() : "";
     const baseUrl = getMediaPublicBaseUrl(activeRoot);
@@ -195,7 +217,10 @@
       return "";
     }
 
-    return baseUrl + "/" + normalizedKey.replace(/^\//, "");
+    return appendCacheBustToken(
+      baseUrl + "/" + normalizedKey.replace(/^\//, ""),
+      getAdminMediaCacheBustToken(activeRoot),
+    );
   }
 
   function buildAudioObjectKey(languageCode, audioFilename) {
@@ -324,6 +349,7 @@
     let currentWordId = params.wordId;
     let currentMode = params.mode;
     let currentDetail = createEmptyWordDetail();
+    refreshAdminMediaCacheBustToken(activeRoot);
 
     async function requestConfirmation(options) {
       if (feedback?.showConfirmDialog) {
@@ -461,6 +487,7 @@
       try {
         const result = await activeRoot.lexiconAdminApi.uploadWordImage(client, currentWordId, file);
         currentDetail.image_url = result.imageUrl || "";
+        refreshAdminMediaCacheBustToken(activeRoot);
         syncMediaFields(activeDocument, currentDetail);
         renderImagePreview(activeDocument, activeRoot, currentDetail);
         if (imageFileInput) {
@@ -505,6 +532,7 @@
       try {
         await activeRoot.lexiconAdminApi.deleteWordImage(client, currentWordId);
         currentDetail.image_url = "";
+        refreshAdminMediaCacheBustToken(activeRoot);
         syncMediaFields(activeDocument, currentDetail);
         renderImagePreview(activeDocument, activeRoot, currentDetail);
         setImageStatus(activeDocument, "??????", false);
@@ -541,6 +569,7 @@
         try {
           const result = await activeRoot.lexiconAdminApi.uploadWordAudio(client, currentWordId, languageCode, file);
           currentDetail.translations[languageCode].audio_filename = result.audioFilename || "";
+          refreshAdminMediaCacheBustToken(activeRoot);
           syncMediaFields(activeDocument, currentDetail);
           renderAudioPreviews(activeDocument, activeRoot, currentDetail);
           if (fileInput) {
@@ -585,6 +614,7 @@
         try {
           await activeRoot.lexiconAdminApi.deleteWordAudio(client, currentWordId, languageCode);
           currentDetail.translations[languageCode].audio_filename = "";
+          refreshAdminMediaCacheBustToken(activeRoot);
           syncMediaFields(activeDocument, currentDetail);
           renderAudioPreviews(activeDocument, activeRoot, currentDetail);
           setAudioStatus(activeDocument, languageCode + " ??????", false);

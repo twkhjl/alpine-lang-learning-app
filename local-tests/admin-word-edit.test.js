@@ -91,6 +91,19 @@ test("media helper utilities derive persistent ids and media paths", () => {
   );
 });
 
+test("buildMediaUrl appends admin cache-bust token for refreshed media previews", () => {
+  assert.equal(
+    buildMediaUrl(
+      {
+        LEXICON_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.com/media/",
+        __LEXICON_ADMIN_MEDIA_CACHE_BUST__: "1712345678901",
+      },
+      "imgs/28.webp",
+    ),
+    "https://cdn.example.com/media/imgs/28.webp?v=1712345678901",
+  );
+});
+
 test("collectFormValues preserves existing media values when read-only inputs are removed", () => {
   const fields = {
     "zh-word": { value: "桌子" },
