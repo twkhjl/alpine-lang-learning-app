@@ -320,6 +320,54 @@
     node.classList.toggle("error", Boolean(isError));
   }
 
+  function getImageStatusMessage(type) {
+    switch (type) {
+      case "missingWord":
+        return "請先儲存單字後再上傳圖片。";
+      case "missingFile":
+        return "請先選擇要上傳的圖片。";
+      case "uploading":
+        return "圖片上傳中...";
+      case "uploadSuccess":
+        return "圖片上傳完成。";
+      case "deleteMissing":
+        return "目前沒有可刪除的圖片。";
+      case "deleting":
+        return "圖片刪除中...";
+      case "deleteSuccess":
+        return "圖片已刪除。";
+      case "fallbackError":
+        return "圖片操作失敗。";
+      default:
+        return "";
+    }
+  }
+
+  function getAudioStatusMessage(type, languageCode) {
+    const normalizedLanguageCode = typeof languageCode === "string" ? languageCode.trim() : "";
+
+    switch (type) {
+      case "missingWord":
+        return "請先儲存單字後再上傳音檔。";
+      case "missingFile":
+        return "請先選擇要上傳的音檔。";
+      case "uploading":
+        return normalizedLanguageCode ? normalizedLanguageCode + " 音檔上傳中..." : "音檔上傳中...";
+      case "uploadSuccess":
+        return normalizedLanguageCode ? normalizedLanguageCode + " 音檔上傳完成。" : "音檔上傳完成。";
+      case "deleteMissing":
+        return normalizedLanguageCode ? "目前沒有可刪除的 " + normalizedLanguageCode + " 音檔。" : "目前沒有可刪除的音檔。";
+      case "deleting":
+        return normalizedLanguageCode ? normalizedLanguageCode + " 音檔刪除中..." : "音檔刪除中...";
+      case "deleteSuccess":
+        return normalizedLanguageCode ? normalizedLanguageCode + " 音檔已刪除。" : "音檔已刪除。";
+      case "fallbackError":
+        return "音檔操作失敗。";
+      default:
+        return "";
+    }
+  }
+
   async function bootstrap(globalObject) {
     const activeRoot = resolveGlobalObject(globalObject);
     const activeDocument = activeRoot.document;
@@ -470,19 +518,19 @@
 
     imageUploadButton?.addEventListener("click", async function () {
       if (!hasPersistentWordId(currentWordId)) {
-        setImageStatus(activeDocument, "?????????????", true);
+        setImageStatus(activeDocument, getImageStatusMessage("missingWord"), true);
         return;
       }
 
       const file = imageFileInput?.files?.[0];
 
       if (!file) {
-        setImageStatus(activeDocument, "?????????", true);
+        setImageStatus(activeDocument, getImageStatusMessage("missingFile"), true);
         return;
       }
 
       setMediaControlsDisabled(activeDocument, true);
-      setImageStatus(activeDocument, "??????...", false);
+      setImageStatus(activeDocument, getImageStatusMessage("uploading"), false);
 
       try {
         const result = await activeRoot.lexiconAdminApi.uploadWordImage(client, currentWordId, file);
@@ -493,10 +541,10 @@
         if (imageFileInput) {
           imageFileInput.value = "";
         }
-        setImageStatus(activeDocument, "??????", false);
+        setImageStatus(activeDocument, getImageStatusMessage("uploadSuccess"), false);
         showSuccessToast(t("wordEdit.toast.imageUploadSuccess"));
       } catch (error) {
-        setImageStatus(activeDocument, error.message || "???????", true);
+        setImageStatus(activeDocument, error.message || getImageStatusMessage("fallbackError"), true);
         showErrorToast(t("wordEdit.toast.imageUploadError"));
       } finally {
         updateMediaUi();
@@ -505,12 +553,12 @@
 
     imageDeleteButton?.addEventListener("click", async function () {
       if (!hasPersistentWordId(currentWordId)) {
-        setImageStatus(activeDocument, "?????????????", true);
+        setImageStatus(activeDocument, getImageStatusMessage("missingWord"), true);
         return;
       }
 
       if (!currentDetail.image_url) {
-        setImageStatus(activeDocument, "??????????", true);
+        setImageStatus(activeDocument, getImageStatusMessage("deleteMissing"), true);
         return;
       }
 
@@ -527,7 +575,7 @@
       }
 
       setMediaControlsDisabled(activeDocument, true);
-      setImageStatus(activeDocument, "??????...", false);
+      setImageStatus(activeDocument, getImageStatusMessage("deleting"), false);
 
       try {
         await activeRoot.lexiconAdminApi.deleteWordImage(client, currentWordId);
@@ -535,10 +583,10 @@
         refreshAdminMediaCacheBustToken(activeRoot);
         syncMediaFields(activeDocument, currentDetail);
         renderImagePreview(activeDocument, activeRoot, currentDetail);
-        setImageStatus(activeDocument, "??????", false);
+        setImageStatus(activeDocument, getImageStatusMessage("deleteSuccess"), false);
         showSuccessToast(t("wordEdit.toast.imageDeleteSuccess"));
       } catch (error) {
-        setImageStatus(activeDocument, error.message || "???????", true);
+        setImageStatus(activeDocument, error.message || getImageStatusMessage("fallbackError"), true);
         showErrorToast(t("wordEdit.toast.imageDeleteError"));
       } finally {
         updateMediaUi();
@@ -552,19 +600,19 @@
 
       uploadButton?.addEventListener("click", async function () {
         if (!hasPersistentWordId(currentWordId)) {
-          setAudioStatus(activeDocument, "?????????????", true);
+          setAudioStatus(activeDocument, getAudioStatusMessage("missingWord"), true);
           return;
         }
 
         const file = fileInput?.files?.[0];
 
         if (!file) {
-          setAudioStatus(activeDocument, "???????", true);
+          setAudioStatus(activeDocument, getAudioStatusMessage("missingFile"), true);
           return;
         }
 
         setMediaControlsDisabled(activeDocument, true);
-        setAudioStatus(activeDocument, "???? " + languageCode + " ??...", false);
+        setAudioStatus(activeDocument, getAudioStatusMessage("uploading", languageCode), false);
 
         try {
           const result = await activeRoot.lexiconAdminApi.uploadWordAudio(client, currentWordId, languageCode, file);
@@ -575,10 +623,10 @@
           if (fileInput) {
             fileInput.value = "";
           }
-          setAudioStatus(activeDocument, languageCode + " ??????", false);
+          setAudioStatus(activeDocument, getAudioStatusMessage("uploadSuccess", languageCode), false);
           showSuccessToast(t("wordEdit.toast.audioUploadSuccess", { languageCode: languageCode }));
         } catch (error) {
-          setAudioStatus(activeDocument, error.message || "???????", true);
+          setAudioStatus(activeDocument, error.message || getAudioStatusMessage("fallbackError"), true);
           showErrorToast(t("wordEdit.toast.audioUploadError", { languageCode: languageCode }));
         } finally {
           updateMediaUi();
@@ -587,12 +635,12 @@
 
       deleteButton?.addEventListener("click", async function () {
         if (!hasPersistentWordId(currentWordId)) {
-          setAudioStatus(activeDocument, "?????????????", true);
+          setAudioStatus(activeDocument, getAudioStatusMessage("missingWord"), true);
           return;
         }
 
         if (!currentDetail.translations[languageCode].audio_filename) {
-          setAudioStatus(activeDocument, languageCode + " ??????????", true);
+          setAudioStatus(activeDocument, getAudioStatusMessage("deleteMissing", languageCode), true);
           return;
         }
 
@@ -609,7 +657,7 @@
         }
 
         setMediaControlsDisabled(activeDocument, true);
-        setAudioStatus(activeDocument, "???? " + languageCode + " ??...", false);
+        setAudioStatus(activeDocument, getAudioStatusMessage("deleting", languageCode), false);
 
         try {
           await activeRoot.lexiconAdminApi.deleteWordAudio(client, currentWordId, languageCode);
@@ -617,10 +665,10 @@
           refreshAdminMediaCacheBustToken(activeRoot);
           syncMediaFields(activeDocument, currentDetail);
           renderAudioPreviews(activeDocument, activeRoot, currentDetail);
-          setAudioStatus(activeDocument, languageCode + " ??????", false);
+          setAudioStatus(activeDocument, getAudioStatusMessage("deleteSuccess", languageCode), false);
           showSuccessToast(t("wordEdit.toast.audioDeleteSuccess", { languageCode: languageCode }));
         } catch (error) {
-          setAudioStatus(activeDocument, error.message || "???????", true);
+          setAudioStatus(activeDocument, error.message || getAudioStatusMessage("fallbackError"), true);
           showErrorToast(t("wordEdit.toast.audioDeleteError", { languageCode: languageCode }));
         } finally {
           updateMediaUi();
@@ -643,6 +691,8 @@
     buildTagOptionMarkup,
     collectFormValues,
     createEmptyWordDetail,
+    getAudioStatusMessage,
+    getImageStatusMessage,
     hasPersistentWordId,
     normalizeWordEditorPayload,
     parseWordEditParams,

@@ -7,6 +7,8 @@ const {
   buildMediaUrl,
   buildTagOptionMarkup,
   createEmptyWordDetail,
+  getAudioStatusMessage,
+  getImageStatusMessage,
   hasPersistentWordId,
   normalizeWordEditorPayload,
   parseWordEditParams,
@@ -102,6 +104,24 @@ test("buildMediaUrl appends admin cache-bust token for refreshed media previews"
     ),
     "https://cdn.example.com/media/imgs/28.webp?v=1712345678901",
   );
+});
+
+test("status message helpers return readable traditional chinese copy", () => {
+  assert.equal(getImageStatusMessage("missingWord"), "請先儲存單字後再上傳圖片。");
+  assert.equal(getImageStatusMessage("missingFile"), "請先選擇要上傳的圖片。");
+  assert.equal(getImageStatusMessage("uploading"), "圖片上傳中...");
+  assert.equal(getImageStatusMessage("uploadSuccess"), "圖片上傳完成。");
+  assert.equal(getImageStatusMessage("deleteMissing"), "目前沒有可刪除的圖片。");
+  assert.equal(getImageStatusMessage("deleteSuccess"), "圖片已刪除。");
+  assert.equal(getImageStatusMessage("fallbackError"), "圖片操作失敗。");
+
+  assert.equal(getAudioStatusMessage("missingWord"), "請先儲存單字後再上傳音檔。");
+  assert.equal(getAudioStatusMessage("missingFile"), "請先選擇要上傳的音檔。");
+  assert.equal(getAudioStatusMessage("uploading", "zh-TW"), "zh-TW 音檔上傳中...");
+  assert.equal(getAudioStatusMessage("uploadSuccess", "zh-TW"), "zh-TW 音檔上傳完成。");
+  assert.equal(getAudioStatusMessage("deleteMissing", "en"), "目前沒有可刪除的 en 音檔。");
+  assert.equal(getAudioStatusMessage("deleteSuccess", "en"), "en 音檔已刪除。");
+  assert.equal(getAudioStatusMessage("fallbackError"), "音檔操作失敗。");
 });
 
 test("collectFormValues preserves existing media values when read-only inputs are removed", () => {
