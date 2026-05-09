@@ -5,7 +5,11 @@
   "scripts": {
     "test": "node --test local-tests/*.test.js",
     "test:e2e": "node local-tests/e2e-runner.js",
-    "test:admin": "node --test local-tests/admin-*.test.js"
+    "test:admin": "node --test local-tests/admin-*.test.js",
+    "stitch:generate": "node scripts/generate-stitch-html.mjs"
+  },
+  "dependencies": {
+    "@google/stitch-sdk": "^0.3.4"
   },
   "devDependencies": {
     "playwright": "^1.56.0"

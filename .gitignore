@@ -3,6 +3,7 @@
 .serena
 .venv
 node_modules/
+.env
 local-tests/output/
 *.test.local.*
 page_example/
