@@ -36,6 +36,7 @@
   const MEDIA_PUBLIC_BASE_URL_PLACEHOLDERS = new Set(["https://media.example.com"]);
   const PURGE_CONFIRMATION_TEXT = "DELETE ALL R2 OBJECTS";
   const STORAGE_DELETE_BATCH_SIZE = 25;
+  const POSTGRES_INTEGER_MAX = 2147483647;
 
   function getFetchImplementation(deps = {}) {
     return deps.fetchImpl || root.fetch;
@@ -139,6 +140,32 @@
     return error;
   }
 
+  function createDatabaseRequestError(payload, fallbackMessage) {
+    const message = payload?.message || fallbackMessage || "Database request failed.";
+    const error = new Error(message);
+    const details = {};
+
+    error.code = "DATABASE_ERROR";
+
+    if (payload?.code) {
+      details.databaseCode = payload.code;
+    }
+
+    if (payload?.details) {
+      details.databaseDetails = payload.details;
+    }
+
+    if (payload?.hint) {
+      details.databaseHint = payload.hint;
+    }
+
+    if (Object.keys(details).length > 0) {
+      error.details = details;
+    }
+
+    return error;
+  }
+
   function mapMediaMutationErrorToResponse(request, env, error) {
     if (error?.code === "MEDIA_SYNC_FAILED") {
       return jsonApiError(request, env, 502, error.code, error.message, error.details);
@@ -146,6 +173,10 @@
 
     if (error?.code === "INCONSISTENT_STATE") {
       return jsonApiError(request, env, 409, error.code, error.message, error.details);
+    }
+
+    if (error?.code === "DATABASE_ERROR") {
+      return jsonApiError(request, env, 500, error.code, error.message, error.details);
     }
 
     if (error?.message === "A supported storage object key is required."
@@ -298,9 +329,23 @@
     return AUDIO_OBJECT_PREFIX + "/" + normalizedLanguageCode + "/" + normalizedWordId + "." + extension;
   }
 
+  function parseStorageWordIdCandidate(value) {
+    if (!/^\d+$/.test(value || "")) {
+      return null;
+    }
+
+    const numericValue = Number(value);
+
+    if (!Number.isSafeInteger(numericValue) || numericValue <= 0 || numericValue > POSTGRES_INTEGER_MAX) {
+      return null;
+    }
+
+    return numericValue;
+  }
+
   function parseStorageObjectKey(key) {
     const normalizedKey = typeof key === "string" ? key.trim() : "";
-    const imageMatch = /^imgs\/(\d+)\.([a-z0-9]+)$/i.exec(normalizedKey);
+    const imageMatch = /^imgs\/([^/]+)\.([a-z0-9]+)$/i.exec(normalizedKey);
 
     if (imageMatch) {
       if (!IMAGE_EXTENSIONS.has(imageMatch[2].toLowerCase())) {
@@ -309,13 +354,13 @@
 
       return {
         mediaType: "image",
-        wordId: Number(imageMatch[1]),
+        wordId: parseStorageWordIdCandidate(imageMatch[1]),
         languageCode: null,
         extension: imageMatch[2].toLowerCase(),
       };
     }
 
-    const audioMatch = /^audios\/([^/]+)\/(\d+)\.([a-z0-9]+)$/i.exec(normalizedKey);
+    const audioMatch = /^audios\/([^/]+)\/([^/]+)\.([a-z0-9]+)$/i.exec(normalizedKey);
 
     if (!audioMatch) {
       return null;
@@ -327,7 +372,7 @@
 
     return {
       mediaType: "audio",
-      wordId: Number(audioMatch[2]),
+      wordId: parseStorageWordIdCandidate(audioMatch[2]),
       languageCode: audioMatch[1],
       extension: audioMatch[3].toLowerCase(),
     };
@@ -496,31 +541,22 @@
     };
   }
 
-  async function loadMediaReferenceState(fetchImpl, config, wordIds) {
-    const normalizedWordIds = Array.from(new Set((Array.isArray(wordIds) ? wordIds : []).filter(function (wordId) {
-      return Number.isInteger(wordId) && wordId > 0;
-    })));
+  async function loadMediaReferenceState(fetchImpl, config, storageObjects) {
+    const recognizedObjects = Array.isArray(storageObjects) ? storageObjects.filter(Boolean) : [];
 
-    if (normalizedWordIds.length === 0) {
+    if (recognizedObjects.length === 0) {
       return {
         imageKeys: new Set(),
         audioKeysByLanguage: new Map(),
       };
     }
 
-    const wordIdFilter = "in.(" + normalizedWordIds.join(",") + ")";
     const [wordRows, translationRows] = await Promise.all([
       fetchServiceRows(fetchImpl, config, "words", {
         select: "id,image_url",
-        filters: {
-          id: wordIdFilter,
-        },
       }),
       fetchServiceRows(fetchImpl, config, "word_translations", {
         select: "word_id,language_code,audio_filename",
-        filters: {
-          word_id: wordIdFilter,
-        },
       }),
     ]);
 
@@ -813,7 +849,10 @@
     });
 
     if (!response.ok) {
-      throw new Error("Database request failed.");
+      const payload = await response.json().catch(function () {
+        return null;
+      });
+      throw createDatabaseRequestError(payload, "Database request failed.");
     }
 
     const payload = await response.json().catch(function () {
@@ -1056,7 +1095,7 @@
         access.fetchImpl,
         access.config,
         parsedPageObjects.map(function (item) {
-          return item.parsedKey.wordId;
+          return item.storageObject;
         }),
       );
       const items = pageObjects

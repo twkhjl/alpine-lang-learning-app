@@ -104,8 +104,19 @@ test("parseStorageObjectKey parses supported image and audio keys", () => {
   });
 });
 
-test("parseStorageObjectKey returns null for unsupported object keys", () => {
-  assert.equal(parseStorageObjectKey("imgs/not-a-number.jpg"), null);
+test("parseStorageObjectKey supports legacy filenames and rejects unsupported object keys", () => {
+  assert.deepEqual(parseStorageObjectKey("imgs/not-a-number.jpg"), {
+    mediaType: "image",
+    wordId: null,
+    languageCode: null,
+    extension: "jpg",
+  });
+  assert.deepEqual(parseStorageObjectKey("audios/en/legacy-file.mp3"), {
+    mediaType: "audio",
+    wordId: null,
+    languageCode: "en",
+    extension: "mp3",
+  });
   assert.equal(parseStorageObjectKey("audios/fr/28.mp3"), null);
   assert.equal(parseStorageObjectKey("misc/28.txt"), null);
 });
@@ -1439,9 +1450,9 @@ test("worker lists storage objects with db reference summary", async () => {
   assert.equal(response.status, 200);
   assert.deepEqual(listCalls, [{ prefix: "imgs/", cursor: "cursor-1" }]);
   const decodedFetchUrls = fetchUrls.map((url) => decodeURIComponent(url));
-  assert.ok(decodedFetchUrls.some((url) => url.includes("/rest/v1/words") && url.includes("id=in.(28)")));
-  assert.ok(decodedFetchUrls.some((url) => url.includes("/rest/v1/word_translations") && url.includes("word_id=in.(28)")));
-  assert.ok(decodedFetchUrls.every((url) => !url.includes("id=in.(999)")));
+  assert.ok(decodedFetchUrls.some((url) => url.includes("/rest/v1/words") && url.includes("select=id,image_url")));
+  assert.ok(decodedFetchUrls.some((url) => url.includes("/rest/v1/word_translations") && url.includes("select=word_id,language_code,audio_filename")));
+  assert.ok(decodedFetchUrls.every((url) => !url.includes("202604120952")));
   assert.deepEqual(await response.json(), {
     ok: true,
     data: {
@@ -1476,6 +1487,109 @@ test("worker lists storage objects with db reference summary", async () => {
       },
       cursor: "cursor-2",
       truncated: true,
+    },
+  });
+});
+
+test("worker lists legacy timestamp image objects without coercing them into oversized word ids", async () => {
+  const fetchUrls = [];
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/objects", {
+      method: "GET",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list() {
+        return Promise.resolve({
+          objects: [
+            {
+              key: "imgs/202604120952.jpg",
+              size: 111,
+              uploaded: new Date("2026-05-01T10:00:00.000Z"),
+            },
+          ],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+    }),
+    {
+      fetchImpl(url) {
+        fetchUrls.push(url);
+
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([
+                { id: 1, image_url: "https://cdn.example.com/media/imgs/202604120952.jpg" },
+              ]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  const decodedFetchUrls = fetchUrls.map((url) => decodeURIComponent(url));
+  assert.ok(decodedFetchUrls.every((url) => !url.includes("202604120952")));
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: {
+      items: [
+        {
+          key: "imgs/202604120952.jpg",
+          type: "image",
+          languageCode: null,
+          wordId: null,
+          size: 111,
+          uploadedAt: "2026-05-01T10:00:00.000Z",
+          dbReferenced: true,
+          previewUrl: "https://cdn.example.com/media/imgs/202604120952.jpg",
+        },
+      ],
+      summary: {
+        objectCount: 1,
+        imageCount: 1,
+        audioCount: 0,
+        referencedCount: 1,
+        orphanedCount: 0,
+      },
+      cursor: null,
+      truncated: false,
     },
   });
 });
@@ -2420,6 +2534,90 @@ test("worker lists storage objects with legacy reference formats, language-safe 
       },
       cursor: null,
       truncated: false,
+    },
+  });
+});
+
+test("worker surfaces database error details when asset reference lookup fails", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example.com/api/admin/assets/objects", {
+      method: "GET",
+      headers: {
+        origin: "https://admin.example.com",
+        authorization: "Bearer access-token",
+      },
+    }),
+    createMediaEnv({
+      list() {
+        return Promise.resolve({
+          objects: [
+            {
+              key: "imgs/28.jpg",
+              size: 111,
+              uploaded: new Date("2026-05-01T10:00:00.000Z"),
+            },
+          ],
+          truncated: false,
+          cursor: undefined,
+        });
+      },
+    }),
+    {
+      fetchImpl(url) {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve({ id: "user-1" });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/admin_users")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([{ user_id: "user-1" }]);
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/words?")) {
+          return Promise.resolve({
+            ok: false,
+            json() {
+              return Promise.resolve({
+                code: "42703",
+                message: "column words.image_url does not exist",
+                details: null,
+              });
+            },
+          });
+        }
+
+        if (url.includes("/rest/v1/word_translations?")) {
+          return Promise.resolve({
+            ok: true,
+            json() {
+              return Promise.resolve([]);
+            },
+          });
+        }
+
+        throw new Error("unexpected fetch call: " + url);
+      },
+    },
+  );
+
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: {
+      code: "DATABASE_ERROR",
+      message: "column words.image_url does not exist",
+      details: {
+        databaseCode: "42703",
+      },
     },
   });
 });
