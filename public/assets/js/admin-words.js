@@ -33,8 +33,9 @@
     return "admin-word-edit.html?mode=create";
   }
 
-  function buildBatchDeleteConfirmationMessage(items) {
+  function buildBatchDeleteConfirmationMessage(items, translator) {
     const normalizedItems = Array.isArray(items) ? items : [];
+    const t = typeof translator === "function" ? translator : function (key) { return key; };
     const labels = normalizedItems
       .slice(0, 3)
       .map(function (item) {
@@ -43,9 +44,9 @@
       .filter(Boolean);
 
     return [
-      "確定刪除 " + normalizedItems.length + " 筆單字？",
-      labels.length ? "包含：" + labels.join("、") : "",
-      "圖片與音檔也會一併刪除。",
+      t("words.confirm.batchDeleteCount", { count: normalizedItems.length }),
+      labels.length ? t("words.confirm.batchDeleteIncludes", { labels: labels.join(", ") }) : "",
+      t("words.confirm.batchDeleteCascade"),
     ].filter(Boolean).join("\n");
   }
 
@@ -155,7 +156,7 @@
       "<td>" + escapeHtml(item.lang_en) + "</td>",
       "<td><div class=\"admin-tags\">" + tagMarkup + "</div></td>",
       "<td>" + escapeHtml(formatUpdatedAt(item.updated_at, locale)) + "</td>",
-      "<td><div class=\"admin-row-actions\"><a class=\"admin-button secondary\" href=\"" + escapeHtml(buildEditWordUrl(item.id)) + "\">" + escapeHtml(t("words.table.edit")) + "</a><button class=\"admin-button danger\" type=\"button\" data-word-delete-id=\"" + escapeHtml(item.id) + "\">刪除</button></div></td>",
+      "<td><div class=\"admin-row-actions\"><a class=\"admin-button secondary\" href=\"" + escapeHtml(buildEditWordUrl(item.id)) + "\">" + escapeHtml(t("words.table.edit")) + "</a><button class=\"admin-button danger\" type=\"button\" data-word-delete-id=\"" + escapeHtml(item.id) + "\">" + escapeHtml(t("words.actions.delete")) + "</button></div></td>",
       "</tr>",
     ].join("");
   }
@@ -437,10 +438,10 @@
       }
 
       const confirmed = await requestConfirmation({
-        title: "確認刪除",
-        message: "刪除這個單字後，圖片與音檔也會一併刪除。確定要繼續嗎？",
-        confirmText: "確認",
-        cancelText: "取消",
+        title: t("feedback.confirm.deleteTitle"),
+        message: t("feedback.confirm.wordDeleteMessage"),
+        confirmText: t("common.confirm"),
+        cancelText: t("common.cancel"),
         tone: "danger",
       });
 
@@ -449,12 +450,12 @@
       }
 
       if (statusNode) {
-        statusNode.textContent = "刪除單字中...";
+        statusNode.textContent = t("words.status.deletingOne");
       }
 
       try {
         await activeRoot.lexiconAdminApi.deleteWord(client, wordId);
-        showSuccessToast("單字已刪除。");
+        showSuccessToast(t("words.toast.deleteOneSuccess"));
 
         if (state.page > 1 && tableBody.querySelectorAll("tr").length <= 1) {
           state.page -= 1;
@@ -463,9 +464,9 @@
         await loadWords();
       } catch (error) {
         if (statusNode) {
-          statusNode.textContent = error.message || "刪除單字失敗。";
+          statusNode.textContent = error.message || t("words.status.deleteOneError");
         }
-        showErrorToast("刪除單字失敗。");
+        showErrorToast(t("words.toast.deleteOneError"));
       }
     });
 
@@ -507,10 +508,10 @@
       }
 
       const confirmed = await requestConfirmation({
-        title: "確認刪除",
-        message: buildBatchDeleteConfirmationMessage(itemsToDelete),
-        confirmText: "確認",
-        cancelText: "取消",
+        title: t("feedback.confirm.deleteTitle"),
+        message: buildBatchDeleteConfirmationMessage(itemsToDelete, t),
+        confirmText: t("common.confirm"),
+        cancelText: t("common.cancel"),
         tone: "danger",
       });
 
@@ -519,7 +520,7 @@
       }
 
       if (statusNode) {
-        statusNode.textContent = "批次刪除單字中...";
+        statusNode.textContent = t("words.status.deletingBatch");
       }
 
       try {
@@ -527,13 +528,15 @@
           return item.id;
         }));
         selectedWordIds.clear();
-        showSuccessToast("已刪除 " + (result.deletedWordIds?.length || itemsToDelete.length) + " 筆單字。");
+        showSuccessToast(t("words.toast.deleteBatchSuccess", {
+          count: result.deletedWordIds?.length || itemsToDelete.length,
+        }));
         await loadWords();
       } catch (error) {
         if (statusNode) {
-          statusNode.textContent = error.message || "批次刪除單字失敗。";
+          statusNode.textContent = error.message || t("words.status.deleteBatchError");
         }
-        showErrorToast("批次刪除單字失敗。");
+        showErrorToast(t("words.toast.deleteBatchError"));
         syncBatchDeleteUi();
       }
     });
