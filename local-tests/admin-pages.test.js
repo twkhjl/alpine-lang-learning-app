@@ -29,6 +29,19 @@ test("shared admin nav excludes edit word from visible sidebar links", () => {
   assert.equal(links.some((link) => link.path === "admin-word-edit.html"), false);
 });
 
+test("shared admin shell keeps language switch and logout in topbar controls", () => {
+  const sidebarMarkup = shellApi.renderSidebarMarkup("admin-dashboard.html", function (key) { return key; });
+  const topbarMarkup = shellApi.renderTopbarControlsMarkup(function (key) { return key; }, "zh-TW");
+
+  assert.doesNotMatch(sidebarMarkup, /data-admin-locale=/);
+  assert.doesNotMatch(sidebarMarkup, /shell\.nav\.logout/);
+  assert.match(topbarMarkup, /data-admin-locale="zh-TW"/);
+  assert.match(topbarMarkup, /data-admin-locale="en"/);
+  assert.match(topbarMarkup, />繁中</);
+  assert.match(topbarMarkup, /data-admin-user-menu-trigger/);
+  assert.match(topbarMarkup, /data-admin-logout/);
+});
+
 test("admin shell pages rely on the shared sidebar placeholder", () => {
   for (const file of shellPages) {
     const html = fs.readFileSync(path.join(process.cwd(), file), "utf8");
@@ -96,6 +109,15 @@ test("admin stylesheet preserves hidden elements as non-interactive", () => {
 
   assert.match(css, /\[hidden\]\s*\{/);
   assert.match(css, /display:\s*none\s*!important/);
+});
+
+test("admin stylesheet defines topbar language panel and user dropdown", () => {
+  const css = fs.readFileSync(path.join(process.cwd(), "public/assets/css/admin.css"), "utf8");
+
+  assert.match(css, /\.admin-topbar-controls\s*\{/);
+  assert.match(css, /\.admin-language-panel-topbar\s*\{/);
+  assert.match(css, /\.admin-user-menu-trigger\s*\{/);
+  assert.match(css, /\.admin-user-menu-panel\s*\{/);
 });
 
 test("admin word edit audio cards stay single-column across desktop and mobile", () => {

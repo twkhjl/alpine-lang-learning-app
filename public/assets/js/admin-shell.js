@@ -98,7 +98,7 @@
     });
   }
 
-  function renderSidebarMarkup(currentPath, translator, locale) {
+  function renderSidebarMarkup(currentPath, translator) {
     const t = typeof translator === "function" ? translator : function (key) { return key; };
     const linksMarkup = renderAdminNavLinks(currentPath).map(function (route) {
       const ariaCurrent = route.active ? ' aria-current="page"' : "";
@@ -110,8 +110,6 @@
       ].join("");
     }).join("");
 
-    const activeLocale = locale === "en" ? "en" : "zh-TW";
-
     return [
       '<div class="admin-brand">',
       "<h1>LingoCMS</h1>",
@@ -120,20 +118,101 @@
       '<nav class="admin-sidebar-nav" aria-label="' + t("shell.nav.ariaLabel") + '">',
       linksMarkup,
       "</nav>",
-      '<div class="admin-sidebar-footer">',
-      '<div class="admin-language-panel">',
+    ].join("");
+  }
+
+  function renderTopbarControlsMarkup(translator, locale) {
+    const t = typeof translator === "function" ? translator : function (key) { return key; };
+    const activeLocale = locale === "en" ? "en" : "zh-TW";
+
+    return [
+      '<div class="admin-topbar-controls">',
+      '<div class="admin-language-panel admin-language-panel-topbar">',
       '<div class="admin-language-label">' + t("shell.language.label") + "</div>",
       '<div class="admin-language-options">',
       '<button type="button" class="admin-language-button' + (activeLocale === "zh-TW" ? " active" : "") + '" data-admin-locale="zh-TW">繁中</button>',
       '<button type="button" class="admin-language-button' + (activeLocale === "en" ? " active" : "") + '" data-admin-locale="en">EN</button>',
       "</div>",
       "</div>",
-      '<a class="admin-nav-link" data-admin-nav="admin-login.html">',
+      '<div class="admin-user-menu" data-admin-user-menu>',
+      '<button type="button" class="admin-user-menu-trigger" data-admin-user-menu-trigger aria-haspopup="menu" aria-expanded="false">',
+      '<span class="material-symbols-outlined">shield_lock</span>',
+      '<span>' + t("shell.userLabel") + "</span>",
+      '<span class="material-symbols-outlined">expand_more</span>',
+      "</button>",
+      '<div class="admin-user-menu-panel" data-admin-user-menu-panel hidden>',
+      '<a class="admin-user-menu-item" data-admin-nav="admin-login.html" data-admin-logout href="admin-login.html" role="menuitem">',
       '<span class="material-symbols-outlined">logout</span>',
       '<span>' + t("shell.nav.logout") + "</span>",
       "</a>",
       "</div>",
+      "</div>",
+      "</div>",
     ].join("");
+  }
+
+  function closeAdminUserMenus(doc) {
+    if (!doc || typeof doc.querySelectorAll !== "function") {
+      return;
+    }
+
+    doc.querySelectorAll("[data-admin-user-menu]").forEach(function (menu) {
+      const trigger = menu.querySelector("[data-admin-user-menu-trigger]");
+      const panel = menu.querySelector("[data-admin-user-menu-panel]");
+
+      if (trigger) {
+        trigger.setAttribute("aria-expanded", "false");
+      }
+
+      if (panel) {
+        panel.hidden = true;
+      }
+    });
+  }
+
+  function bindTopbarControls(doc) {
+    if (!doc || doc.__lexiconAdminTopbarBound) {
+      return;
+    }
+
+    doc.addEventListener("click", function (event) {
+      const trigger = event.target && typeof event.target.closest === "function"
+        ? event.target.closest("[data-admin-user-menu-trigger]")
+        : null;
+
+      if (trigger) {
+        const menu = typeof trigger.closest === "function"
+          ? trigger.closest("[data-admin-user-menu]")
+          : null;
+        const panel = menu ? menu.querySelector("[data-admin-user-menu-panel]") : null;
+        const isOpen = trigger.getAttribute("aria-expanded") === "true";
+
+        closeAdminUserMenus(doc);
+
+        if (!isOpen && panel) {
+          trigger.setAttribute("aria-expanded", "true");
+          panel.hidden = false;
+        }
+
+        return;
+      }
+
+      const isInMenu = event.target && typeof event.target.closest === "function"
+        ? event.target.closest("[data-admin-user-menu]")
+        : null;
+
+      if (!isInMenu) {
+        closeAdminUserMenus(doc);
+      }
+    });
+
+    doc.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeAdminUserMenus(doc);
+      }
+    });
+
+    doc.__lexiconAdminTopbarBound = true;
   }
 
   function applyAdminPageState(doc, globalObject) {
@@ -151,11 +230,16 @@
       ? i18n.createTranslator(activeRoot).t
       : function (key) { return key; };
     const sidebar = activeDocument.querySelector("[data-admin-sidebar]");
+    const topbarUser = activeDocument.querySelector(".admin-topbar-user");
 
     activeDocument.body.dataset.adminPage = currentPath;
 
     if (sidebar) {
-      sidebar.innerHTML = renderSidebarMarkup(currentPath, translator, locale);
+      sidebar.innerHTML = renderSidebarMarkup(currentPath, translator);
+    }
+
+    if (topbarUser) {
+      topbarUser.innerHTML = renderTopbarControlsMarkup(translator, locale);
     }
 
     activeDocument.querySelectorAll("[data-admin-nav]").forEach(function (node) {
@@ -178,6 +262,7 @@
   function bootstrap(globalObject) {
     const activeRoot = resolveGlobalObject(globalObject);
     applyAdminPageState(activeRoot.document, activeRoot);
+    bindTopbarControls(activeRoot.document);
 
     if (activeRoot.document) {
       activeRoot.document.addEventListener("lexicon-admin-localechange", function () {
@@ -201,5 +286,6 @@
     isAdminRoute: isAdminRoute,
     renderAdminNavLinks: renderAdminNavLinks,
     renderSidebarMarkup: renderSidebarMarkup,
+    renderTopbarControlsMarkup: renderTopbarControlsMarkup,
   };
 });
