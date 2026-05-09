@@ -115,19 +115,17 @@ function resolveStitchConfig({ cliArgs = {}, env = {}, cwd = process.cwd() } = {
   };
   const apiKey = String(mergedEnv.STITCH_API_KEY || "").trim();
   const projectId = String(cliArgs.projectId || mergedEnv.STITCH_PROJECT_ID || "").trim();
+  const projectTitle = String(mergedEnv.STITCH_PROJECT_TITLE || "Stitch Generated Page").trim() || "Stitch Generated Page";
 
   if (!apiKey) {
     throw new Error("STITCH_API_KEY is required. Set it in .env or your shell environment.");
-  }
-
-  if (!projectId) {
-    throw new Error("A Stitch project id is required. Use --project or STITCH_PROJECT_ID.");
   }
 
   return {
     apiKey,
     prompt: String(cliArgs.prompt || "").trim(),
     projectId,
+    projectTitle,
     outputPath: buildOutputPath(cwd, cliArgs.output || mergedEnv.STITCH_OUTPUT || ""),
   };
 }

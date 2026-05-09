@@ -316,3 +316,73 @@ dark neumorphism 若過度追求柔和，會讓：
   4. page-specific refinements
   5. login alignment
 
+## Reference Mapping
+
+本次 dark neumorphism 視覺改版，允許參考 `page_example/dark neumorphism/` 內由 Stitch 產生的靜態元件頁，但必須採用「元件語言抽取」而非「整頁貼用」。
+
+### Primary Reference
+
+- `page_example/dark neumorphism/lava_neumorphic_4`
+- 用途：
+  - 後台主題基底
+  - sidebar / topbar 層次
+  - dashboard card surface
+  - 資料面板與列表容器
+- 要抽取的內容：
+  - 深炭黑背景階層
+  - 熔岩橘發光 accent
+  - 柔和外凸式 card
+  - 低亮度高對比資訊排列
+
+### Secondary Reference
+
+- `page_example/dark neumorphism/lava_neumorphic_5`
+- 用途：
+  - 字體氣質
+  - 暖色 highlight 的使用節奏
+  - 標題與小標層級感
+- 要抽取的內容：
+  - 排版節奏
+  - 標題與說明文字的對比比例
+- 不直接採用的內容：
+  - 整體棕色主背景
+
+### Control Detail Reference
+
+- `page_example/dark neumorphism/lava_neumorphic_2.0_3d_3`
+- 用途：
+  - icon button
+  - toggle
+  - active glow
+  - inset / extruded control language
+- 要抽取的內容：
+  - 小尺寸元件的立體感
+  - hover / active / pressed 狀態
+- 不直接採用的內容：
+  - 過重的 3D 厚度
+  - 不利於 table / form 可讀性的誇張陰影
+
+## Integration Constraint
+
+`page_example/dark neumorphism/` 內的靜態 HTML 僅可作為視覺元件參考來源。
+
+### Allowed
+
+- 抽取色票、陰影、圓角、光暈、面板層次、按鈕狀態、輸入框語言、badge / tab / card 視覺模式
+- 參考 `code.html` 內的局部 CSS 手法，重新映射到現有後台樣式系統
+- 以現有 `admin-*` class 為核心，重寫樣式表與少量 modifier class
+
+### Not Allowed
+
+- 不可將任一 Stitch 產生頁面的完整 HTML 原封不動替換現有後台頁面
+- 不可為了貼合參考頁而破壞既有 DOM 綁定、資料屬性、JS query selector 或頁面功能結構
+- 不可把後台改成 marketing page / showcase page 式版面
+
+### Implementation Principle
+
+最終成果必須是：
+
+- 現有後台結構仍然存在
+- 功能與互動保持不變
+- 視覺語言明確來自參考元件頁
+- 但落地方式是 `design token + component mapping`，不是 `page replacement`

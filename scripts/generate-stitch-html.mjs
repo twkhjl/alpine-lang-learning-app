@@ -20,7 +20,9 @@ async function main() {
 
   process.env.STITCH_API_KEY = config.apiKey;
 
-  const project = stitch.project(config.projectId);
+  const project = config.projectId
+    ? stitch.project(config.projectId)
+    : await stitch.createProject(config.projectTitle);
   const screen = await project.generate(config.prompt);
   const htmlUrl = await screen.getHtml();
   const response = await fetch(htmlUrl);
@@ -33,6 +35,10 @@ async function main() {
 
   await fs.mkdir(path.dirname(config.outputPath), { recursive: true });
   await fs.writeFile(config.outputPath, html, "utf8");
+
+  if (!config.projectId) {
+    process.stdout.write(`Created Stitch project: ${project.id}\n`);
+  }
 
   process.stdout.write(`Generated HTML saved to ${config.outputPath}\n`);
   process.stdout.write(`Source URL: ${htmlUrl}\n`);

@@ -59,10 +59,28 @@ test("resolveStitchConfig reads env values and keeps output inside page_example 
   assert.equal(result.apiKey, "test-key");
   assert.equal(result.prompt, "Generate vocabulary landing page");
   assert.equal(result.projectId, "project-123");
+  assert.equal(result.projectTitle, "Stitch Generated Page");
   assert.equal(
     result.outputPath,
     path.resolve("D:\\codes\\alpineJsProjects\\alpine-lang-learning-app", "page_example", "landing.html"),
   );
+});
+
+test("resolveStitchConfig allows empty project id and falls back to auto-create title", () => {
+  const result = resolveStitchConfig({
+    cliArgs: {
+      prompt: "Generate vocabulary landing page",
+    },
+    env: {
+      STITCH_API_KEY: "test-key",
+      STITCH_PROJECT_ID: "",
+    },
+    cwd: "D:\\codes\\alpineJsProjects\\alpine-lang-learning-app",
+  });
+
+  assert.equal(result.apiKey, "test-key");
+  assert.equal(result.projectId, "");
+  assert.equal(result.projectTitle, "Stitch Generated Page");
 });
 
 test("resolveStitchConfig rejects missing api key", () => {
@@ -72,7 +90,7 @@ test("resolveStitchConfig rejects missing api key", () => {
         prompt: "Generate vocabulary landing page",
       },
       env: {},
-      cwd: "D:\\codes\\alpineJsProjects\\alpine-lang-learning-app",
+      cwd: "D:\\codes\\alpineJsProjects\\alpine-lang-learning-app\\local-tests\\fixtures\\no-env",
     }),
     /STITCH_API_KEY is required/,
   );

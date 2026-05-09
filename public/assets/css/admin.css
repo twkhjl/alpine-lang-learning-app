@@ -1,21 +1,40 @@
 :root {
-  --admin-bg: #eef3f9;
-  --admin-surface: #ffffff;
-  --admin-surface-muted: #f7f9fc;
-  --admin-surface-strong: #e5edf7;
-  --admin-border: #c8d4e3;
-  --admin-text: #142033;
-  --admin-text-muted: #526176;
-  --admin-sidebar: #16263e;
-  --admin-sidebar-border: #243854;
-  --admin-sidebar-hover: #223652;
-  --admin-primary: #1967d2;
-  --admin-primary-strong: #0f56ba;
-  --admin-danger: #c02626;
-  --admin-success: #177245;
-  --admin-warning: #a76412;
-  --admin-radius: 12px;
-  --admin-shadow: 0 10px 30px rgba(12, 24, 42, 0.08);
+  --admin-bg: #15171a;
+  --admin-bg-accent: #1b1e23;
+  --admin-surface: #202328;
+  --admin-surface-muted: #1b1e22;
+  --admin-surface-strong: #282c31;
+  --admin-surface-soft: #23272c;
+  --admin-border: rgba(255, 181, 158, 0.14);
+  --admin-border-strong: rgba(255, 181, 158, 0.24);
+  --admin-text: #f4e6df;
+  --admin-text-muted: #b79e91;
+  --admin-sidebar: #181a1f;
+  --admin-sidebar-border: rgba(255, 181, 158, 0.1);
+  --admin-sidebar-hover: linear-gradient(135deg, rgba(255, 106, 45, 0.14), rgba(255, 123, 56, 0.08));
+  --admin-primary: #ff6a2d;
+  --admin-primary-strong: #ff8849;
+  --admin-primary-soft: rgba(255, 106, 45, 0.16);
+  --admin-danger: #ff6b6b;
+  --admin-success: #7bd88f;
+  --admin-warning: #ffb054;
+  --admin-radius: 16px;
+  --admin-radius-lg: 22px;
+  --admin-shadow-raised:
+    -9px -9px 18px rgba(52, 56, 61, 0.28),
+    12px 12px 26px rgba(8, 9, 11, 0.9);
+  --admin-shadow-inset:
+    inset 6px 6px 16px rgba(8, 9, 11, 0.82),
+    inset -6px -6px 16px rgba(52, 56, 61, 0.18);
+  --admin-shadow-glow: 0 0 0 1px rgba(255, 131, 75, 0.14), 0 0 24px rgba(255, 106, 45, 0.22);
+  --admin-shadow-card:
+    var(--admin-shadow-raised),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.04),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.36);
+  --admin-shadow-pressed:
+    inset 4px 4px 12px rgba(8, 9, 11, 0.72),
+    inset -4px -4px 10px rgba(52, 56, 61, 0.14);
+  --admin-focus-ring: 0 0 0 1px rgba(255, 136, 73, 0.8), 0 0 0 5px rgba(255, 106, 45, 0.18);
 }
 
 *,
@@ -25,13 +44,41 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
+  background: var(--admin-bg);
+}
+
+::selection {
+  background: rgba(255, 106, 45, 0.3);
+  color: #fff6f1;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111317;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid #111317;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 106, 45, 0.65), rgba(255, 136, 73, 0.35));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 136, 73, 0.85), rgba(255, 106, 45, 0.52));
 }
 
 body.admin-page {
   margin: 0;
   min-height: 100vh;
-  background: var(--admin-bg);
+  background:
+    radial-gradient(circle at top left, rgba(255, 106, 45, 0.13), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 163, 107, 0.07), transparent 22%),
+    linear-gradient(160deg, #121417 0%, var(--admin-bg) 45%, #181b20 100%);
   color: var(--admin-text);
   font-family: "Noto Sans TC", "Segoe UI", sans-serif;
   line-height: 1.5;
@@ -49,6 +96,23 @@ textarea {
   font: inherit;
 }
 
+button,
+.admin-button,
+.admin-language-button,
+.admin-nav-link,
+.admin-tab-row a,
+.admin-pagination button,
+.admin-topbar-user,
+.admin-text-link {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -62,12 +126,23 @@ textarea {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 12%),
+    transparent;
 }
 
 .admin-sidebar {
-  background: var(--admin-sidebar);
-  color: #eff5ff;
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%),
+    var(--admin-sidebar);
+  color: #fff2ea;
   border-right: 1px solid var(--admin-sidebar-border);
+  box-shadow:
+    12px 0 36px rgba(0, 0, 0, 0.34),
+    inset -1px 0 0 rgba(255, 255, 255, 0.03);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -86,7 +161,7 @@ textarea {
 
 .admin-brand p {
   margin: 6px 0 0;
-  color: #9bb0cc;
+  color: rgba(255, 214, 195, 0.7);
   font-size: 0.8125rem;
 }
 
@@ -106,20 +181,25 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 12px 14px;
   border-radius: var(--admin-radius);
-  color: #cfe0f7;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  border: 1px solid transparent;
+  color: rgba(255, 226, 214, 0.78);
 }
 
 .admin-nav-link:hover {
   background: var(--admin-sidebar-hover);
+  border-color: rgba(255, 181, 158, 0.14);
+  box-shadow: var(--admin-shadow-pressed);
   color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .admin-nav-link[aria-current="page"] {
-  background: var(--admin-primary);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--admin-primary), #b83f14);
+  color: #fff7f2;
+  border-color: rgba(255, 174, 139, 0.3);
+  box-shadow: var(--admin-shadow-glow);
 }
 
 .admin-language-panel {
@@ -127,12 +207,14 @@ textarea {
   gap: 10px;
   padding: 12px;
   border-radius: var(--admin-radius);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 181, 158, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: var(--admin-shadow-pressed);
 }
 
 .admin-language-label {
   font-size: 0.8125rem;
-  color: #9bb0cc;
+  color: rgba(255, 214, 195, 0.7);
 }
 
 .admin-language-options {
@@ -143,17 +225,19 @@ textarea {
 .admin-language-button {
   min-width: 68px;
   padding: 8px 10px;
-  border: 1px solid var(--admin-sidebar-border);
+  border: 1px solid rgba(255, 181, 158, 0.14);
   border-radius: 999px;
-  background: transparent;
-  color: #cfe0f7;
+  background: var(--admin-surface-muted);
+  box-shadow: var(--admin-shadow-raised);
+  color: rgba(255, 231, 221, 0.78);
   cursor: pointer;
 }
 
 .admin-language-button.active {
-  border-color: transparent;
-  background: var(--admin-primary);
-  color: #ffffff;
+  border-color: rgba(255, 174, 139, 0.3);
+  background: linear-gradient(135deg, var(--admin-primary), #c5471a);
+  box-shadow: var(--admin-shadow-glow);
+  color: #fff8f4;
 }
 
 .admin-content {
@@ -171,9 +255,10 @@ textarea {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 28px;
-  border-bottom: 1px solid var(--admin-border);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 181, 158, 0.08);
+  background: rgba(21, 23, 26, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .admin-topbar-title h1,
@@ -202,6 +287,7 @@ textarea {
   border: 1px solid var(--admin-border);
   border-radius: 999px;
   background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-raised);
   color: var(--admin-text-muted);
 }
 
@@ -240,23 +326,39 @@ textarea {
   gap: 8px;
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 187, 160, 0.18);
   border-radius: var(--admin-radius);
-  background: var(--admin-primary);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--admin-primary), #b63f14);
+  box-shadow: var(--admin-shadow-raised), var(--admin-shadow-glow);
+  color: #fff7f2;
   font-weight: 600;
   cursor: pointer;
+}
+
+.admin-button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    -10px -10px 20px rgba(52, 56, 61, 0.22),
+    12px 12px 26px rgba(8, 9, 11, 0.84),
+    0 0 28px rgba(255, 106, 45, 0.26);
+}
+
+.admin-button:active {
+  transform: translateY(0);
+  box-shadow: var(--admin-shadow-pressed), 0 0 18px rgba(255, 106, 45, 0.14);
 }
 
 .admin-button.secondary {
   background: var(--admin-surface);
   color: var(--admin-text);
-  border-color: var(--admin-border);
+  border-color: rgba(255, 181, 158, 0.12);
+  box-shadow: var(--admin-shadow-raised);
 }
 
 .admin-button.danger {
-  background: var(--admin-danger);
-  color: #ffffff;
+  background: linear-gradient(135deg, #a52d2d, #df5454);
+  color: #fff8f8;
+  box-shadow: var(--admin-shadow-raised), 0 0 18px rgba(255, 107, 107, 0.18);
 }
 
 .admin-button[disabled] {
@@ -268,7 +370,7 @@ textarea {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
-  box-shadow: var(--admin-shadow);
+  box-shadow: var(--admin-shadow-card);
 }
 
 .admin-grid {
@@ -319,29 +421,40 @@ textarea {
   font-weight: 600;
 }
 
+.admin-text-link:hover {
+  color: var(--admin-primary-strong);
+  text-shadow: 0 0 18px rgba(255, 106, 45, 0.2);
+}
+
 .admin-table-wrap {
   overflow-x: auto;
+  border-radius: 0 0 var(--admin-radius) var(--admin-radius);
 }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
+  background: transparent;
 }
 
 .admin-table th,
 .admin-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid rgba(255, 181, 158, 0.08);
   text-align: left;
   vertical-align: top;
 }
 
 .admin-table th {
-  background: var(--admin-surface-muted);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--admin-text-muted);
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .admin-table-meta {
@@ -353,8 +466,9 @@ textarea {
 .admin-empty-state {
   padding: 18px;
   border-radius: 12px;
-  border: 1px dashed var(--admin-border);
-  background: var(--admin-surface-muted);
+  border: 1px dashed rgba(255, 181, 158, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.08));
+  box-shadow: var(--admin-shadow-pressed);
   color: var(--admin-text-muted);
   text-align: center;
 }
@@ -371,7 +485,7 @@ textarea {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 0;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid rgba(255, 181, 158, 0.08);
 }
 
 .admin-status-row:last-child {
@@ -405,10 +519,12 @@ textarea {
   height: 10px;
   border-radius: 50%;
   background: var(--admin-success);
+  box-shadow: 0 0 14px rgba(123, 216, 143, 0.4);
 }
 
 .admin-dot.warning {
   background: var(--admin-warning);
+  box-shadow: 0 0 14px rgba(255, 176, 84, 0.4);
 }
 
 .admin-status-footer {
@@ -422,6 +538,8 @@ textarea {
   grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 0.8fr)) auto auto;
   gap: 14px;
   align-items: end;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  border-radius: var(--admin-radius);
 }
 
 .admin-field {
@@ -441,8 +559,28 @@ textarea {
   padding: 10px 12px;
   border: 1px solid var(--admin-border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--admin-surface-muted);
+  box-shadow: var(--admin-shadow-inset);
   color: var(--admin-text);
+}
+
+.admin-field input::placeholder,
+.admin-field textarea::placeholder {
+  color: rgba(183, 158, 145, 0.68);
+}
+
+.admin-field input:focus,
+.admin-field select:focus,
+.admin-field textarea:focus,
+.admin-button:focus-visible,
+.admin-language-button:focus-visible,
+.admin-nav-link:focus-visible,
+.admin-tab-row a:focus-visible,
+.admin-pagination button:focus-visible,
+.admin-toast-dismiss:focus-visible {
+  outline: none;
+  border-color: rgba(255, 136, 73, 0.5);
+  box-shadow: var(--admin-shadow-inset), var(--admin-focus-ring);
 }
 
 .admin-table-footer {
@@ -469,12 +607,18 @@ textarea {
   justify-content: center;
   border: 1px solid var(--admin-border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-raised);
   color: var(--admin-text-muted);
 }
 
 .admin-pagination span {
   color: var(--admin-text);
+}
+
+.admin-pagination button:hover {
+  color: var(--admin-text);
+  box-shadow: var(--admin-shadow-glow), var(--admin-shadow-raised);
 }
 
 .admin-word-grid {
@@ -511,9 +655,10 @@ textarea {
 .admin-media-preview {
   min-height: 200px;
   padding: 16px;
-  border: 1px dashed var(--admin-border);
+  border: 1px dashed rgba(255, 181, 158, 0.18);
   border-radius: 14px;
-  background: var(--admin-surface-muted);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(0, 0, 0, 0.08));
+  box-shadow: var(--admin-shadow-pressed);
   display: grid;
   place-items: center;
 }
@@ -529,6 +674,7 @@ textarea {
   display: grid;
   gap: 14px;
   background: var(--admin-surface-muted);
+  box-shadow: var(--admin-shadow-card);
 }
 
 .admin-media-audio-card h4,
@@ -559,6 +705,7 @@ textarea {
   border-radius: 999px;
   border: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
+  box-shadow: var(--admin-shadow-raised);
 }
 
 .admin-help-text {
@@ -573,14 +720,16 @@ textarea {
 
 .admin-status-text.error {
   color: var(--admin-danger);
+  text-shadow: 0 0 18px rgba(255, 107, 107, 0.15);
 }
 
 .admin-thumb {
   width: 48px;
   height: 48px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #dbeafe, #eff6ff);
-  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, rgba(255, 106, 45, 0.24), rgba(255, 136, 73, 0.08));
+  border: 1px solid rgba(255, 181, 158, 0.18);
+  box-shadow: var(--admin-shadow-raised);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -611,9 +760,10 @@ textarea {
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--admin-surface-muted);
-  border: 1px solid #cddcff;
+  border: 1px solid rgba(255, 181, 158, 0.16);
   color: var(--admin-text-muted);
   font-size: 12px;
+  box-shadow: var(--admin-shadow-raised);
 }
 
 .admin-row-actions {
@@ -632,13 +782,15 @@ textarea {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--admin-border);
-  background: #fff;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-raised);
   color: var(--admin-text-muted);
 }
 
 .admin-tab-row a.active {
-  background: var(--admin-primary);
-  border-color: var(--admin-primary);
+  background: linear-gradient(135deg, var(--admin-primary), #b83f14);
+  border-color: rgba(255, 174, 139, 0.28);
+  box-shadow: var(--admin-shadow-glow), var(--admin-shadow-raised);
   color: #fff;
 }
 
@@ -658,7 +810,8 @@ textarea {
   padding: 14px;
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
   display: grid;
   gap: 12px;
 }
@@ -677,8 +830,9 @@ textarea {
   text-align: center;
   padding: 18px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #eff6ff, #f8fbff);
-  border: 1px dashed #bfd1f8;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(0, 0, 0, 0.08));
+  border: 1px dashed rgba(255, 181, 158, 0.18);
+  box-shadow: var(--admin-shadow-pressed);
   color: var(--admin-text-muted);
   word-break: break-all;
 }
@@ -711,13 +865,15 @@ textarea {
 }
 
 .admin-badge.success {
-  background: rgba(23, 114, 69, 0.12);
+  background: rgba(123, 216, 143, 0.14);
   color: var(--admin-success);
+  box-shadow: inset 0 0 0 1px rgba(123, 216, 143, 0.16);
 }
 
 .admin-badge.muted {
-  background: var(--admin-surface-muted);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--admin-text-muted);
+  box-shadow: inset 0 0 0 1px rgba(255, 181, 158, 0.08);
 }
 
 .admin-asset-meta,
@@ -744,15 +900,18 @@ textarea {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(15, 23, 42, 0.42);
+  background: rgba(5, 7, 10, 0.62);
+  backdrop-filter: blur(10px);
 }
 
 .admin-modal {
   width: min(100%, 520px);
-  background: #fff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.1)), var(--admin-surface);
   border-radius: 18px;
   border: 1px solid var(--admin-border);
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.24);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.4),
+    var(--admin-shadow-card);
 }
 
 .admin-modal header,
@@ -765,11 +924,11 @@ textarea {
 }
 
 .admin-modal header {
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid rgba(255, 181, 158, 0.08);
 }
 
 .admin-modal footer {
-  border-top: 1px solid var(--admin-border);
+  border-top: 1px solid rgba(255, 181, 158, 0.08);
 }
 
 .admin-modal-body {
@@ -788,7 +947,7 @@ textarea {
 }
 
 .admin-feedback-backdrop.danger .admin-modal {
-  border-color: rgba(192, 38, 38, 0.28);
+  border-color: rgba(255, 107, 107, 0.32);
 }
 
 .admin-toast-viewport {
@@ -810,22 +969,22 @@ textarea {
   padding: 14px 16px;
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 18px 42px rgba(12, 24, 42, 0.16);
+  background: rgba(24, 27, 31, 0.96);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36), var(--admin-shadow-card);
   color: var(--admin-text);
   pointer-events: auto;
 }
 
 .admin-toast-success {
-  border-color: rgba(23, 114, 69, 0.24);
+  border-color: rgba(123, 216, 143, 0.28);
 }
 
 .admin-toast-error {
-  border-color: rgba(192, 38, 38, 0.24);
+  border-color: rgba(255, 107, 107, 0.28);
 }
 
 .admin-toast-info {
-  border-color: rgba(25, 103, 210, 0.22);
+  border-color: rgba(255, 136, 73, 0.24);
 }
 
 .admin-toast-content {
@@ -845,9 +1004,10 @@ textarea {
 
 .admin-login-page {
   background:
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.24), transparent 30%),
-    linear-gradient(135deg, #020617 0%, #0f172a 55%, #111827 100%);
-  color: #e5eefc;
+    radial-gradient(circle at top left, rgba(255, 106, 45, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(255, 166, 116, 0.08), transparent 24%),
+    linear-gradient(135deg, #101216 0%, #16191d 55%, #1d2126 100%);
+  color: #f6ebe5;
 }
 
 .admin-login-layout {
@@ -873,16 +1033,20 @@ textarea {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(18px);
-  background: rgba(2, 6, 23, 0.52);
+  background: rgba(13, 15, 19, 0.42);
 }
 
 .admin-login-card {
   width: min(100%, 420px);
   padding: 32px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.26);
-  background: rgba(15, 23, 42, 0.88);
-  box-shadow: 0 30px 80px rgba(2, 6, 23, 0.42);
+  border-radius: var(--admin-radius-lg);
+  border: 1px solid rgba(255, 181, 158, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.08)),
+    rgba(24, 27, 31, 0.9);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.44),
+    var(--admin-shadow-card);
 }
 
 .admin-login-form {
@@ -900,8 +1064,8 @@ textarea {
 }
 
 .admin-login-switcher .admin-language-button {
-  border-color: rgba(148, 163, 184, 0.26);
-  background: rgba(15, 23, 42, 0.58);
+  border-color: rgba(255, 181, 158, 0.14);
+  background: rgba(24, 27, 31, 0.72);
 }
 
 @media (max-width: 1180px) {
