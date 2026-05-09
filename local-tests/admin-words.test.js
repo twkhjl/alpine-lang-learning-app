@@ -4,10 +4,15 @@ const path = require("node:path");
 const test = require("node:test");
 
 const adminI18n = require("../public/assets/js/admin-i18n");
+const adminApi = require("../public/assets/js/admin-api");
 const {
   bootstrap,
+  buildBatchDeleteErrorMessage,
   buildBatchDeleteConfirmationMessage,
+  buildBatchDeleteSuccessMessage,
   buildCreateWordUrl,
+  buildSingleDeleteErrorMessage,
+  buildSingleDeleteSuccessMessage,
   buildEditWordUrl,
   buildWordImagePreviewUrl,
   normalizeWordsPageState,
@@ -40,6 +45,14 @@ const enTranslator = function (key, replacements = {}) {
     "words.confirm.batchDeleteCount": "Delete {count} words?",
     "words.confirm.batchDeleteIncludes": "Includes: {labels}",
     "words.confirm.batchDeleteCascade": "Images and audio files will also be deleted.",
+    "words.toast.deleteOneSuccess": "Word deleted.",
+    "words.toast.deleteOneSuccessWithMedia": "Word deleted and {objectCount} media files removed.",
+    "words.toast.deleteOneError": "Failed to delete word.",
+    "words.toast.deleteBatchSuccess": "Deleted {count} words.",
+    "words.toast.deleteBatchSuccessWithMedia": "Deleted {count} words and removed {objectCount} media files.",
+    "words.toast.deleteBatchError": "Failed to delete selected words.",
+    "words.toast.deleteOnePartialError": "Word deleted, but {objectCount} media files still need cleanup.",
+    "words.toast.deleteBatchPartialError": "Deleted {count} words, but {objectCount} media files still need cleanup.",
   };
 
   return Object.entries(replacements).reduce(function (message, [token, value]) {
@@ -278,16 +291,22 @@ function createWordsAdminTestContext(options = {}) {
       deleteWord(_client, wordId) {
         deleteWordCalls.push(wordId);
         if (options.deleteWordError) {
-          return Promise.reject(new Error(options.deleteWordError));
+          if (typeof options.deleteWordError === "string") {
+            return Promise.reject(new Error(options.deleteWordError));
+          }
+          return Promise.reject(options.deleteWordError);
         }
-        return Promise.resolve({ deleted: true });
+        return Promise.resolve(options.deleteWordResult || { deleted: true });
       },
       deleteWords(_client, wordIds) {
         deleteWordsCalls.push(wordIds);
         if (options.deleteWordsError) {
-          return Promise.reject(new Error(options.deleteWordsError));
+          if (typeof options.deleteWordsError === "string") {
+            return Promise.reject(new Error(options.deleteWordsError));
+          }
+          return Promise.reject(options.deleteWordsError);
         }
-        return Promise.resolve({ deletedWordIds: wordIds });
+        return Promise.resolve(options.deleteWordsResult || { deletedWordIds: wordIds });
       },
     },
   };
@@ -375,6 +394,74 @@ test("buildBatchDeleteConfirmationMessage uses english copy", () => {
   );
 });
 
+test("delete feedback builders surface media cleanup details", () => {
+  assert.equal(
+    buildSingleDeleteSuccessMessage(
+      {
+        id: 28,
+        deleted: true,
+        deletedObjectCount: 3,
+      },
+      {
+        t: enTranslator,
+        api: adminApi,
+      },
+    ),
+    "Word deleted and 3 media files removed.",
+  );
+
+  assert.equal(
+    buildBatchDeleteSuccessMessage(
+      {
+        deletedWordIds: [28, 31],
+        deletedObjectCount: 5,
+      },
+      {
+        requestedWordIds: [28, 31],
+        t: enTranslator,
+        api: adminApi,
+      },
+    ),
+    "Deleted 2 words and removed 5 media files.",
+  );
+
+  assert.equal(
+    buildSingleDeleteErrorMessage(
+      {
+        code: "INCONSISTENT_STATE",
+        details: {
+          wordId: 28,
+          deletedObjectCount: 3,
+        },
+      },
+      {
+        requestedWordIds: [28],
+        t: enTranslator,
+        api: adminApi,
+      },
+    ),
+    "Word deleted, but 3 media files still need cleanup.",
+  );
+
+  assert.equal(
+    buildBatchDeleteErrorMessage(
+      {
+        code: "INCONSISTENT_STATE",
+        details: {
+          deletedWordIds: [28, 31],
+          deletedObjectCount: 5,
+        },
+      },
+      {
+        requestedWordIds: [28, 31],
+        t: enTranslator,
+        api: adminApi,
+      },
+    ),
+    "Deleted 2 words, but 5 media files still need cleanup.",
+  );
+});
+
 test("renderWordRows returns localized empty state markup", () => {
   const markup = renderWordRows([], { t: zhTranslator });
 
@@ -452,7 +539,13 @@ test("admin words page batch delete button uses i18n key", () => {
 });
 
 test("bootstrap localizes single delete confirm and success toast in english", async () => {
-  const context = createWordsAdminTestContext();
+  const context = createWordsAdminTestContext({
+    deleteWordResult: {
+      id: 28,
+      deleted: true,
+      deletedObjectCount: 3,
+    },
+  });
 
   await bootstrap(context.root);
 
@@ -478,11 +571,16 @@ test("bootstrap localizes single delete confirm and success toast in english", a
       tone: "danger",
     },
   ]);
-  assert.deepEqual(context.successToasts, ["Word deleted."]);
+  assert.deepEqual(context.successToasts, ["Word deleted and 3 media files removed."]);
 });
 
 test("bootstrap localizes batch delete confirm and success toast in english", async () => {
-  const context = createWordsAdminTestContext();
+  const context = createWordsAdminTestContext({
+    deleteWordsResult: {
+      deletedWordIds: [28, 31],
+      deletedObjectCount: 5,
+    },
+  });
 
   await bootstrap(context.root);
 
@@ -516,7 +614,7 @@ test("bootstrap localizes batch delete confirm and success toast in english", as
       tone: "danger",
     },
   ]);
-  assert.deepEqual(context.successToasts, ["Deleted 2 words."]);
+  assert.deepEqual(context.successToasts, ["Deleted 2 words and removed 5 media files."]);
 });
 
 test("bootstrap localizes single and batch delete error toasts in english", async () => {
@@ -556,4 +654,74 @@ test("bootstrap localizes single and batch delete error toasts in english", asyn
 
   assert.deepEqual(batchContext.errorToasts, ["Failed to delete selected words."]);
   assert.equal(batchContext.statusNode.textContent, "Batch delete failed.");
+});
+
+test("bootstrap surfaces inconsistent-state delete details in english toasts", async () => {
+  const singleContext = createWordsAdminTestContext({
+    deleteWordError: Object.assign(
+      new Error("Word was deleted, but media storage deletion did not complete."),
+      {
+        code: "INCONSISTENT_STATE",
+        details: {
+          wordId: 28,
+          deletedObjectCount: 3,
+        },
+      },
+    ),
+  });
+
+  await bootstrap(singleContext.root);
+
+  const deleteButton = createEventNode({
+    attributes: { "data-word-delete-id": "28" },
+  });
+
+  await singleContext.tableBody.dispatch("click", {
+    target: {
+      closest(selector) {
+        return selector === "[data-word-delete-id]" ? deleteButton : null;
+      },
+    },
+  });
+
+  assert.deepEqual(singleContext.errorToasts, ["Word deleted, but 3 media files still need cleanup."]);
+  assert.equal(singleContext.statusNode.textContent, "Word deleted, but 3 media files still need cleanup.");
+
+  const batchContext = createWordsAdminTestContext({
+    deleteWordsError: Object.assign(
+      new Error("Words were deleted, but media storage deletion did not complete."),
+      {
+        code: "INCONSISTENT_STATE",
+        details: {
+          deletedWordIds: [28, 31],
+          deletedObjectCount: 5,
+        },
+      },
+    ),
+  });
+
+  await bootstrap(batchContext.root);
+
+  batchContext.wordCheckboxes[0].checked = true;
+  await batchContext.tableBody.dispatch("change", {
+    target: {
+      closest(selector) {
+        return selector === "[data-word-select-id]" ? batchContext.wordCheckboxes[0] : null;
+      },
+    },
+  });
+
+  batchContext.wordCheckboxes[1].checked = true;
+  await batchContext.tableBody.dispatch("change", {
+    target: {
+      closest(selector) {
+        return selector === "[data-word-select-id]" ? batchContext.wordCheckboxes[1] : null;
+      },
+    },
+  });
+
+  await batchContext.deleteSelectedButton.dispatch("click");
+
+  assert.deepEqual(batchContext.errorToasts, ["Deleted 2 words, but 5 media files still need cleanup."]);
+  assert.equal(batchContext.statusNode.textContent, "Deleted 2 words, but 5 media files still need cleanup.");
 });

@@ -494,6 +494,49 @@
     });
   }
 
+  function normalizeDeletedWordIds(value, fallbackWordIds = []) {
+    const candidateIds = Array.isArray(value) && value.length > 0 ? value : fallbackWordIds;
+    return Array.from(new Set((Array.isArray(candidateIds) ? candidateIds : []).map(function (item) {
+      return Number(item);
+    }).filter(function (item) {
+      return Number.isInteger(item) && item > 0;
+    })));
+  }
+
+  function normalizeDeletedObjectCount(value) {
+    const numericValue = Number(value);
+    return Number.isInteger(numericValue) && numericValue >= 0 ? numericValue : null;
+  }
+
+  function getWordDeleteSuccessMeta(result, fallbackWordIds = []) {
+    const deletedWordIds = normalizeDeletedWordIds(
+      result?.deletedWordIds || (result?.id ? [result.id] : []),
+      fallbackWordIds,
+    );
+
+    return {
+      deletedCount: deletedWordIds.length,
+      deletedObjectCount: normalizeDeletedObjectCount(result?.deletedObjectCount),
+      deletedWordIds,
+    };
+  }
+
+  function getWordDeleteErrorMeta(error, fallbackWordIds = []) {
+    const deletedWordIds = normalizeDeletedWordIds(
+      error?.details?.deletedWordIds || (error?.details?.wordId ? [error.details.wordId] : []),
+      fallbackWordIds,
+    );
+
+    return {
+      code: error?.code || "REQUEST_FAILED",
+      deletedCount: deletedWordIds.length,
+      deletedObjectCount: normalizeDeletedObjectCount(error?.details?.deletedObjectCount),
+      deletedWordIds,
+      inconsistentState: error?.code === "INCONSISTENT_STATE",
+      message: error?.message || "Request failed.",
+    };
+  }
+
   async function listStorageObjects(client, filters = {}, options = {}) {
     const query = new URLSearchParams();
     const prefix = normalizeTextValue(filters.prefix);
@@ -907,6 +950,8 @@
     deleteTag,
     deleteWordAudio,
     deleteWordImage,
+    getWordDeleteErrorMeta,
+    getWordDeleteSuccessMeta,
     getAdminSupabaseClient,
     getAdminDataApiBaseUrl,
     getProtectedAccessToken,

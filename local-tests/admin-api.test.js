@@ -11,6 +11,8 @@ const {
   deleteWordAudio,
   deleteWordImage,
   filterAssetReferences,
+  getWordDeleteErrorMeta,
+  getWordDeleteSuccessMeta,
   getProtectedAccessToken,
   loadAssetReferences,
   loadDashboardSummary,
@@ -318,6 +320,61 @@ test("deleteWords sends selected ids to the batch delete endpoint", async () => 
   });
   assert.equal(capturedRequest.method, "POST");
   assert.equal(capturedRequest.url, "https://worker.example.com/api/admin/words/batch-delete");
+});
+
+test("word delete helpers summarize success and inconsistent-state payloads", () => {
+  assert.deepEqual(
+    getWordDeleteSuccessMeta(
+      {
+        id: 28,
+        deleted: true,
+        deletedObjectCount: 3,
+      },
+      [28],
+    ),
+    {
+      deletedCount: 1,
+      deletedObjectCount: 3,
+      deletedWordIds: [28],
+    },
+  );
+
+  assert.deepEqual(
+    getWordDeleteSuccessMeta(
+      {
+        deletedWordIds: [28, 31],
+        deletedObjectCount: 5,
+      },
+      [],
+    ),
+    {
+      deletedCount: 2,
+      deletedObjectCount: 5,
+      deletedWordIds: [28, 31],
+    },
+  );
+
+  assert.deepEqual(
+    getWordDeleteErrorMeta(
+      {
+        code: "INCONSISTENT_STATE",
+        message: "Words were deleted, but media storage deletion did not complete.",
+        details: {
+          deletedWordIds: [28, 31],
+          deletedObjectCount: 5,
+        },
+      },
+      [28, 31],
+    ),
+    {
+      code: "INCONSISTENT_STATE",
+      deletedCount: 2,
+      deletedObjectCount: 5,
+      deletedWordIds: [28, 31],
+      inconsistentState: true,
+      message: "Words were deleted, but media storage deletion did not complete.",
+    },
+  );
 });
 
 test("listStorageObjects forwards prefix and cursor to the protected assets endpoint", async () => {

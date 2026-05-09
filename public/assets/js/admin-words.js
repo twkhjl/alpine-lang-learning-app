@@ -50,6 +50,102 @@
     ].filter(Boolean).join("\n");
   }
 
+  function getDeleteMetaHelpers(options = {}) {
+    const api = options.api || resolveGlobalObject(options.globalObject).lexiconAdminApi || {};
+    return {
+      getErrorMeta: typeof api.getWordDeleteErrorMeta === "function"
+        ? api.getWordDeleteErrorMeta
+        : function (error, fallbackWordIds) {
+            const deletedWordIds = Array.isArray(fallbackWordIds) ? fallbackWordIds.slice() : [];
+            return {
+              code: error?.code || "REQUEST_FAILED",
+              deletedCount: deletedWordIds.length,
+              deletedObjectCount: Number.isInteger(Number(error?.details?.deletedObjectCount))
+                ? Number(error.details.deletedObjectCount)
+                : null,
+              deletedWordIds,
+              inconsistentState: error?.code === "INCONSISTENT_STATE",
+              message: error?.message || "Request failed.",
+            };
+          },
+      getSuccessMeta: typeof api.getWordDeleteSuccessMeta === "function"
+        ? api.getWordDeleteSuccessMeta
+        : function (result, fallbackWordIds) {
+            const deletedWordIds = Array.isArray(result?.deletedWordIds) && result.deletedWordIds.length > 0
+              ? result.deletedWordIds.slice()
+              : Array.isArray(fallbackWordIds)
+                ? fallbackWordIds.slice()
+                : result?.id
+                  ? [Number(result.id)]
+                  : [];
+            return {
+              deletedCount: deletedWordIds.length,
+              deletedObjectCount: Number.isInteger(Number(result?.deletedObjectCount))
+                ? Number(result.deletedObjectCount)
+                : null,
+              deletedWordIds,
+            };
+          },
+    };
+  }
+
+  function buildSingleDeleteSuccessMessage(result, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const meta = getDeleteMetaHelpers(options).getSuccessMeta(result, options.requestedWordIds || []);
+
+    if (Number.isInteger(meta.deletedObjectCount) && meta.deletedObjectCount > 0) {
+      return t("words.toast.deleteOneSuccessWithMedia", {
+        objectCount: meta.deletedObjectCount,
+      });
+    }
+
+    return t("words.toast.deleteOneSuccess");
+  }
+
+  function buildBatchDeleteSuccessMessage(result, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const requestedWordIds = Array.isArray(options.requestedWordIds) ? options.requestedWordIds : [];
+    const meta = getDeleteMetaHelpers(options).getSuccessMeta(result, requestedWordIds);
+    const count = meta.deletedCount || requestedWordIds.length;
+
+    if (Number.isInteger(meta.deletedObjectCount) && meta.deletedObjectCount > 0) {
+      return t("words.toast.deleteBatchSuccessWithMedia", {
+        count,
+        objectCount: meta.deletedObjectCount,
+      });
+    }
+
+    return t("words.toast.deleteBatchSuccess", { count });
+  }
+
+  function buildSingleDeleteErrorMessage(error, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const meta = getDeleteMetaHelpers(options).getErrorMeta(error, options.requestedWordIds || []);
+
+    if (meta.inconsistentState && Number.isInteger(meta.deletedObjectCount) && meta.deletedObjectCount > 0) {
+      return t("words.toast.deleteOnePartialError", {
+        objectCount: meta.deletedObjectCount,
+      });
+    }
+
+    return t("words.toast.deleteOneError");
+  }
+
+  function buildBatchDeleteErrorMessage(error, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const requestedWordIds = Array.isArray(options.requestedWordIds) ? options.requestedWordIds : [];
+    const meta = getDeleteMetaHelpers(options).getErrorMeta(error, requestedWordIds);
+
+    if (meta.inconsistentState && Number.isInteger(meta.deletedObjectCount) && meta.deletedObjectCount > 0) {
+      return t("words.toast.deleteBatchPartialError", {
+        count: meta.deletedCount || requestedWordIds.length,
+        objectCount: meta.deletedObjectCount,
+      });
+    }
+
+    return t("words.toast.deleteBatchError");
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -454,8 +550,12 @@
       }
 
       try {
-        await activeRoot.lexiconAdminApi.deleteWord(client, wordId);
-        showSuccessToast(t("words.toast.deleteOneSuccess"));
+        const deleteResult = await activeRoot.lexiconAdminApi.deleteWord(client, wordId);
+        showSuccessToast(buildSingleDeleteSuccessMessage(deleteResult, {
+          globalObject: activeRoot,
+          requestedWordIds: [wordId],
+          t: t,
+        }));
 
         if (state.page > 1 && tableBody.querySelectorAll("tr").length <= 1) {
           state.page -= 1;
@@ -463,10 +563,18 @@
 
         await loadWords();
       } catch (error) {
+        const toastMessage = buildSingleDeleteErrorMessage(error, {
+          globalObject: activeRoot,
+          requestedWordIds: [wordId],
+          t: t,
+        });
+        const statusMessage = error?.code === "INCONSISTENT_STATE"
+          ? toastMessage
+          : error?.message || t("words.status.deleteOneError");
         if (statusNode) {
-          statusNode.textContent = error.message || t("words.status.deleteOneError");
+          statusNode.textContent = statusMessage;
         }
-        showErrorToast(t("words.toast.deleteOneError"));
+        showErrorToast(toastMessage);
       }
     });
 
@@ -524,19 +632,32 @@
       }
 
       try {
-        const result = await activeRoot.lexiconAdminApi.deleteWords(client, itemsToDelete.map(function (item) {
+        const requestedWordIds = itemsToDelete.map(function (item) {
           return item.id;
-        }));
+        });
+        const result = await activeRoot.lexiconAdminApi.deleteWords(client, requestedWordIds);
         selectedWordIds.clear();
-        showSuccessToast(t("words.toast.deleteBatchSuccess", {
-          count: result.deletedWordIds?.length || itemsToDelete.length,
+        showSuccessToast(buildBatchDeleteSuccessMessage(result, {
+          globalObject: activeRoot,
+          requestedWordIds: requestedWordIds,
+          t: t,
         }));
         await loadWords();
       } catch (error) {
+        const toastMessage = buildBatchDeleteErrorMessage(error, {
+          globalObject: activeRoot,
+          requestedWordIds: itemsToDelete.map(function (item) {
+            return item.id;
+          }),
+          t: t,
+        });
+        const statusMessage = error?.code === "INCONSISTENT_STATE"
+          ? toastMessage
+          : error?.message || t("words.status.deleteBatchError");
         if (statusNode) {
-          statusNode.textContent = error.message || t("words.status.deleteBatchError");
+          statusNode.textContent = statusMessage;
         }
-        showErrorToast(t("words.toast.deleteBatchError"));
+        showErrorToast(toastMessage);
         syncBatchDeleteUi();
       }
     });
@@ -552,8 +673,12 @@
 
   return {
     bootstrap: bootstrap,
+    buildBatchDeleteErrorMessage: buildBatchDeleteErrorMessage,
     buildBatchDeleteConfirmationMessage: buildBatchDeleteConfirmationMessage,
+    buildBatchDeleteSuccessMessage: buildBatchDeleteSuccessMessage,
     buildCreateWordUrl: buildCreateWordUrl,
+    buildSingleDeleteErrorMessage: buildSingleDeleteErrorMessage,
+    buildSingleDeleteSuccessMessage: buildSingleDeleteSuccessMessage,
     buildEditWordUrl: buildEditWordUrl,
     buildWordImagePreviewUrl: buildWordImagePreviewUrl,
     createTagNameResolver: createTagNameResolver,

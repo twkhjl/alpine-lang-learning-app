@@ -375,6 +375,65 @@
     }
   }
 
+  function getDeleteMetaHelpers(options = {}) {
+    const api = options.api || resolveGlobalObject(options.globalObject).lexiconAdminApi || {};
+    return {
+      getErrorMeta: typeof api.getWordDeleteErrorMeta === "function"
+        ? api.getWordDeleteErrorMeta
+        : function (error, fallbackWordIds) {
+            const deletedWordIds = Array.isArray(fallbackWordIds) ? fallbackWordIds.slice() : [];
+            return {
+              code: error?.code || "REQUEST_FAILED",
+              deletedCount: deletedWordIds.length,
+              deletedObjectCount: Number.isInteger(Number(error?.details?.deletedObjectCount))
+                ? Number(error.details.deletedObjectCount)
+                : null,
+              deletedWordIds,
+              inconsistentState: error?.code === "INCONSISTENT_STATE",
+              message: error?.message || "Request failed.",
+            };
+          },
+      getSuccessMeta: typeof api.getWordDeleteSuccessMeta === "function"
+        ? api.getWordDeleteSuccessMeta
+        : function (result, fallbackWordIds) {
+            const deletedWordIds = Array.isArray(fallbackWordIds) ? fallbackWordIds.slice() : [];
+            return {
+              deletedCount: deletedWordIds.length,
+              deletedObjectCount: Number.isInteger(Number(result?.deletedObjectCount))
+                ? Number(result.deletedObjectCount)
+                : null,
+              deletedWordIds,
+            };
+          },
+    };
+  }
+
+  function buildDeleteWordSuccessMessage(result, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const meta = getDeleteMetaHelpers(options).getSuccessMeta(result, options.wordId ? [options.wordId] : []);
+
+    if (Number.isInteger(meta.deletedObjectCount) && meta.deletedObjectCount > 0) {
+      return t("wordEdit.toast.deleteSuccessWithMedia", {
+        objectCount: meta.deletedObjectCount,
+      });
+    }
+
+    return t("words.toast.deleteOneSuccess");
+  }
+
+  function buildDeleteWordErrorMessage(error, options = {}) {
+    const t = typeof options.t === "function" ? options.t : function (key) { return key; };
+    const meta = getDeleteMetaHelpers(options).getErrorMeta(error, options.wordId ? [options.wordId] : []);
+
+    if (meta.inconsistentState && Number.isInteger(meta.deletedObjectCount) && meta.deletedObjectCount > 0) {
+      return t("wordEdit.toast.deletePartialError", {
+        objectCount: meta.deletedObjectCount,
+      });
+    }
+
+    return error?.message || t("words.toast.deleteOneError");
+  }
+
   async function bootstrap(globalObject) {
     const activeRoot = resolveGlobalObject(globalObject);
     const activeDocument = activeRoot.document;
@@ -520,6 +579,17 @@
           showSuccessToast(t("wordEdit.status.saved"));
           updateMediaUi();
         } catch (error) {
+          const errorMessage = buildDeleteWordErrorMessage(error, {
+            globalObject: activeRoot,
+            t: t,
+            wordId: currentWordId,
+          });
+          setWordEditStatus(activeDocument, errorMessage, true);
+          setSaveDisabled(activeDocument, false);
+          setDeleteDisabled(activeDocument, false);
+          setMediaControlsDisabled(activeDocument, false);
+          showErrorToast(errorMessage);
+          return;
           setWordEditStatus(activeDocument, error.message || t("wordEdit.status.error"), true);
           showErrorToast(t("wordEdit.status.error"));
         } finally {
@@ -554,7 +624,14 @@
         setMediaControlsDisabled(activeDocument, true);
 
         try {
-          await activeRoot.lexiconAdminApi.deleteWord(client, currentWordId);
+          const deleteResult = await activeRoot.lexiconAdminApi.deleteWord(client, currentWordId);
+          showSuccessToast(buildDeleteWordSuccessMessage(deleteResult, {
+            globalObject: activeRoot,
+            t: t,
+            wordId: currentWordId,
+          }));
+          activeRoot.location.href = "admin-words.html";
+          return;
           showSuccessToast("單字已刪除。");
           activeRoot.location.href = "admin-words.html";
         } catch (error) {
@@ -738,6 +815,8 @@
     applyWordDetail,
     bootstrap,
     buildAudioObjectKey,
+    buildDeleteWordErrorMessage,
+    buildDeleteWordSuccessMessage,
     buildMediaUrl,
     buildTagOptionMarkup,
     collectFormValues,

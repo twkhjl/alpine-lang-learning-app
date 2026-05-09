@@ -1,7 +1,10 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
+const adminApi = require("../public/assets/js/admin-api");
 
 const {
+  buildDeleteWordErrorMessage,
+  buildDeleteWordSuccessMessage,
   collectFormValues,
   buildAudioObjectKey,
   buildMediaUrl,
@@ -155,4 +158,45 @@ test("collectFormValues preserves existing media values when read-only inputs ar
   assert.equal(formValues.translations["zh-TW"].audio_filename, "28-zh.mp3");
   assert.equal(formValues.translations.id.audio_filename, "28-id.mp3");
   assert.equal(formValues.translations.en.audio_filename, "28-en.mp3");
+});
+
+test("word edit delete feedback builders surface media cleanup details", () => {
+  const t = function (key, replacements = {}) {
+    const table = {
+      "wordEdit.toast.deleteSuccessWithMedia": "單字已刪除，並清除 {objectCount} 個媒體檔案。",
+      "wordEdit.toast.deletePartialError": "單字已刪除，但 {objectCount} 個媒體檔案尚未刪除乾淨，請檢查資產。",
+      "words.toast.deleteOneSuccess": "單字已刪除。",
+      "words.toast.deleteOneError": "刪除單字失敗。",
+    };
+
+    return Object.entries(replacements).reduce(function (message, [token, value]) {
+      return message.replace(`{${token}}`, value);
+    }, table[key] || key);
+  };
+
+  assert.equal(
+    buildDeleteWordSuccessMessage(
+      {
+        id: 28,
+        deleted: true,
+        deletedObjectCount: 2,
+      },
+      { t, api: adminApi },
+    ),
+    "單字已刪除，並清除 2 個媒體檔案。",
+  );
+
+  assert.equal(
+    buildDeleteWordErrorMessage(
+      {
+        code: "INCONSISTENT_STATE",
+        details: {
+          wordId: 28,
+          deletedObjectCount: 2,
+        },
+      },
+      { t, api: adminApi, wordId: 28 },
+    ),
+    "單字已刪除，但 2 個媒體檔案尚未刪除乾淨，請檢查資產。",
+  );
 });
