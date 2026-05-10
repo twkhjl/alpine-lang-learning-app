@@ -372,13 +372,9 @@ function lexiconApp() {
     },
 
     get visibleCardWords() {
-      return this.filteredWordsByTags.filter((word) => {
-        if (this.wordStatus(word) === STATUS.IGNORED) {
-          return false;
-        }
-
-        return this.wordMatchesStatusFilter(word);
-      });
+      return this.filteredWordsByTags.filter((word) =>
+        this.wordMatchesStatusFilter(word),
+      );
     },
 
     get filteredListWords() {
