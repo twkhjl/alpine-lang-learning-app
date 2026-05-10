@@ -314,6 +314,10 @@
     return normalizedWordIds;
   }
 
+  function normalizeUploadedFilename(file) {
+    return typeof file?.name === "string" ? file.name.trim() : "";
+  }
+
   function buildWordImageKey(wordId, mimeType) {
     const normalizedWordId = normalizeWordId(wordId);
     const extension = getMediaExtensionForMimeType(mimeType, IMAGE_MIME_TYPE_TO_EXTENSION);
@@ -1258,6 +1262,7 @@
         await callAdminRpc(access.fetchImpl, access.config, "admin_set_word_image", {
           p_word_id: wordId,
           p_image_url: objectKey,
+          p_image_original_filename: normalizeUploadedFilename(file),
         });
       } catch (error) {
         let rollbackSucceeded = false;
@@ -1399,6 +1404,7 @@
           p_word_id: wordId,
           p_language_code: languageCode,
           p_audio_filename: getStorageObjectBasename(objectKey),
+          p_audio_original_filename: normalizeUploadedFilename(file),
         });
       } catch (error) {
         try {

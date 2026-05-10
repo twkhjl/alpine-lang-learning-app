@@ -2133,12 +2133,17 @@ test("worker uploads a word image to R2 and syncs image_url through RPC", async 
           assert.deepEqual(JSON.parse(options.body), {
             p_word_id: 28,
             p_image_url: "imgs/28.webp",
+            p_image_original_filename: "word.webp",
           });
 
           return Promise.resolve({
             ok: true,
             json() {
-              return Promise.resolve({ word_id: 28, image_url: "imgs/28.webp" });
+              return Promise.resolve({
+                word_id: 28,
+                image_url: "imgs/28.webp",
+                image_original_filename: "word.webp",
+              });
             },
           });
         }
@@ -2220,6 +2225,7 @@ test("worker uploads word audio to R2 and syncs audio_filename through RPC", asy
             p_word_id: 28,
             p_language_code: "en",
             p_audio_filename: "28.mp3",
+            p_audio_original_filename: "word.mp3",
           });
 
           return Promise.resolve({
@@ -2229,6 +2235,7 @@ test("worker uploads word audio to R2 and syncs audio_filename through RPC", asy
                 word_id: 28,
                 language_code: "en",
                 audio_filename: "28.mp3",
+                audio_original_filename: "word.mp3",
               });
             },
           });
