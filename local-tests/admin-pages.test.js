@@ -66,6 +66,19 @@ test("admin write pages load the shared feedback runtime", () => {
   }
 });
 
+test("admin assets danger panel uses compact actions layout instead of stretching full height", () => {
+  const html = fs.readFileSync(path.join(process.cwd(), "admin-assets.html"), "utf8");
+  const css = fs.readFileSync(path.join(process.cwd(), "public/assets/css/admin.css"), "utf8");
+
+  assert.match(html, /<aside class="admin-card admin-drawer admin-assets-danger-panel">/);
+  assert.match(html, /<div class="admin-form-grid admin-assets-danger-actions">/);
+  assert.doesNotMatch(html, /style="grid-template-columns:\s*1fr;\s*margin-top:\s*8px;"/);
+
+  assert.match(css, /\.admin-assets-danger-panel\s*\{[\s\S]*align-self:\s*start\s*;/);
+  assert.match(css, /\.admin-assets-danger-actions\s*\{[\s\S]*grid-template-columns:\s*1fr\s*;/);
+  assert.match(css, /\.admin-assets-danger-actions\s*>\s*\.admin-button\s*\{[\s\S]*justify-self:\s*start\s*;/);
+});
+
 test("admin word edit hides read-only id and media path inputs", () => {
   const html = fs.readFileSync(path.join(process.cwd(), "admin-word-edit.html"), "utf8");
 

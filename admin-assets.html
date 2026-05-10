@@ -87,11 +87,11 @@
               </section>
             </div>
 
-            <aside class="admin-card admin-drawer">
+            <aside class="admin-card admin-drawer admin-assets-danger-panel">
               <h2>危險操作</h2>
               <p>清空整個 bucket 會刪除所有舊圖片與音檔，並同步清空單字的 `image_url` 與 `audio_filename`。</p>
               <p>請先在下方輸入確認字串，再執行 purge。</p>
-              <div class="admin-form-grid" style="grid-template-columns: 1fr; margin-top: 8px;">
+              <div class="admin-form-grid admin-assets-danger-actions">
                 <div class="admin-field">
                   <label for="assets-purge-confirm">確認字串</label>
                   <input id="assets-purge-confirm" placeholder="DELETE ALL R2 OBJECTS" />

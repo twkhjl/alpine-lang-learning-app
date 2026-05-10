@@ -960,6 +960,20 @@ input[type="checkbox"] {
   gap: 24px;
 }
 
+.admin-assets-danger-panel {
+  align-self: start;
+}
+
+.admin-assets-danger-actions {
+  grid-template-columns: 1fr;
+  margin-top: 8px;
+}
+
+.admin-assets-danger-actions > .admin-button {
+  justify-self: start;
+  align-self: start;
+}
+
 .admin-asset-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
