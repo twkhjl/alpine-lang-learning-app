@@ -166,6 +166,8 @@
       </section>
 
       <section x-show="activeView === 'list'" data-testid="view-list" class="min-h-[70vh]">
+       <div class="sticky top-20 z-30 ">
+
         <div class="mb-4 flex items-center gap-3">
           <div class="relative flex-1">
             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-sm text-outline">search</span>
@@ -244,6 +246,7 @@
             </button>
           </div>
         </div>
+       </div>
 
         <template x-if="filteredListWords.length">
           <div class="space-y-4">
