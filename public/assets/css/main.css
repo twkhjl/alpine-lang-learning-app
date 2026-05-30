@@ -24,6 +24,104 @@
   border: 1px solid rgba(145, 143, 160, 0.15);
 }
 
+main > section[x-show="loading"] {
+  align-items: flex-start;
+  padding-top: 0.25rem;
+}
+
+main > section[x-show="loading"] .glass-panel {
+  position: relative;
+  min-height: 30rem;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%) -120% 0 / 220% 100%,
+    radial-gradient(circle at 18% 18%, rgba(194, 193, 255, 0.18), transparent 22%),
+    linear-gradient(rgba(42, 41, 50, 0.95), rgba(42, 41, 50, 0.95));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+main > section[x-show="loading"] .glass-panel > * {
+  opacity: 0;
+}
+
+main > section[x-show="loading"] .glass-panel::before,
+main > section[x-show="loading"] .glass-panel::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+main > section[x-show="loading"] .glass-panel::before {
+  inset: 1.25rem;
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(rgba(194, 193, 255, 0.22), rgba(194, 193, 255, 0.22)) 0 0 / 42% 0.65rem no-repeat,
+    linear-gradient(rgba(145, 143, 160, 0.18), rgba(145, 143, 160, 0.18)) 0 1.5rem / 68% 0.45rem no-repeat,
+    linear-gradient(rgba(52, 52, 61, 0.82), rgba(52, 52, 61, 0.82)) 0 4rem / 100% 11rem no-repeat,
+    linear-gradient(rgba(52, 52, 61, 0.72), rgba(52, 52, 61, 0.72)) 0 16.25rem / 100% 4.75rem no-repeat,
+    linear-gradient(rgba(52, 52, 61, 0.62), rgba(52, 52, 61, 0.62)) 0 22rem / 100% 4.75rem no-repeat;
+}
+
+main > section[x-show="loading"] .glass-panel::after {
+  left: 2.5rem;
+  right: 2.5rem;
+  top: 6.25rem;
+  height: 20rem;
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 2rem 2rem, rgba(145, 143, 160, 0.26) 0 1.6rem, transparent 1.65rem),
+    linear-gradient(rgba(228, 225, 237, 0.12), rgba(228, 225, 237, 0.12)) 4.75rem 0.9rem / 48% 0.55rem no-repeat,
+    linear-gradient(rgba(145, 143, 160, 0.14), rgba(145, 143, 160, 0.14)) 4.75rem 2rem / 34% 0.45rem no-repeat,
+    radial-gradient(circle at 2rem 7.75rem, rgba(145, 143, 160, 0.22) 0 1.6rem, transparent 1.65rem),
+    linear-gradient(rgba(228, 225, 237, 0.11), rgba(228, 225, 237, 0.11)) 4.75rem 6.65rem / 58% 0.55rem no-repeat,
+    linear-gradient(rgba(145, 143, 160, 0.13), rgba(145, 143, 160, 0.13)) 4.75rem 7.75rem / 40% 0.45rem no-repeat,
+    radial-gradient(circle at 2rem 13.5rem, rgba(145, 143, 160, 0.2) 0 1.6rem, transparent 1.65rem),
+    linear-gradient(rgba(228, 225, 237, 0.1), rgba(228, 225, 237, 0.1)) 4.75rem 12.4rem / 50% 0.55rem no-repeat,
+    linear-gradient(rgba(145, 143, 160, 0.12), rgba(145, 143, 160, 0.12)) 4.75rem 13.5rem / 30% 0.45rem no-repeat;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -120% 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 120% 0, 0 0, 0 0;
+  }
+}
+
+@media (max-width: 640px) {
+  main > section[x-show="loading"] .glass-panel {
+    min-height: 27rem;
+  }
+
+  main > section[x-show="loading"] .glass-panel::before {
+    inset: 1rem;
+    background:
+      linear-gradient(rgba(194, 193, 255, 0.22), rgba(194, 193, 255, 0.22)) 0 0 / 48% 0.6rem no-repeat,
+      linear-gradient(rgba(145, 143, 160, 0.18), rgba(145, 143, 160, 0.18)) 0 1.4rem / 76% 0.45rem no-repeat,
+      linear-gradient(rgba(52, 52, 61, 0.82), rgba(52, 52, 61, 0.82)) 0 3.5rem / 100% 9.5rem no-repeat,
+      linear-gradient(rgba(52, 52, 61, 0.72), rgba(52, 52, 61, 0.72)) 0 14rem / 100% 4.25rem no-repeat,
+      linear-gradient(rgba(52, 52, 61, 0.62), rgba(52, 52, 61, 0.62)) 0 19.25rem / 100% 4.25rem no-repeat;
+  }
+
+  main > section[x-show="loading"] .glass-panel::after {
+    left: 2rem;
+    right: 2rem;
+    top: 5.5rem;
+    transform: scale(0.92);
+    transform-origin: top left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main > section[x-show="loading"] .glass-panel {
+    animation: none;
+  }
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
