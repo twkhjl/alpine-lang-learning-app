@@ -115,7 +115,7 @@ async function run() {
         "admin login body not tagged",
       );
       await expect(
-        (await page.locator(".login-form").count()) > 0,
+        (await page.locator(".admin-login-form").count()) > 0,
         "admin login form missing",
       );
     });
@@ -218,6 +218,76 @@ async function run() {
         listOrderState.firstFilteredListWordId === listOrderState.maxWordId,
         "list view should start from the highest word id",
       );
+    });
+
+    await step("grid view renders six slots and loop highlight", async () => {
+      await page.evaluate(() => {
+        window.Audio = class MockAudio {
+          constructor(src) {
+            this.src = src;
+            this.onended = null;
+            this.onerror = null;
+          }
+
+          play() {
+            return Promise.resolve();
+          }
+
+          pause() {}
+        };
+      });
+
+      await page.getByTestId("nav-grid").click();
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return current?.activeView === "grid";
+      });
+
+      const gridView = page.getByTestId("view-grid");
+      await expect(await gridView.isVisible(), "grid view should open");
+      await expect(await gridView.getByTestId("grid-slot").count() === 6, "grid view should render six slots");
+      await expect(await page.getByTestId("grid-next-page").isVisible(), "grid next button should exist");
+
+      const beforeToggle = await page.evaluate(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return {
+          playableIndexes: current?.gridPlayableIndexes || [],
+          progressLabel: current?.gridProgressLabel?.() || "",
+        };
+      });
+      await expect(beforeToggle.playableIndexes.length > 0, "grid page should contain playable slots");
+      await expect(!!beforeToggle.progressLabel, "grid progress label should exist");
+
+      await page.getByTestId("grid-loop-toggle").click();
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return current?.gridLoopPlaying === true && current?.gridLoopActiveIndex === current?.gridPlayableIndexes?.[0];
+      });
+
+      const activeCount = await gridView.locator("[data-grid-active='true']").count();
+      await expect(activeCount === 1, "grid should highlight exactly one active slot");
+
+      await page.getByTestId("grid-next-page").click();
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return current?.gridLoopPlaying === false && current?.gridLoopActiveIndex === -1;
+      });
     });
 
     await step("card flow", async () => {
@@ -497,6 +567,7 @@ async function run() {
           currentCardIndex: state?.currentCardIndex || 0,
           favoriteWordIds: [...(state?.favoriteWordIds || [])],
           ignoredWordIds: [...(state?.ignoredWordIds || [])],
+          activeStatusFilters: [...(state?.activeStatusFilters || [])],
         };
       });
 
@@ -520,10 +591,12 @@ async function run() {
           };
         });
 
-        await expect(
-          nextState.currentWordId !== initialState.currentWordId,
-          "ignoring the current card should advance to the next visible word",
-        );
+        if (!initialState.activeStatusFilters.includes("all")) {
+          await expect(
+            nextState.currentWordId !== initialState.currentWordId,
+            "ignoring the current card should advance when ignored words are filtered out",
+          );
+        }
         await expect(
           nextState.ignoredWordIds.includes(initialState.currentWordId),
           "ignored card should be stored in ignoredWordIds",
