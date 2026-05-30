@@ -374,6 +374,7 @@ function lexiconApp() {
     touchStartX: 0,
     touchOffsetX: 0,
     touchActive: false,
+    cardHeadlineNeedsScroll: false,
     cardMotionClass: "",
     motionTimer: null,
     saveTimer: null,
@@ -1384,6 +1385,20 @@ function lexiconApp() {
       if (event.currentTarget?.releasePointerCapture) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
+    },
+
+    updateCardHeadlineOverflow(_text = "") {
+      this.$nextTick(() => {
+        const element = this.$refs.cardHeadline;
+        if (!element) {
+          this.cardHeadlineNeedsScroll = false;
+          return;
+        }
+
+        const overflowThreshold = 1;
+        this.cardHeadlineNeedsScroll =
+          element.scrollHeight > element.clientHeight + overflowThreshold;
+      });
     },
 
     handleKeydown(event) {
