@@ -76,7 +76,7 @@ const STATUS = {
 };
 
 const DEFAULT_PREFERENCES = {
-  version: 3,
+  version: 4,
   nativeLanguage: "zh-TW",
   displayLanguage1: "zh-TW",
   displayLanguage2: "id",
@@ -87,6 +87,8 @@ const DEFAULT_PREFERENCES = {
   favoriteWordIds: [],
   ignoredWordIds: [],
   statusFilters: ["all"],
+  listLoopGroupCount: 1,
+  listQuickLanguageSlot: 1,
 };
 
 const VALID_VIEWS = ["card", "grid", "list", "favorites", "settings"];
@@ -284,7 +286,7 @@ function normalizePreferences(saved, languages = []) {
     : DEFAULT_PREFERENCES.statusFilters;
 
   return {
-    version: 3,
+    version: 4,
     nativeLanguage,
     displayLanguage1,
     displayLanguage2,
@@ -302,6 +304,10 @@ function normalizePreferences(saved, languages = []) {
     favoriteWordIds: normalizedStatus.favoriteWordIds,
     ignoredWordIds: normalizedStatus.ignoredWordIds,
     statusFilters,
+    listLoopGroupCount: [1, 3, 6].includes(preferred.listLoopGroupCount)
+      ? preferred.listLoopGroupCount
+      : DEFAULT_PREFERENCES.listLoopGroupCount,
+    listQuickLanguageSlot: preferred.listQuickLanguageSlot === 2 ? 2 : 1,
   };
 }
 
@@ -381,6 +387,13 @@ function lexiconApp() {
     gridLoopActiveIndex: -1,
     gridLoopGeneration: 0,
     gridCurrentAudio: null,
+    selectedLoopWordIds: [],
+    listLoopPlaying: false,
+    listLoopActiveWordId: null,
+    listLoopGeneration: 0,
+    listLoopCurrentAudio: null,
+    listLoopGroupCount: 1,
+    listQuickLanguageSlot: 1,
     cardLanguageSlot: 1,
     nativeLanguage: "zh-TW",
     displayLanguage1: "zh-TW",
@@ -437,6 +450,27 @@ function lexiconApp() {
         .filter((word) => this.wordStatus(word) === STATUS.FAVORITE)
         .filter((word) => this.wordMatchesStatusFilter(word))
         .filter((word) => wordMatchesQuery(word, this.favoritesQuery));
+    },
+
+    get listLoopSourceWords() {
+      return this.filteredWordsByTags.filter((word) => this.wordMatchesStatusFilter(word));
+    },
+
+    get selectedLoopWords() {
+      const selectedIds = new Set(this.selectedLoopWordIds);
+      return this.listLoopSourceWords.filter((word) => selectedIds.has(word.id));
+    },
+
+    get listLoopWordCap() {
+      return this.listLoopGroupCount * 6;
+    },
+
+    get cappedLoopWords() {
+      return this.selectedLoopWords.slice(0, this.listLoopWordCap);
+    },
+
+    get activeListLanguage() {
+      return this.listQuickLanguageSlot === 2 ? this.displayLanguage2 : this.displayLanguage1;
     },
 
     get gridSourceWords() {
@@ -687,6 +721,8 @@ function lexiconApp() {
         this.favoriteWordIds = normalized.favoriteWordIds;
         this.ignoredWordIds = normalized.ignoredWordIds;
         this.statusFilters = normalized.statusFilters;
+        this.listLoopGroupCount = normalized.listLoopGroupCount;
+        this.listQuickLanguageSlot = normalized.listQuickLanguageSlot;
       } catch (_error) {
         localStorage.removeItem("lexicon-preferences");
       }
@@ -694,7 +730,7 @@ function lexiconApp() {
 
     persistPreferences() {
       const payload = {
-        version: 3,
+        version: 4,
         nativeLanguage: this.nativeLanguage,
         displayLanguage1: this.displayLanguage1,
         displayLanguage2: this.displayLanguage2,
@@ -705,12 +741,15 @@ function lexiconApp() {
         favoriteWordIds: this.favoriteWordIds,
         ignoredWordIds: this.ignoredWordIds,
         statusFilters: this.activeStatusFilters,
+        listLoopGroupCount: this.listLoopGroupCount,
+        listQuickLanguageSlot: this.listQuickLanguageSlot,
       };
 
       localStorage.setItem("lexicon-preferences", JSON.stringify(payload));
     },
 
     savePreferences() {
+      this.stopListLoop();
       this.settingsError = "";
       if (this.displayLanguage1 === this.displayLanguage2) {
         this.settingsError = this.t("languageMismatchError");
@@ -757,6 +796,7 @@ function lexiconApp() {
     },
 
     selectLanguage(field, code) {
+      this.stopListLoop();
       this[field] = code;
       this.ensureLanguagesAreValid();
       this.applyDocumentLanguage();
@@ -776,6 +816,9 @@ function lexiconApp() {
 
       if (this.activeView === "grid" && view !== "grid") {
         this.stopGridLoop();
+      }
+      if (this.activeView === "list" && view !== "list") {
+        this.stopListLoop();
       }
 
       this.activeView = view;
@@ -907,6 +950,7 @@ function lexiconApp() {
 
     applyDraftFilters() {
       this.stopGridLoop();
+      this.stopListLoop();
       this.selectedTagIds = [...this.draftTagIds];
       this.statusFilters = [...this.activeDraftStatusFilters];
       this.filterPanelOpen = false;
@@ -930,6 +974,7 @@ function lexiconApp() {
 
     clearAppliedFilters() {
       this.stopGridLoop();
+      this.stopListLoop();
       this.selectedTagIds = [];
       this.draftTagIds = [];
       this.statusFilters = ["all"];
@@ -1010,6 +1055,7 @@ function lexiconApp() {
 
     setWordStatus(wordId, nextStatus) {
       this.stopGridLoop();
+      this.stopListLoop();
       const previousCardWordId =
         this.activeView === "card" ? this.currentCardWord?.id || null : null;
       const normalized = applyExclusiveStatus(
@@ -1159,6 +1205,18 @@ function lexiconApp() {
       return ordered.find((languageCode) => word?.audioPaths?.[languageCode]) || "";
     },
 
+    listAudioLanguageForWord(word) {
+      const ordered = [
+        this.activeListLanguage,
+        this.displayLanguage1,
+        this.displayLanguage2,
+        "zh-TW",
+        "id",
+        "en",
+      ];
+      return ordered.find((languageCode) => word?.audioPaths?.[languageCode]) || "";
+    },
+
     hasAudio(word, languageCode = null) {
       const code = languageCode || this.audioLanguageForWord(word);
       return !!(word?.audioPaths && code && word.audioPaths[code]);
@@ -1173,6 +1231,131 @@ function lexiconApp() {
 
       const audio = new Audio(path);
       audio.play().catch(() => {});
+    },
+
+    stopListLoop() {
+      this.listLoopGeneration += 1;
+      this.listLoopPlaying = false;
+      this.listLoopActiveWordId = null;
+      if (this.listLoopCurrentAudio?.pause) {
+        this.listLoopCurrentAudio.pause();
+      }
+      this.listLoopCurrentAudio = null;
+    },
+
+    toggleListQuickLanguage() {
+      this.stopListLoop();
+      this.listQuickLanguageSlot = this.listQuickLanguageSlot === 2 ? 1 : 2;
+      this.persistPreferences();
+    },
+
+    setListLoopGroupCount(value) {
+      const numericValue = Number(value);
+      if (![1, 3, 6].includes(numericValue)) {
+        return;
+      }
+
+      this.stopListLoop();
+      this.listLoopGroupCount = numericValue;
+      this.persistPreferences();
+    },
+
+    toggleLoopWordSelection(wordId) {
+      this.stopListLoop();
+      if (this.selectedLoopWordIds.includes(wordId)) {
+        this.selectedLoopWordIds = this.selectedLoopWordIds.filter((id) => id !== wordId);
+        return;
+      }
+
+      this.selectedLoopWordIds = [...this.selectedLoopWordIds, wordId];
+    },
+
+    clearLoopSelection() {
+      this.stopListLoop();
+      this.selectedLoopWordIds = [];
+    },
+
+    isLoopWordSelected(wordId) {
+      return this.selectedLoopWordIds.includes(wordId);
+    },
+
+    get playableLoopWords() {
+      return this.cappedLoopWords.filter((word) =>
+        this.hasAudio(word, this.listAudioLanguageForWord(word)),
+      );
+    },
+
+    toggleListLoop() {
+      if (this.listLoopPlaying) {
+        this.stopListLoop();
+        return;
+      }
+
+      const firstWord = this.playableLoopWords[0];
+      if (!firstWord) {
+        return;
+      }
+
+      this.listLoopGeneration += 1;
+      this.listLoopPlaying = true;
+      this.playSelectedLoopWord(firstWord, this.listLoopGeneration);
+    },
+
+    playSelectedLoopWord(word, generation = this.listLoopGeneration) {
+      if (!this.listLoopPlaying || generation !== this.listLoopGeneration || !word) {
+        return;
+      }
+
+      const languageCode = this.listAudioLanguageForWord(word);
+      const path = word?.audioPaths?.[languageCode] || "";
+      if (!path) {
+        this.playNextSelectedLoopWord(word.id, generation);
+        return;
+      }
+
+      const audio = new Audio(path);
+      const finish = () => {
+        if (this.listLoopCurrentAudio === audio) {
+          this.listLoopCurrentAudio = null;
+        }
+      };
+
+      this.listLoopActiveWordId = word.id;
+      this.listLoopCurrentAudio = audio;
+
+      audio.onended = () => {
+        finish();
+        this.playNextSelectedLoopWord(word.id, generation);
+      };
+      audio.onerror = () => {
+        finish();
+        this.playNextSelectedLoopWord(word.id, generation);
+      };
+
+      audio.play().catch(() => {
+        finish();
+        this.playNextSelectedLoopWord(word.id, generation);
+      });
+    },
+
+    playNextSelectedLoopWord(currentWordId, generation = this.listLoopGeneration) {
+      if (!this.listLoopPlaying || generation !== this.listLoopGeneration) {
+        return;
+      }
+
+      const playableWords = this.playableLoopWords;
+      if (!playableWords.length) {
+        this.stopListLoop();
+        return;
+      }
+
+      const currentIndex = playableWords.findIndex((word) => word.id === currentWordId);
+      const nextWord =
+        currentIndex === -1 || currentIndex === playableWords.length - 1
+          ? playableWords[0]
+          : playableWords[currentIndex + 1];
+
+      this.playSelectedLoopWord(nextWord, generation);
     },
 
     toggleGridLoop() {
@@ -1341,6 +1524,7 @@ function lexiconApp() {
 
     handleBeforeUnload() {
       this.stopGridLoop();
+      this.stopListLoop();
     },
 
     handlePointerDown(event) {
@@ -1439,6 +1623,14 @@ function lexiconApp() {
       return this.showCardTranslation ? this.displayLanguage2 : this.displayLanguage1;
     },
 
+    activeListPronunciation(word) {
+      return resolveWordPronunciation(word, this.activeListLanguage);
+    },
+
+    activeListWordText(word) {
+      return resolveWordText(word, this.activeListLanguage);
+    },
+
     cardHeadlineText() {
       return resolveWordText(this.currentCardWord, this.cardHeadlineLanguage());
     },
@@ -1491,6 +1683,62 @@ function lexiconApp() {
 
     gridLoopButtonLabel() {
       return this.gridLoopPlaying ? this.t("gridLoopStop") : this.t("gridLoopPlay");
+    },
+
+    listLoopButtonLabel() {
+      const labels = {
+        "zh-TW": {
+          play: "開始循環",
+          stop: "停止循環",
+        },
+        id: {
+          play: "Mulai Loop",
+          stop: "Hentikan Loop",
+        },
+        en: {
+          play: "Start Loop",
+          stop: "Stop Loop",
+        },
+      };
+      const table = labels[this.nativeLanguage] || labels["zh-TW"];
+      return this.listLoopPlaying ? table.stop : table.play;
+    },
+
+    listSelectionSummaryLabel() {
+      const labels = {
+        "zh-TW": "已選",
+        id: "Dipilih",
+        en: "Selected",
+      };
+      const selectedCountLabel = labels[this.nativeLanguage] || labels["zh-TW"];
+      return `${selectedCountLabel} ${this.selectedLoopWordIds.length}`;
+    },
+
+    listLanguageToggleLabel() {
+      const targetLanguage =
+        this.listQuickLanguageSlot === 2 ? this.displayLanguage1 : this.displayLanguage2;
+      return this.getLocalizedLanguageLabel(targetLanguage);
+    },
+
+    listClearSelectionLabel() {
+      const labels = {
+        "zh-TW": "清除選取",
+        id: "Hapus Pilihan",
+        en: "Clear Selection",
+      };
+      return labels[this.nativeLanguage] || labels["zh-TW"];
+    },
+
+    isListLoopWordActive(wordId) {
+      return this.listLoopPlaying && this.listLoopActiveWordId === wordId;
+    },
+
+    listSelectButtonClasses(wordId) {
+      const base =
+        "inline-flex h-11 min-w-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-all active:scale-95";
+      return this.isLoopWordSelected(wordId)
+        ? `${base} border-primary/40 bg-primary-container text-on-primary-container`
+        : `${base} border-outline-variant/30 bg-surface-container-high text-on-surface`;
     },
 
     isGridSlotActive(slotIndex) {

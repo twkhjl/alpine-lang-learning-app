@@ -7,10 +7,22 @@ const vm = require("node:vm");
 function loadMainScript() {
   const scriptPath = path.join(__dirname, "..", "public", "assets", "js", "main.js");
   const code = fs.readFileSync(scriptPath, "utf8");
+  const storage = new Map();
   const context = {
     window: {},
     tailwind: {},
     console,
+    localStorage: {
+      getItem(key) {
+        return storage.has(key) ? storage.get(key) : null;
+      },
+      setItem(key, value) {
+        storage.set(key, String(value));
+      },
+      removeItem(key) {
+        storage.delete(key);
+      },
+    },
   };
 
   vm.createContext(context);
@@ -90,4 +102,82 @@ test("toggleGridLoop starts on first playable slot and second toggle stops", () 
   app.toggleGridLoop();
   assert.equal(app.gridLoopPlaying, false);
   assert.equal(app.gridLoopActiveIndex, -1);
+});
+
+test("selected loop words survive search changes and cap by loop group count", () => {
+  const { lexiconApp } = loadMainScript();
+  const app = lexiconApp();
+
+  app.words = Array.from({ length: 20 }, (_, index) => ({
+    id: 20 - index,
+    tags: [],
+    "lang_zh-TW": `詞-${20 - index}`,
+    lang_id: `kata-${20 - index}`,
+    pronunciation: { "zh-TW": `p-${20 - index}`, id: "" },
+    audioPaths: { "zh-TW": `audio-${20 - index}.mp3`, id: "" },
+  }));
+  app.selectedLoopWordIds = [20, 18, 16, 14, 12, 10, 8];
+  app.statusFilters = ["all"];
+  app.selectedTagIds = [];
+  app.searchQuery = "詞-20";
+  app.listLoopGroupCount = 1;
+
+  assert.equal(app.filteredListWords.length, 1);
+  assert.deepEqual(
+    app.selectedLoopWords.map((word) => word.id),
+    [20, 18, 16, 14, 12, 10, 8],
+  );
+  assert.deepEqual(
+    app.cappedLoopWords.map((word) => word.id),
+    [20, 18, 16, 14, 12, 10],
+  );
+});
+
+test("changing active list language stops list loop and updates active language", () => {
+  const { lexiconApp } = loadMainScript();
+  const app = lexiconApp();
+
+  app.displayLanguage1 = "zh-TW";
+  app.displayLanguage2 = "id";
+  app.listQuickLanguageSlot = 1;
+  app.listLoopPlaying = true;
+  app.listLoopActiveWordId = 9;
+  app.listLoopCurrentAudio = {
+    pauseCalled: false,
+    pause() {
+      this.pauseCalled = true;
+    },
+  };
+
+  app.toggleListQuickLanguage();
+
+  assert.equal(app.activeListLanguage, "id");
+  assert.equal(app.listLoopPlaying, false);
+  assert.equal(app.listLoopActiveWordId, null);
+  assert.equal(app.listLoopCurrentAudio, null);
+});
+
+test("toggleListLoop starts from first playable selected word and second toggle stops", () => {
+  const { lexiconApp } = loadMainScript();
+  const app = lexiconApp();
+
+  app.words = [
+    { id: 4, tags: [], audioPaths: { "zh-TW": "four.mp3" } },
+    { id: 3, tags: [], audioPaths: {} },
+    { id: 2, tags: [], audioPaths: { "zh-TW": "two.mp3" } },
+  ];
+  app.selectedLoopWordIds = [4, 3, 2];
+  app.listLoopGroupCount = 1;
+  app.playSelectedLoopWord = (word) => {
+    app.listLoopPlaying = true;
+    app.listLoopActiveWordId = word.id;
+  };
+
+  app.toggleListLoop();
+  assert.equal(app.listLoopPlaying, true);
+  assert.equal(app.listLoopActiveWordId, 4);
+
+  app.toggleListLoop();
+  assert.equal(app.listLoopPlaying, false);
+  assert.equal(app.listLoopActiveWordId, null);
 });

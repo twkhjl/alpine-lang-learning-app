@@ -627,9 +627,14 @@ async function run() {
 
     await step("list flow and modal", async () => {
       await page.getByTestId("nav-list").click();
+      await expect(await page.getByTestId("list-loop-toggle").isVisible(), "list loop toggle should exist");
+      await expect(await page.getByTestId("list-loop-size").isVisible(), "list loop size selector should exist");
+      await expect(await page.getByTestId("list-language-toggle").isVisible(), "list language toggle should exist");
       await page.getByTestId("list-search").fill("bagus");
-      const visibleArticles = await page.locator("article").count();
+      const listView = page.getByTestId("view-list");
+      const visibleArticles = await listView.getByTestId("list-card").count();
       await expect(visibleArticles >= 1, "list search returned no results");
+      await expect(await listView.getByTestId("list-select-toggle").first().isVisible(), "list selection toggle should exist");
 
       await page.getByTestId("list-item-open").first().click();
       await page.waitForFunction(() => {
@@ -753,6 +758,55 @@ async function run() {
         return current?.detailModalOpen;
       });
       await expect(modalClosed === false, "detail modal did not close on Escape");
+    });
+
+    await step("list multi-select loop playback", async () => {
+      await page.evaluate(() => {
+        window.Audio = class MockAudio {
+          constructor(src) {
+            this.src = src;
+            this.onended = null;
+            this.onerror = null;
+          }
+
+          play() {
+            return Promise.resolve();
+          }
+
+          pause() {}
+        };
+      });
+
+      await page.getByTestId("nav-list").click();
+      await page.getByTestId("list-search").fill("");
+      await page.getByTestId("list-select-toggle").nth(0).click();
+      await page.getByTestId("list-select-toggle").nth(1).click();
+      await page.getByTestId("list-search").fill("not-found-term");
+      await expect((await page.getByTestId("view-list").textContent())?.includes("0") !== true, "selection summary should persist outside current search");
+      await page.getByTestId("list-search").fill("");
+
+      await page.getByTestId("list-loop-toggle").click();
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return current?.listLoopPlaying === true && current?.listLoopActiveWordId !== null;
+      });
+
+      const activeListCards = await page.locator("[data-testid='list-card'][class*='ring-2']").count();
+      await expect(activeListCards >= 1, "selected loop playback should highlight an active list card");
+
+      await page.getByTestId("list-language-toggle").click();
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return current?.listLoopPlaying === false && current?.listLoopActiveWordId === null;
+      });
     });
 
     await step("favorites flow", async () => {

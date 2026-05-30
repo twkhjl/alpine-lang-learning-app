@@ -231,40 +231,80 @@
           </div>
         </div>
 
+        <div class="mb-5 grid gap-3 rounded-3xl border border-outline-variant/20 bg-surface-container-low p-4 shadow-xl md:grid-cols-[1fr_auto_auto_auto_auto] md:items-center">
+          <div class="rounded-2xl bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface" x-text="listSelectionSummaryLabel()"></div>
+
+          <button type="button" data-testid="list-language-toggle" class="inline-flex items-center justify-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface transition-all hover:bg-surface-bright active:scale-95" @click="toggleListQuickLanguage()" :aria-label="listLanguageToggleLabel()">
+            <span class="material-symbols-outlined text-base">translate</span>
+            <span x-text="listLanguageToggleLabel()"></span>
+          </button>
+
+          <label class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface">
+            <span class="material-symbols-outlined text-base">repeat</span>
+            <select data-testid="list-loop-size" class="bg-transparent text-sm font-semibold text-on-surface outline-none" :value="listLoopGroupCount" @change="setListLoopGroupCount($event.target.value)">
+              <option value="1">1</option>
+              <option value="3">3</option>
+              <option value="6">6</option>
+            </select>
+          </label>
+
+          <button type="button" data-testid="list-loop-toggle" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary-container px-5 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="toggleListLoop()" :disabled="!playableLoopWords.length" :aria-label="listLoopButtonLabel()">
+            <span class="material-symbols-outlined" x-text="listLoopPlaying ? 'stop_circle' : 'repeat'"></span>
+            <span x-text="listLoopButtonLabel()"></span>
+          </button>
+
+          <button type="button" class="inline-flex items-center justify-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface transition-all hover:bg-surface-bright active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="clearLoopSelection()" :disabled="!selectedLoopWordIds.length" :aria-label="listClearSelectionLabel()">
+            <span class="material-symbols-outlined text-base">deselect</span>
+            <span x-text="listClearSelectionLabel()"></span>
+          </button>
+        </div>
+
         <template x-if="filteredListWords.length">
           <div class="space-y-4">
             <template x-for="word in filteredListWords" :key="word.id">
-              <article class="group rounded-xl border border-transparent bg-surface-container-low p-4 transition-all hover:border-outline-variant/30 hover:bg-surface-container-high">
-                <div class="flex items-center gap-4">
-                  <button type="button" data-testid="list-item-open" class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container-highest" @click="openWordDetails(word.id)">
-                    <img x-show="word.img" class="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0" :src="word.img" :alt="getWordText(word, displayLanguage1)" @error="handleImageError($event)">
-                  </button>
-
-                  <button type="button" class="min-w-0 flex-1 text-left" @click="openWordDetails(word.id)">
-                    <div class="flex items-center justify-between gap-4">
-                      <div class="min-w-0">
-                        <span class="block truncate font-headline text-xl tracking-wide text-primary" x-text="getWordText(word, displayLanguage1)"></span>
-                        <p class="mt-0.5 truncate text-sm text-outline" x-text="getWordText(word, displayLanguage2)"></p>
-                        <p class="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-tertiary" x-text="listItemTagSummary(word)"></p>
-                      </div>
+              <article data-testid="list-card" class="group overflow-hidden rounded-3xl border bg-surface-container-low transition-all" :class="isListLoopWordActive(word.id) ? 'border-primary shadow-2xl shadow-primary/15 ring-2 ring-primary/35' : 'border-outline-variant/20 hover:border-primary/30 hover:bg-surface-container-high'">
+                <div class="grid gap-0 md:grid-cols-[220px_1fr]">
+                  <button type="button" data-testid="list-item-open" class="relative h-56 w-full overflow-hidden bg-surface-container-highest md:h-full md:min-h-[260px]" @click="openWordDetails(word.id)">
+                    <img x-show="word.img" class="h-full w-full object-cover transition-all duration-500 group-hover:scale-[1.02]" :src="word.img" :alt="activeListWordText(word)" @error="handleImageError($event)">
+                    <div x-show="!word.img" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-surface-container-high to-surface-container-low text-outline">
+                      <span class="material-symbols-outlined text-5xl">image</span>
                     </div>
                   </button>
 
-                  <button type="button" class="rounded-full p-2 text-tertiary transition-transform hover:scale-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click.stop="playAudio(word)" :disabled="!hasAudio(word)" :aria-label="t('playAudio')">
-                    <span class="material-symbols-outlined">volume_up</span>
-                  </button>
-                </div>
+                  <div class="flex flex-col justify-between p-5 md:p-6">
+                    <div>
+                      <div class="mb-4 flex flex-wrap items-center gap-2">
+                        <button type="button" data-testid="list-select-toggle" :class="listSelectButtonClasses(word.id)" @click.stop="toggleLoopWordSelection(word.id)">
+                          <span class="material-symbols-outlined text-base" x-text="isLoopWordSelected(word.id) ? 'check_circle' : 'add_circle'"></span>
+                        </button>
+                        <span class="rounded-full bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-tertiary" x-text="listItemTagSummary(word)"></span>
+                        <span x-show="isListLoopWordActive(word.id)" class="rounded-full bg-primary-container px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">Looping</span>
+                      </div>
 
-                <div class="mt-4 flex items-center justify-end gap-2">
-                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'normal')" @click.stop="toggleWordStatus(word.id, 'normal')" :aria-label="t('clearMark')">
-                    <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
-                  </button>
-                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'favorite')" @click.stop="toggleWordStatus(word.id, 'favorite')" :aria-label="t('markFavorite')">
-                    <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'favorite') ? 'fill-icon' : ''">favorite</span>
-                  </button>
-                  <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'ignored')" @click.stop="toggleWordStatus(word.id, 'ignored')" :aria-label="t('markIgnored')">
-                    <span class="material-symbols-outlined">do_not_disturb_on</span>
-                  </button>
+                      <button type="button" class="block w-full text-left" @click="openWordDetails(word.id)">
+                        <h3 class="font-headline text-3xl font-black leading-tight tracking-[0.03em] text-primary" x-text="activeListWordText(word)"></h3>
+                        <p x-show="activeListPronunciation(word)" class="mt-3 text-sm font-semibold tracking-wide text-tertiary" x-text="activeListPronunciation(word)"></p>
+                      </button>
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+                      <button type="button" class="rounded-full p-2 text-tertiary transition-transform hover:scale-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click.stop="playAudio(word, listAudioLanguageForWord(word))" :disabled="!hasAudio(word, listAudioLanguageForWord(word))" :aria-label="t('playAudio')">
+                        <span class="material-symbols-outlined">volume_up</span>
+                      </button>
+
+                      <div class="flex items-center justify-end gap-2">
+                        <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'normal')" @click.stop="toggleWordStatus(word.id, 'normal')" :aria-label="t('clearMark')">
+                          <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'normal') ? 'fill-icon' : ''">auto_stories</span>
+                        </button>
+                        <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'favorite')" @click.stop="toggleWordStatus(word.id, 'favorite')" :aria-label="t('markFavorite')">
+                          <span class="material-symbols-outlined" :class="isStatusActive(word.id, 'favorite') ? 'fill-icon' : ''">favorite</span>
+                        </button>
+                        <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full border transition-all active:scale-95" :class="statusButtonClasses(word.id, 'ignored')" @click.stop="toggleWordStatus(word.id, 'ignored')" :aria-label="t('markIgnored')">
+                          <span class="material-symbols-outlined">do_not_disturb_on</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </article>
             </template>
