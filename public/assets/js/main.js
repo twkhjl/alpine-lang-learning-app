@@ -91,33 +91,15 @@ const DEFAULT_PREFERENCES = {
   listQuickLanguageSlot: 1,
 };
 
-const VALID_VIEWS = ["card", "grid", "list", "favorites", "settings"];
+const VALID_VIEWS = ["card", "list", "favorites", "settings"];
 const VALID_STATUS_FILTERS = ["all", "favorite", "ignored", "normal"];
 const R2_PUBLIC_BASE_URL =
   "https://pub-0ab02e3e2bda4c4c99e33c093612b10c.r2.dev";
-const CONTENT_VIEWS = ["card", "grid", "list", "favorites"];
+const CONTENT_VIEWS = ["card", "list", "favorites"];
 const UI_TRANSLATION_FALLBACKS = {
-  "zh-TW": {
-    gridLoopPlay: "開始循環",
-    gridLoopStop: "停止循環",
-    gridPreviousGroup: "上一組",
-    gridNextGroup: "下一組",
-    gridEmptySlot: "空白卡槽",
-  },
-  id: {
-    gridLoopPlay: "Mulai Loop",
-    gridLoopStop: "Hentikan Loop",
-    gridPreviousGroup: "Grup Sebelumnya",
-    gridNextGroup: "Grup Berikutnya",
-    gridEmptySlot: "Slot Kosong",
-  },
-  en: {
-    gridLoopPlay: "Start Loop",
-    gridLoopStop: "Stop Loop",
-    gridPreviousGroup: "Previous Group",
-    gridNextGroup: "Next Group",
-    gridEmptySlot: "Empty Slot",
-  },
+  "zh-TW": {},
+  id: {},
+  en: {},
 };
 
 function resolveMediaUrl(path) {
@@ -333,16 +315,6 @@ function sortWordsByDescendingId(words) {
   return [...words].sort((left, right) => right.id - left.id);
 }
 
-function getGridProgressRange(pageIndex, pageSize, pageWordsLength, totalWords) {
-  if (!pageWordsLength || !totalWords) {
-    return { start: 0, end: 0, total: totalWords };
-  }
-
-  const start = pageIndex * pageSize + 1;
-  const end = start + pageWordsLength - 1;
-  return { start, end, total: totalWords };
-}
-
 window.lexiconTestUtils = {
   STATUS,
   DEFAULT_PREFERENCES,
@@ -358,7 +330,6 @@ window.lexiconTestUtils = {
   getWordStatus,
   applyExclusiveStatus,
   sortWordsByDescendingId,
-  getGridProgressRange,
 };
 
 function lexiconApp() {
@@ -372,12 +343,6 @@ function lexiconApp() {
     activeView: "card",
     lastContentView: "card",
     currentCardIndex: 0,
-    gridPageIndex: 0,
-    gridPageSize: 6,
-    gridLoopPlaying: false,
-    gridLoopActiveIndex: -1,
-    gridLoopGeneration: 0,
-    gridCurrentAudio: null,
     selectedLoopWordIds: [],
     selectedLoopPanelOpen: false,
     listLoopPlaying: false,
@@ -469,35 +434,6 @@ function lexiconApp() {
       return this.listQuickLanguageSlot === 2 ? this.displayLanguage2 : this.displayLanguage1;
     },
 
-    get gridSourceWords() {
-      return this.visibleCardWords;
-    },
-
-    get gridTotalPages() {
-      return this.gridSourceWords.length
-        ? Math.ceil(this.gridSourceWords.length / this.gridPageSize)
-        : 0;
-    },
-
-    get gridPageWords() {
-      const start = this.gridPageIndex * this.gridPageSize;
-      return this.gridSourceWords.slice(start, start + this.gridPageSize);
-    },
-
-    get gridSlots() {
-      return Array.from({ length: this.gridPageSize }, (_, index) => ({
-        index,
-        word: this.gridPageWords[index] || null,
-        empty: !this.gridPageWords[index],
-      }));
-    },
-
-    get gridPlayableIndexes() {
-      return this.gridSlots
-        .filter((slot) => slot.word && this.hasAudio(slot.word, this.gridAudioLanguageForWord(slot.word)))
-        .map((slot) => slot.index);
-    },
-
     get currentCardWord() {
       return this.visibleCardWords[this.currentCardIndex] || null;
     },
@@ -545,15 +481,6 @@ function lexiconApp() {
         current: this.visibleCardWords.length ? this.currentCardIndex + 1 : 0,
         total: this.visibleCardWords.length,
       });
-    },
-
-    get gridProgressRange() {
-      return getGridProgressRange(
-        this.gridPageIndex,
-        this.gridPageSize,
-        this.gridPageWords.length,
-        this.gridSourceWords.length,
-      );
     },
 
     get activeStatusFilters() {
@@ -640,7 +567,6 @@ function lexiconApp() {
         this.ensureLanguagesAreValid();
         this.applyDocumentLanguage();
         this.clampCardIndex();
-        this.clampGridPageIndex();
       } catch (error) {
         this.error = error.message || "Unknown error";
       } finally {
@@ -810,9 +736,6 @@ function lexiconApp() {
         this.dismissFavoritesSnackbar();
       }
 
-      if (this.activeView === "grid" && view !== "grid") {
-        this.stopGridLoop();
-      }
       if (this.activeView === "list" && view !== "list") {
         this.stopListLoop();
       }
@@ -824,10 +747,6 @@ function lexiconApp() {
 
       if (view === "card") {
         this.clampCardIndex();
-      }
-
-      if (view === "grid") {
-        this.clampGridPageIndex();
       }
 
       this.detailModalOpen = false;
@@ -947,13 +866,11 @@ function lexiconApp() {
     },
 
     applyDraftFilters() {
-      this.stopGridLoop();
       this.stopListLoop();
       this.selectedTagIds = [...this.draftTagIds];
       this.statusFilters = [...this.activeDraftStatusFilters];
       this.filterPanelOpen = false;
       this.clampCardIndex();
-      this.clampGridPageIndex();
       this.persistPreferences();
     },
 
@@ -971,14 +888,12 @@ function lexiconApp() {
     },
 
     clearAppliedFilters() {
-      this.stopGridLoop();
       this.stopListLoop();
       this.selectedTagIds = [];
       this.draftTagIds = [];
       this.statusFilters = ["all"];
       this.draftStatusFilters = ["all"];
       this.clampCardIndex();
-      this.clampGridPageIndex();
       this.persistPreferences();
     },
 
@@ -1052,7 +967,6 @@ function lexiconApp() {
     },
 
     setWordStatus(wordId, nextStatus) {
-      this.stopGridLoop();
       this.stopListLoop();
       const previousCardWordId =
         this.activeView === "card" ? this.currentCardWord?.id || null : null;
@@ -1069,7 +983,6 @@ function lexiconApp() {
       if (this.activeView === "card") {
         this.clampCardIndex();
       }
-      this.clampGridPageIndex();
 
       const nextCardWordId =
         this.activeView === "card" ? this.currentCardWord?.id || null : null;
@@ -1183,17 +1096,6 @@ function lexiconApp() {
     audioLanguageForWord(word) {
       const ordered = [
         this.cardHeadlineLanguage(),
-        this.displayLanguage1,
-        this.displayLanguage2,
-        "zh-TW",
-        "id",
-        "en",
-      ];
-      return ordered.find((languageCode) => word?.audioPaths?.[languageCode]) || "";
-    },
-
-    gridAudioLanguageForWord(word) {
-      const ordered = [
         this.displayLanguage1,
         this.displayLanguage2,
         "zh-TW",
@@ -1381,126 +1283,6 @@ function lexiconApp() {
       this.playSelectedLoopWord(nextWord, generation);
     },
 
-    toggleGridLoop() {
-      if (this.gridLoopPlaying) {
-        this.stopGridLoop();
-        return;
-      }
-
-      const firstPlayableIndex = this.gridPlayableIndexes[0];
-      if (typeof firstPlayableIndex !== "number") {
-        return;
-      }
-
-      this.gridLoopGeneration += 1;
-      this.gridLoopPlaying = true;
-      this.playGridSlotAudio(firstPlayableIndex, this.gridLoopGeneration);
-    },
-
-    stopGridLoop() {
-      this.gridLoopGeneration += 1;
-      this.gridLoopPlaying = false;
-      this.gridLoopActiveIndex = -1;
-      if (this.gridCurrentAudio?.pause) {
-        this.gridCurrentAudio.pause();
-      }
-      this.gridCurrentAudio = null;
-    },
-
-    playGridSlotAudio(slotIndex, generation = this.gridLoopGeneration) {
-      if (!this.gridLoopPlaying || generation !== this.gridLoopGeneration) {
-        return;
-      }
-
-      const slot = this.gridSlots[slotIndex];
-      const word = slot?.word || null;
-      const languageCode = word ? this.gridAudioLanguageForWord(word) : "";
-      const path = word?.audioPaths?.[languageCode] || "";
-
-      if (!word || !path) {
-        this.playNextGridSlot(slotIndex, generation);
-        return;
-      }
-
-      const audio = new Audio(path);
-      const finish = () => {
-        if (this.gridCurrentAudio === audio) {
-          this.gridCurrentAudio = null;
-        }
-      };
-
-      this.gridLoopActiveIndex = slotIndex;
-      this.gridCurrentAudio = audio;
-
-      audio.onended = () => {
-        finish();
-        this.playNextGridSlot(slotIndex, generation);
-      };
-      audio.onerror = () => {
-        finish();
-        this.playNextGridSlot(slotIndex, generation);
-      };
-
-      audio.play().catch(() => {
-        finish();
-        this.playNextGridSlot(slotIndex, generation);
-      });
-    },
-
-    playNextGridSlot(currentIndex, generation = this.gridLoopGeneration) {
-      if (!this.gridLoopPlaying || generation !== this.gridLoopGeneration) {
-        return;
-      }
-
-      const playableIndexes = this.gridPlayableIndexes;
-      if (!playableIndexes.length) {
-        this.stopGridLoop();
-        return;
-      }
-
-      const currentOrderIndex = playableIndexes.indexOf(currentIndex);
-      const nextPlayableIndex =
-        currentOrderIndex === -1 || currentOrderIndex === playableIndexes.length - 1
-          ? playableIndexes[0]
-          : playableIndexes[currentOrderIndex + 1];
-
-      this.playGridSlotAudio(nextPlayableIndex, generation);
-    },
-
-    clampGridPageIndex() {
-      const total = this.gridTotalPages;
-      if (!total) {
-        this.gridPageIndex = 0;
-        return;
-      }
-
-      if (this.gridPageIndex >= total) {
-        this.gridPageIndex = total - 1;
-      }
-
-      if (this.gridPageIndex < 0) {
-        this.gridPageIndex = 0;
-      }
-    },
-
-    goToNextGridPage() {
-      this.stopGridLoop();
-      this.clampGridPageIndex();
-      if (this.gridPageIndex >= this.gridTotalPages - 1) {
-        return;
-      }
-      this.gridPageIndex += 1;
-    },
-
-    goToPreviousGridPage() {
-      this.stopGridLoop();
-      this.clampGridPageIndex();
-      if (this.gridPageIndex <= 0) {
-        return;
-      }
-      this.gridPageIndex -= 1;
-    },
-
     nextCard() {
       if (this.visibleCardWords.length <= 1) {
         this.showCardTranslation = false;
@@ -1546,7 +1328,6 @@ function lexiconApp() {
     },
 
     handleBeforeUnload() {
-      this.stopGridLoop();
       this.stopListLoop();
     },
 
@@ -1628,13 +1409,6 @@ function lexiconApp() {
         if (event.key === "ArrowLeft") {
           this.prevCard();
         }
-      } else if (this.activeView === "grid") {
-        if (event.key === "ArrowRight") {
-          this.goToNextGridPage();
-        }
-        if (event.key === "ArrowLeft") {
-          this.goToPreviousGridPage();
-        }
       }
     },
 
@@ -1702,15 +1476,6 @@ function lexiconApp() {
         : this.displayLanguage2;
       const targetLabel = this.getLocalizedLanguageLabel(targetLanguage);
       return this.t("showLanguage", { language: targetLabel });
-    },
-
-    gridProgressLabel() {
-      const { start, end, total } = this.gridProgressRange;
-      return `${start}-${end} / ${total}`;
-    },
-
-    gridLoopButtonLabel() {
-      return this.gridLoopPlaying ? this.t("gridLoopStop") : this.t("gridLoopPlay");
     },
 
     listLoopButtonLabel() {
@@ -1849,25 +1614,6 @@ function lexiconApp() {
       return this.isLoopWordSelected(wordId)
         ? `${base} border-primary/40 bg-primary-container text-on-primary-container`
         : `${base} border-outline-variant/30 bg-surface-container-high text-on-surface`;
-    },
-
-    isGridSlotActive(slotIndex) {
-      return this.gridLoopPlaying && this.gridLoopActiveIndex === slotIndex;
-    },
-
-    gridSlotClasses(slot) {
-      const base =
-        "relative flex min-h-[180px] flex-col justify-between overflow-hidden rounded-3xl border p-4 transition-all";
-
-      if (!slot.word) {
-        return `${base} border-dashed border-outline-variant/30 bg-surface-container-low opacity-60`;
-      }
-
-      if (this.isGridSlotActive(slot.index)) {
-        return `${base} border-primary bg-primary-container/15 shadow-xl shadow-primary/15 ring-2 ring-primary/40`;
-      }
-
-      return `${base} border-outline-variant/20 bg-surface-container-low hover:border-primary/30`;
     },
 
     t(key, replacements = {}) {
