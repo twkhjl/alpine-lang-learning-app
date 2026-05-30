@@ -181,3 +181,39 @@ test("toggleListLoop starts from first playable selected word and second toggle 
   assert.equal(app.listLoopPlaying, false);
   assert.equal(app.listLoopActiveWordId, null);
 });
+
+test("selected loop panel opens, closes, and can remove one selected word", () => {
+  const { lexiconApp } = loadMainScript();
+  const app = lexiconApp();
+
+  app.words = [
+    {
+      id: 3,
+      tags: [],
+      "lang_zh-TW": "三",
+      pronunciation: { "zh-TW": "san" },
+      audioPaths: { "zh-TW": "three.mp3" },
+    },
+    {
+      id: 2,
+      tags: [],
+      "lang_zh-TW": "二",
+      pronunciation: { "zh-TW": "er" },
+      audioPaths: { "zh-TW": "two.mp3" },
+    },
+  ];
+  app.selectedLoopWordIds = [3, 2];
+
+  app.toggleSelectedLoopPanel();
+  assert.equal(app.selectedLoopPanelOpen, true);
+  assert.deepEqual(
+    app.selectedLoopPanelWords.map((word) => word.id),
+    [3, 2],
+  );
+
+  app.removeSelectedLoopWord(3);
+  assert.deepEqual(app.selectedLoopWordIds, [2]);
+
+  app.closeSelectedLoopPanel();
+  assert.equal(app.selectedLoopPanelOpen, false);
+});

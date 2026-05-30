@@ -780,6 +780,23 @@ async function run() {
       await page.getByTestId("list-search").fill("");
       await page.getByTestId("list-select-toggle").nth(0).click();
       await page.getByTestId("list-select-toggle").nth(1).click();
+      await expect(await page.getByTestId("list-selected-summary").isVisible(), "selected summary button should exist");
+      await page.getByTestId("list-selected-summary").click();
+      await expect(await page.getByTestId("selected-loop-panel").isVisible(), "selected loop panel should open");
+      await expect(
+        (await page.getByTestId("selected-loop-remove").count()) >= 2,
+        "selected loop panel should list selected words",
+      );
+      await page.getByTestId("selected-loop-remove").first().click();
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => {
+        const body = document.body;
+        const current =
+          body && body._x_dataStack && body._x_dataStack.length
+            ? body._x_dataStack[0]
+            : null;
+        return current?.selectedLoopPanelOpen === false && current?.selectedLoopWordIds?.length === 1;
+      });
       await page.getByTestId("list-search").fill("not-found-term");
       await expect((await page.getByTestId("view-list").textContent())?.includes("0") !== true, "selection summary should persist outside current search");
       await page.getByTestId("list-search").fill("");

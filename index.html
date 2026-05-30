@@ -227,29 +227,88 @@
           </div>
         </div>
 
-        <div class="mb-5 grid gap-3 rounded-3xl border border-outline-variant/20 bg-surface-container-low p-4 shadow-xl md:grid-cols-[1fr_auto_auto_auto_auto] md:items-center">
-          <div class="rounded-2xl bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface" x-text="listSelectionSummaryLabel()"></div>
+        <div class="relative mb-5 rounded-3xl border border-outline-variant/20 bg-surface-container-low p-3 shadow-xl">
+          <div class="flex items-center gap-2">
+            <div class="relative min-w-0 flex-1">
+              <button type="button" data-testid="list-selected-summary" class="flex w-full items-center justify-between rounded-2xl border border-primary/15 bg-surface-container-high px-3 py-2.5 text-on-surface transition-all hover:border-primary/35 hover:bg-surface-bright active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50" @click="toggleSelectedLoopPanel()" :disabled="!selectedLoopWordIds.length" :aria-label="listSelectionSummaryLabel()" :title="listSelectionSummaryLabel()">
+                <span class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-lg text-primary">playlist_play</span>
+                  <span class="rounded-full bg-primary-container px-2 py-0.5 text-xs font-black tracking-[0.18em] text-on-primary-container" x-text="selectedLoopWordIds.length"></span>
+                </span>
+                <span class="material-symbols-outlined text-base text-outline transition-transform" :class="selectedLoopPanelOpen ? 'rotate-180 text-primary' : ''">expand_more</span>
+              </button>
 
-          <button type="button" data-testid="list-language-toggle" class="inline-flex items-center justify-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface transition-all hover:bg-surface-bright active:scale-95" @click="toggleListQuickLanguage()" :aria-label="listLanguageToggleLabel()">
-            <span class="material-symbols-outlined text-base">translate</span>
-            <span x-text="listLanguageToggleLabel()"></span>
-          </button>
+              <div x-show="selectedLoopPanelOpen" x-transition.opacity class="fixed inset-0 z-40 bg-black/25 md:bg-transparent" @click="closeSelectedLoopPanel()"></div>
 
-          <button type="button" data-testid="list-loop-toggle" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary-container px-5 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="toggleListLoop()" :disabled="!playableLoopWords.length" :aria-label="listLoopButtonLabel()">
-            <span class="material-symbols-outlined" x-text="listLoopPlaying ? 'stop_circle' : 'repeat'"></span>
-            <span x-text="listLoopButtonLabel()"></span>
-          </button>
+              <section x-show="selectedLoopPanelOpen" x-transition.origin.top.left data-testid="selected-loop-panel" class="fixed inset-x-4 bottom-4 z-50 max-h-[70vh] overflow-hidden rounded-3xl border border-outline-variant/20 bg-surface shadow-2xl shadow-black/20 md:absolute md:inset-x-auto md:bottom-auto md:left-0 md:top-[calc(100%+0.75rem)] md:w-[24rem] md:max-h-[28rem]" @click.stop>
+                <div class="flex items-center justify-between border-b border-outline-variant/10 px-4 py-3">
+                  <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-tertiary" x-text="listSelectionSummaryLabel()"></p>
+                    <p class="mt-1 text-xs text-on-surface-variant" x-text="listLoopButtonLabel()"></p>
+                  </div>
+                  <button type="button" class="rounded-full p-2 text-outline transition-colors hover:text-primary" @click="closeSelectedLoopPanel()" :aria-label="t('close')">
+                    <span class="material-symbols-outlined text-base">close</span>
+                  </button>
+                </div>
 
-          <button type="button" class="inline-flex items-center justify-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface transition-all hover:bg-surface-bright active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="clearLoopSelection()" :disabled="!selectedLoopWordIds.length" :aria-label="listClearSelectionLabel()">
-            <span class="material-symbols-outlined text-base">deselect</span>
-            <span x-text="listClearSelectionLabel()"></span>
-          </button>
+                <div class="max-h-[50vh] space-y-2 overflow-y-auto p-3 md:max-h-[20rem]">
+                  <template x-for="word in selectedLoopPanelWords" :key="`selected-${word.id}`">
+                    <article class="flex items-center gap-3 rounded-2xl border border-outline-variant/10 bg-surface-container-low px-3 py-2">
+                      <div class="h-14 w-14 overflow-hidden rounded-2xl bg-surface-container-highest">
+                        <img x-show="word.img" class="h-full w-full object-cover" :src="word.img" :alt="activeListWordText(word)" @error="handleImageError($event)">
+                        <div x-show="!word.img" class="flex h-full w-full items-center justify-center text-outline">
+                          <span class="material-symbols-outlined text-xl">image</span>
+                        </div>
+                      </div>
+
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-bold text-on-surface" x-text="activeListWordText(word)"></p>
+                        <p x-show="activeListPronunciation(word)" class="mt-1 truncate text-xs text-on-surface-variant" x-text="activeListPronunciation(word)"></p>
+                      </div>
+
+                      <button type="button" data-testid="selected-loop-remove" class="rounded-full p-2 text-outline transition-colors hover:text-error active:scale-95" @click="removeSelectedLoopWord(word.id)" :aria-label="listClearSelectionLabel()" :title="listClearSelectionLabel()">
+                        <span class="material-symbols-outlined text-base">remove_circle</span>
+                      </button>
+                    </article>
+                  </template>
+                </div>
+
+                <div class="border-t border-outline-variant/10 px-3 py-3">
+                  <button type="button" class="w-full rounded-full bg-surface-container-high px-4 py-2.5 text-sm font-semibold text-on-surface transition-all hover:bg-surface-bright active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40" @click="clearLoopSelection()" :disabled="!selectedLoopWordIds.length" :aria-label="listClearSelectionLabel()">
+                    <span x-text="listClearSelectionLabel()"></span>
+                  </button>
+                </div>
+              </section>
+            </div>
+
+            <button type="button" data-testid="list-language-toggle" class="inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-high px-3 text-on-surface transition-all hover:border-primary/30 hover:bg-surface-bright active:scale-95" @click="toggleListQuickLanguage()" :aria-label="listLanguageToggleLabel()" :title="listLanguageToggleLabel()">
+              <span class="material-symbols-outlined text-base">translate</span>
+              <span class="text-[11px] font-black tracking-[0.18em]" x-text="listLanguageToggleCode()"></span>
+            </button>
+
+            <label class="flex h-11 items-center rounded-full border border-outline-variant/20 bg-surface-container-high px-3 text-sm font-semibold text-on-surface">
+              <span class="sr-only">Loop size</span>
+              <select class="border-none bg-transparent pr-6 text-sm font-semibold text-on-surface focus:ring-0" :value="String(listLoopGroupCount)" @change="setListLoopGroupCount($event.target.value)">
+                <option value="1">1</option>
+                <option value="3">3</option>
+                <option value="6">6</option>
+              </select>
+            </label>
+
+            <button type="button" data-testid="list-loop-toggle" class="inline-flex h-11 w-11 items-center justify-center rounded-full text-on-primary shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" :class="listLoopPlaying ? 'bg-primary shadow-primary/25 ring-2 ring-primary/25' : 'bg-gradient-to-br from-primary to-primary-container shadow-primary/20'" @click="toggleListLoop()" :disabled="!playableLoopWords.length" :aria-label="listLoopButtonLabel()" :title="listLoopButtonLabel()">
+              <span class="material-symbols-outlined" x-text="listLoopPlaying ? 'stop_circle' : 'repeat'"></span>
+            </button>
+
+            <button type="button" data-testid="list-clear-selection" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface transition-all hover:border-error/25 hover:bg-surface-bright hover:text-error active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="clearLoopSelection()" :disabled="!selectedLoopWordIds.length" :aria-label="listClearSelectionLabel()" :title="listClearSelectionLabel()">
+              <span class="material-symbols-outlined text-base">deselect</span>
+            </button>
+          </div>
         </div>
 
         <template x-if="filteredListWords.length">
           <div class="space-y-4">
             <template x-for="word in filteredListWords" :key="word.id">
-              <article data-testid="list-card" class="group overflow-hidden rounded-3xl border bg-surface-container-low transition-all" :class="isListLoopWordActive(word.id) ? 'border-primary shadow-2xl shadow-primary/15 ring-2 ring-primary/35' : 'border-outline-variant/20 hover:border-primary/30 hover:bg-surface-container-high'">
+              <article data-testid="list-card" class="group overflow-hidden rounded-3xl border bg-surface-container-low transition-all" :data-list-selected="isLoopWordSelected(word.id) ? 'true' : 'false'" :data-list-playing="isListLoopWordActive(word.id) ? 'true' : 'false'" :class="isListLoopWordActive(word.id) ? 'border-primary bg-primary-container/10 shadow-2xl shadow-primary/15 ring-2 ring-primary/35' : isLoopWordSelected(word.id) ? 'border-primary/35 bg-primary-container/5 shadow-lg shadow-primary/10' : 'border-outline-variant/20 hover:border-primary/30 hover:bg-surface-container-high'">
                 <div class="grid gap-0 md:grid-cols-[220px_1fr]">
                   <button type="button" data-testid="list-item-open" class="relative h-56 w-full overflow-hidden bg-surface-container-highest md:h-full md:min-h-[260px]" @click="openWordDetails(word.id)">
                     <img x-show="word.img" class="h-full w-full object-cover transition-all duration-500 group-hover:scale-[1.02]" :src="word.img" :alt="activeListWordText(word)" @error="handleImageError($event)">
@@ -264,8 +323,9 @@
                         <button type="button" data-testid="list-select-toggle" :class="listSelectButtonClasses(word.id)" @click.stop="toggleLoopWordSelection(word.id)">
                           <span class="material-symbols-outlined text-base" x-text="isLoopWordSelected(word.id) ? 'check_circle' : 'add_circle'"></span>
                         </button>
-                        <span class="rounded-full bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-tertiary" x-text="listItemTagSummary(word)"></span>
-                        <span x-show="isListLoopWordActive(word.id)" class="rounded-full bg-primary-container px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">Looping</span>
+                        <span x-show="isLoopWordSelected(word.id)" class="rounded-full bg-primary-container/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary-container">Selected</span>
+                        <span x-show="isListLoopWordActive(word.id)" class="rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-on-primary">Looping</span>
+                        <span class="rounded-full bg-black/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-tertiary" x-text="listItemTagSummary(word)"></span>
                       </div>
 
                       <button type="button" class="block w-full text-left" @click="openWordDetails(word.id)">
@@ -650,6 +710,10 @@
       <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('library')"></span>
     </button>
 
+    <button type="button" data-testid="nav-grid" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'grid' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('grid')">
+      <span class="material-symbols-outlined" :class="activeView === 'grid' ? 'fill-icon' : ''">grid_view</span>
+      <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('gridView')"></span>
+    </button>
 
     <button type="button" data-testid="nav-favorites" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'favorites' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('favorites')">
       <span class="material-symbols-outlined" :class="activeView === 'favorites' ? 'fill-icon' : ''">favorite</span>
