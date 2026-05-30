@@ -98,9 +98,6 @@ const R2_PUBLIC_BASE_URL =
 const CONTENT_VIEWS = ["card", "grid", "list", "favorites"];
 const UI_TRANSLATION_FALLBACKS = {
   "zh-TW": {
-    gridNav: "六格",
-    gridViewTitle: "六宮格練習",
-    gridViewDescription: "每頁顯示六個單字，可切頁並循環播放。",
     gridLoopPlay: "開始循環",
     gridLoopStop: "停止循環",
     gridPreviousGroup: "上一組",
@@ -108,9 +105,6 @@ const UI_TRANSLATION_FALLBACKS = {
     gridEmptySlot: "空白卡槽",
   },
   id: {
-    gridNav: "Grid",
-    gridViewTitle: "Latihan Grid",
-    gridViewDescription: "Tampilkan enam kata per halaman dan putar audionya berulang.",
     gridLoopPlay: "Mulai Loop",
     gridLoopStop: "Hentikan Loop",
     gridPreviousGroup: "Grup Sebelumnya",
@@ -118,9 +112,6 @@ const UI_TRANSLATION_FALLBACKS = {
     gridEmptySlot: "Slot Kosong",
   },
   en: {
-    gridNav: "Grid",
-    gridViewTitle: "Grid Practice",
-    gridViewDescription: "Show six words per page and loop their audio in order.",
     gridLoopPlay: "Start Loop",
     gridLoopStop: "Stop Loop",
     gridPreviousGroup: "Previous Group",

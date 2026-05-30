@@ -160,11 +160,7 @@
       </section>
 
       <section x-show="activeView === 'grid'" data-testid="view-grid" class="min-h-[70vh] space-y-5 pb-6">
-        <section class="space-y-2 pt-2">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-tertiary" x-text="t('gridNav')"></p>
-          <h2 class="font-headline text-3xl font-extrabold tracking-tight text-primary" x-text="t('gridViewTitle')"></h2>
-          <p class="text-sm text-on-surface-variant" x-text="t('gridViewDescription')"></p>
-        </section>
+
 
         <div class="grid gap-3 md:grid-cols-[auto_1fr_auto_auto] md:items-center">
           <button type="button" data-testid="grid-prev-page" class="inline-flex items-center justify-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface transition-all hover:bg-surface-bright active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="goToPreviousGridPage()" :disabled="gridPageIndex <= 0" :aria-label="t('gridPreviousGroup')">
@@ -663,10 +659,6 @@
       <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('library')"></span>
     </button>
 
-    <button type="button" data-testid="nav-grid" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'grid' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('grid')">
-      <span class="material-symbols-outlined" :class="activeView === 'grid' ? 'fill-icon' : ''">grid_view</span>
-      <span class="mt-1 font-headline text-[10px] uppercase tracking-widest" x-text="t('gridNav')"></span>
-    </button>
 
     <button type="button" data-testid="nav-favorites" class="flex scale-95 flex-col items-center justify-center rounded-2xl p-2 transition-all duration-300 active:scale-90" :class="activeView === 'favorites' ? 'bg-primary-container text-primary' : 'text-gray-500 hover:bg-[#1c1c26] hover:text-primary'" @click="switchView('favorites')">
       <span class="material-symbols-outlined" :class="activeView === 'favorites' ? 'fill-icon' : ''">favorite</span>
