@@ -628,7 +628,6 @@ async function run() {
     await step("list flow and modal", async () => {
       await page.getByTestId("nav-list").click();
       await expect(await page.getByTestId("list-loop-toggle").isVisible(), "list loop toggle should exist");
-      await expect(await page.getByTestId("list-loop-size").isVisible(), "list loop size selector should exist");
       await expect(await page.getByTestId("list-language-toggle").isVisible(), "list language toggle should exist");
       await page.getByTestId("list-search").fill("bagus");
       const listView = page.getByTestId("view-list");

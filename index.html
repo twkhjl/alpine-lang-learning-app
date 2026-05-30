@@ -235,15 +235,6 @@
             <span x-text="listLanguageToggleLabel()"></span>
           </button>
 
-          <label class="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-3 text-sm font-semibold text-on-surface">
-            <span class="material-symbols-outlined text-base">repeat</span>
-            <select data-testid="list-loop-size" class="bg-transparent text-sm font-semibold text-on-surface outline-none" :value="listLoopGroupCount" @change="setListLoopGroupCount($event.target.value)">
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="6">6</option>
-            </select>
-          </label>
-
           <button type="button" data-testid="list-loop-toggle" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary-container px-5 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40" @click="toggleListLoop()" :disabled="!playableLoopWords.length" :aria-label="listLoopButtonLabel()">
             <span class="material-symbols-outlined" x-text="listLoopPlaying ? 'stop_circle' : 'repeat'"></span>
             <span x-text="listLoopButtonLabel()"></span>
